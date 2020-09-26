@@ -4,8 +4,8 @@ C needed ISO conforming templates, so here we go.
 
 ## Usage
 
-CTL is collection of header only files packaged into standard containers, like `vec`,
-which is synonmous to the `C++ vector`.
+CTL is a collection of header only files packaged into a series containers,
+like `vec`, which is synonmous to the `C++ vector`.
 
     #include <stdlib.h>
     #include <stdio.h>
