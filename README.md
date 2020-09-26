@@ -34,7 +34,7 @@ int main(void)
 
 ## Running Tests
 
-When invoking make, tests are compiled, run, and cleaned up
+When invoking make, tests are compiled, ran, and cleaned up
 using `gcc -std=c89`.
 
     make
