@@ -5,16 +5,22 @@
 #define T int
 #include <ctl/vec.h>
 
-#define T int
-#include <ctl/compare.h>
+static int
+compare_int(const void* a, const void* b)
+{
+    const int* aa = a;
+    const int* bb = b;
+    return *aa < *bb;
+}
 
-void test_vec_int_sort(void)
+void
+test_vec_int_sort(void)
 {
     int i;
     vec_int ints = vec_int_init(1, NULL);
     for(i = 0; i < 20; i++)
         vec_int_push_back(&ints, rand());
-    vec_int_sort(&ints, compare_dec_int);
+    vec_int_sort(&ints, compare_int);
     for(i = 0; i < vec_int_size(&ints) - 1; i++)
     {
         int* data = vec_int_data(&ints);
@@ -23,7 +29,8 @@ void test_vec_int_sort(void)
     vec_int_free(&ints);
 }
 
-void test_vec_int_del(void)
+void
+test_vec_int_del(void)
 {
     vec_int ints = vec_int_init(1, NULL);
     vec_int_push_front(&ints, 2);
@@ -54,9 +61,17 @@ void test_vec_int_del(void)
     vec_int_free(&ints);
 }
 
-int main(void)
+void
+test(void)
 {
     test_vec_int_sort();
     test_vec_int_del();
+    puts("TESTS PASSED");
+}
+
+int
+main(void)
+{
+    test();
     return 0;
 }
