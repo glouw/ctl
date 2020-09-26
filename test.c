@@ -13,7 +13,7 @@ compare_int(const void* a, const void* b)
     return *aa < *bb;
 }
 
-void
+static void
 test_vec_int_sort(void)
 {
     int i;
@@ -29,7 +29,7 @@ test_vec_int_sort(void)
     vec_int_free(&ints);
 }
 
-void
+static void
 test_vec_int_del(void)
 {
     vec_int ints = vec_int_init(1, NULL);
@@ -61,7 +61,7 @@ test_vec_int_del(void)
     vec_int_free(&ints);
 }
 
-void
+static void
 test(void)
 {
     test_vec_int_sort();
