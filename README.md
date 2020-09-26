@@ -14,8 +14,8 @@ inspired by the C++ Standard Template Library (STL).
 static int
 compare_int(const void* a, const void* b)
 {
-    const int* aa = (ints*) a;
-    const int* bb = (ints*) b;
+    const int* aa = (int*) a;
+    const int* bb = (int*) b;
     return *aa < *bb;
 }
 
