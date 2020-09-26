@@ -22,12 +22,12 @@ compare_int(const void* a, const void* b)
 int main(void)
 {
     int i;
-    vec_int ints = vec_int_init(4, NULL);
+    vec_int ints = vec_int_init(1, NULL);
     for(i = 0; i < 100; i++)
         vec_int_push_back(&ints, rand());
     vec_int_sort(&ints, compare_int);
-    for(i = 0 ; i < vec_int_size(&ints); i++)
-        printf("%d\n", vec_int_data(&ints)[i]);
+    for(i = ints.begin; i < ints.end; i++)
+        printf("%d\n", ints.value[i]);
     vec_int_free(&ints);
 }
 ```

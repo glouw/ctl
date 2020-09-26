@@ -22,11 +22,12 @@ IMPL(A, zero)(void)
 static A
 IMPL(A, init)(int capacity, void (*destruct)(T*))
 {
+    const int min = 1;
     A self = IMPL(A, zero)();
-    self.value = (T*) malloc(capacity * sizeof(T));
+    self.capacity = capacity < min ? min : capacity;
+    self.value = (T*) malloc(self.capacity * sizeof(T));
     self.destruct = destruct;
-    self.begin = self.end = capacity / 2;
-    self.capacity = capacity;
+    self.begin = self.end = self.capacity / 2;
     return self;
 }
 

@@ -3,7 +3,7 @@ CC = gcc -std=c89
 CFLAGS = \
 	-isystem. \
 	-Wall -Wextra -Wpedantic -Wfatal-errors \
-	-fsanitize=address -Og -g
+	-fsanitize=address -O0 -g
 
 BIN = test
 
