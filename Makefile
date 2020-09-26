@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS = -isystem. -fsanitize=address -g -Wfatal-errors
+CFLAGS = -std=c90 -isystem. -Wall -Wextra -Wpedantic -Wfatal-errors -fsanitize=address -g
 
 SRC = test.c
 

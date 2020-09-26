@@ -1,4 +1,4 @@
-DECL int
+static int
 TEMPLATE(compare_asc)(const void* a, const void* b)
 {
     const T* aa = a;
@@ -6,7 +6,7 @@ TEMPLATE(compare_asc)(const void* a, const void* b)
     return *aa > *bb;
 }
 
-DECL int
+static int
 TEMPLATE(compare_dec)(const void* a, const void* b)
 {
     const T* aa = a;
