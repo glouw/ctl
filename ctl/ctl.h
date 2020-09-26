@@ -7,6 +7,6 @@
 
 #define IMPL(name) PASTE(C, PASTE(_, name))
 
-#define TEMPLATE(name, TYPE) PASTE(PASTE(name, _), TYPE)
+#define TEMPLATE(name) PASTE(PASTE(name, _), T)
 
 #endif

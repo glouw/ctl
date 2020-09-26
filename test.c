@@ -1,9 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <ctl/ctl.h>
+
 #define T int
 #include <ctl/vec.h>
+
 #define T int
 #include <ctl/compare.h>
 
