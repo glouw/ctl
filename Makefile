@@ -1,7 +1,6 @@
-CC = gcc
+CC = gcc -std=c89
 
 CFLAGS = \
-	-std=c89 \
 	-isystem. \
 	-Wall -Wextra -Wpedantic -Wfatal-errors \
 	-fsanitize=address -Og -g
@@ -17,10 +16,12 @@ define expand
 endef
 
 clean: all
-	rm -f $(BIN)
+	@rm -f $(BIN)
 
 all:
+	@echo "compiler: $(CC)"
 	$(call run,test_vec.c)
+	$(call run,test_list.c)
 
 vec:
 	$(call expand,$@)

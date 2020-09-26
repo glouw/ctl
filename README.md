@@ -5,8 +5,6 @@ inspired by the C++ Standard Template Library (STL).
 
 ## Usage
 
-
-    #include <stdlib.h>
     #include <stdio.h>
 
     #define T int
@@ -32,6 +30,14 @@ inspired by the C++ Standard Template Library (STL).
         vec_int_free(&ints);
     }
 
-## Running tests
+## Running Tests
+
+When invoking make, tests are compiled, run, and cleaned up
+using `gcc -std=c89`.
 
     make
+
+The CTL is also compatible with all versions of C++. Testing the CTL with a
+C++ compiler can be done with:
+
+    make CC==g++\ -std=c++11
