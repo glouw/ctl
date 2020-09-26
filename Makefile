@@ -1,5 +1,12 @@
-# FOR TEMPLATES, GIVE UP AFTER 1 ERROR ELSE STDOUT IS SPAMMED.
-#   SEE -Wfatal-errors
+CC = gcc
+
+CFLAGS = -isystem. -fsanitize=address -g -Wfatal-errors
+
+SRC = test.c
+
+BIN = test
 
 all:
-	gcc main.c -fsanitize=address -g -Wfatal-errors
+	$(CC) $(CFLAGS) $(SRC) -o $(BIN)
+	./$(BIN)
+	rm $(BIN)
