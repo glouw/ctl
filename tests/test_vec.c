@@ -26,36 +26,9 @@ test_vec_int_sort(void)
     vec_int_free(&ints);
 }
 
-static void
-test_vec_int_compile(void)
-{
-    vec_int ints = vec_int_init(1, NULL);
-    vec_int_realloc(&ints, 0);
-    vec_int_push_back(&ints, 1);
-    vec_int_push_back(&ints, 2);
-    vec_int_push_back(&ints, 3);
-    vec_int_push_front(&ints, 4);
-    vec_int_push_front(&ints, 5);
-    vec_int_push_front(&ints, 6);
-    vec_int_peak_back(&ints);
-    vec_int_peak_front(&ints);
-    vec_int_pop_back(&ints);
-    vec_int_pop_front(&ints);
-    vec_int_del_back(&ints);
-    vec_int_del_front(&ints);
-    vec_int_swap(&ints, ints.begin, ints.end - 1);
-    vec_int_del(&ints, ints.begin);
-    vec_int_data(&ints);
-    vec_int_size(&ints);
-    vec_int_sort(&ints, NULL);
-    vec_int_free(&ints);
-    vec_int_zero();
-}
-
 int
 main(void)
 {
-    test_vec_int_compile();
     test_vec_int_sort();
     printf("%s: PASSED\n", __FILE__);
     return 0;

@@ -124,10 +124,16 @@ IMPL(A, swap)(A* self, int a, int b)
     self->value[b] = temp;
 }
 
+static int
+IMPL(A, weigh_back)(A* self, int index)
+{
+    return self->end - index < self->begin - index;
+}
+
 static void
 IMPL(A, del)(A* self, int index)
 {
-    if(self->end - index < self->begin - index)
+    if(IMPL(A, weigh_back)(self, index))
     {
         IMPL(A, swap)(self, self->end - 1, index);
         IMPL(A, del_back)(self);
@@ -137,6 +143,17 @@ IMPL(A, del)(A* self, int index)
         IMPL(A, swap)(self, self->begin, index);
         IMPL(A, del_front)(self);
     }
+}
+
+static void
+IMPL(A, insert)(A* self, int index, T value)
+{
+    T temp = self->value[index];
+    if(IMPL(A, weigh_back)(self, index))
+        IMPL(A, push_back)(self, temp);
+    else
+        IMPL(A, push_front)(self, temp);
+    self->value[index] = value;
 }
 
 static T*

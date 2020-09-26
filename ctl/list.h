@@ -14,17 +14,17 @@ A;
 static A*
 IMPL(A, init)(T data)
 {
-    A* b = (A*) malloc(sizeof(T));
-    b->data = data;
-    b->next = NULL;
-    b->prev = NULL;
-    return b;
+    A* self = (A*) malloc(sizeof(T));
+    self->data = data;
+    self->next = NULL;
+    self->prev = NULL;
+    return self;
 }
 
 static void
-IMPL(A, free)(A* b)
+IMPL(A, free)(A* self)
 {
-    free(b);
+    free(self);
 }
 
 typedef struct B
@@ -99,25 +99,29 @@ IMPL(B, pop)(B* self, A* node)
 }
 
 static void
+IMPL(B, del)(B* self, A* node)
+{
+    T data = IMPL(B, pop)(self, node);
+    if(self->destruct)
+        self->destruct(&data);
+}
+
+static void
 IMPL(B, free)(B* self)
 {
     while(self->size > 0)
-    {
-        T data = IMPL(B, pop)(self, self->head);
-        if(self->destruct)
-            self->destruct(&data);
-    }
+        IMPL(B, del)(self, self->head);
 }
 
 static void
 IMPL(B, sort)(B* self, int (*compare)(const void*, const void*))
 {
-    T* cache = (T*) malloc(self->size * sizeof(*cache));
-    int index = 0;
     A* node;
+    T* cache = (T*) malloc(self->size * sizeof(T));
+    int index = 0;
     for(node = self->head; node; node = node->next)
         cache[index++] = node->data;
-    qsort(cache, self->size, sizeof(*cache), compare);
+    qsort(cache, self->size, sizeof(T), compare);
     index = 0;
     for(node = self->head; node; node = node->next)
         node->data = cache[index++];
