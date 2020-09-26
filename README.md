@@ -5,30 +5,32 @@ inspired by the C++ Standard Template Library (STL).
 
 ## Usage
 
-    #include <stdio.h>
+```C
+#include <stdio.h>
 
-    #define T int
-    #include <ctl/vec.h>
+#define T int
+#include <ctl/vec.h>
 
-    static int
-    compare_int(const void* a, const void* b)
-    {
-        const int* aa = a;
-        const int* bb = b;
-        return *aa < *bb;
-    }
+static int
+compare_int(const void* a, const void* b)
+{
+    const int* aa = (ints*) a;
+    const int* bb = (ints*) b;
+    return *aa < *bb;
+}
 
-    int main(void)
-    {
-        int i;
-        vec_int ints = vec_int_init(4, NULL);
-        for(i = 0; i < 100; i++)
-            vec_int_push_back(&ints, rand());
-        vec_int_sort(&ints, compare_int);
-        for(i = 0 ; i < vec_int_size(&ints); i++)
-            printf("%d\n", vec_int_data(&ints)[i]);
-        vec_int_free(&ints);
-    }
+int main(void)
+{
+    int i;
+    vec_int ints = vec_int_init(4, NULL);
+    for(i = 0; i < 100; i++)
+        vec_int_push_back(&ints, rand());
+    vec_int_sort(&ints, compare_int);
+    for(i = 0 ; i < vec_int_size(&ints); i++)
+        printf("%d\n", vec_int_data(&ints)[i]);
+    vec_int_free(&ints);
+}
+```
 
 ## Running Tests
 
