@@ -1,4 +1,4 @@
-#define C TEMPLATE(vec)
+#define C TEMPLATE(vec, T)
 
 typedef struct
 {
