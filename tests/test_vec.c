@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
@@ -61,17 +60,11 @@ test_vec_int_del(void)
     vec_int_free(&ints);
 }
 
-static void
-test(void)
-{
-    test_vec_int_sort();
-    test_vec_int_del();
-    puts("TESTS PASSED");
-}
-
 int
 main(void)
 {
-    test();
+    test_vec_int_sort();
+    test_vec_int_del();
+    printf("%s: PASSED\n", __FILE__);
     return 0;
 }
