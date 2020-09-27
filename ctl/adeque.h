@@ -1,6 +1,13 @@
+/*
+ * ARRAY DECK
+ *
+ * VALUES ARE CONTIGUOUS.
+ *
+ */
+
 #include <ctl/ctl.h>
 
-#define A TEMPLATE(T, vec)
+#define A TEMPLATE(T, adeque)
 
 typedef struct
 {
@@ -22,7 +29,7 @@ IMPL(A, zero)(void)
 static A
 IMPL(A, init)(int capacity, void (*destruct)(T*))
 {
-    const int min = 1;
+    int min = 1;
     A self = IMPL(A, zero)();
     self.capacity = capacity < min ? min : capacity;
     self.value = (T*) malloc(self.capacity * sizeof(T));

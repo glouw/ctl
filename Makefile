@@ -1,8 +1,8 @@
 CC = gcc -std=c89
 
 CFLAGS = \
-	-isystem. \
-	-Wall -Wextra -Wpedantic -Wfatal-errors \
+	-I. \
+	-Wall -Wextra -Wpedantic -Wfatal-errors -Wno-unused-function\
 	-fsanitize=address -Og -g
 
 BIN = test
@@ -20,10 +20,10 @@ clean: all
 
 all:
 	@echo "compiler: $(CC)"
-	$(call run,test_vec.c)
-	$(call run,test_list.c)
+	$(call run,test_adeque.c)
+	$(call run,test_delist.c)
 
-vec:
+adeque:
 	$(call expand,$@)
 
 list:
