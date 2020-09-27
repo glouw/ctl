@@ -6,30 +6,13 @@ inspired by the C++ Standard Template Library (STL).
 ## Usage
 
 ```C
-#include <stdio.h>
-
 #define T int
-#include <ctl/vec.h>
+#include <ctl/deque.h>
 
-static int
-compare_int(const void* a, const void* b)
-{
-    const int* aa = (int*) a;
-    const int* bb = (int*) b;
-    return *aa < *bb;
-}
+#define T float
+#include <ctl/list.h>
 
-int main(void)
-{
-    int i;
-    vec_int ints = vec_int_init(1, NULL);
-    for(i = 0; i < 100; i++)
-        vec_int_push_back(&ints, rand());
-    vec_int_sort(&ints, compare_int);
-    for(i = ints.begin; i < ints.end; i++)
-        printf("%d\n", ints.value[i]);
-    vec_int_free(&ints);
-}
+/* etc */
 ```
 
 ## Running Tests
