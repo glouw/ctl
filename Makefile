@@ -8,11 +8,11 @@ CFLAGS = \
 BIN = test
 
 define run
-	@ $(CC) $(CFLAGS) tests/$(1) -o $(BIN); ./$(BIN)
+	$(CC) $(CFLAGS) tests/$(1) -o $(BIN); ./$(BIN)
 endef
 
 define expand
-	@ $(CC) $(CFLAGS) ctl/$(1).h -E -DT=int
+	$(CC) $(CFLAGS) ctl/$(1).h -E $(2) 
 endef
 
 clean: all
@@ -22,9 +22,13 @@ all:
 	@echo "compiler: $(CC)"
 	$(call run,test_adeque.c)
 	$(call run,test_delist.c)
+	$(call run,test_array.c)
 
 adeque:
-	$(call expand,$@)
+	$(call expand,$@,-DT=int)
 
-list:
-	$(call expand,$@)
+delist:
+	$(call expand,$@,-DT=int)
+
+array:
+	$(call expand,$@,-DT=int -DS=53)
