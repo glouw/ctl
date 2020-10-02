@@ -1,34 +1,31 @@
-CC = gcc -std=c89
+CC = gcc -std=c99
+CXX = g++ -std=c++17
 
 CFLAGS = \
-	-I. \
-	-Wall -Wextra -Wpedantic -Wfatal-errors -Wno-unused-function\
+	-Ictl \
+	-Wall -Wextra -Wpedantic -Wfatal-errors -Wno-unused-function \
 	-fsanitize=address -Og -g
 
 BIN = test
 
 define run
-	$(CC) $(CFLAGS) tests/$(1) -o $(BIN); ./$(BIN)
+	$1 $(CFLAGS) $(2) -o $(BIN); ./$(BIN)
 endef
 
 define expand
-	$(CC) $(CFLAGS) ctl/$(1).h -E $(2) 
+	$(CC) $(CFLAGS) ctl/$(1).h -E $(2)
 endef
 
 clean: all
 	@rm -f $(BIN)
 
 all:
-	@echo "compiler: $(CC)"
-	$(call run,test_adeque.c)
-	$(call run,test_delist.c)
-	$(call run,test_array.c)
+	# ENSURE ALL CTL CONTAINERS COMPILE WITH C99
+	$(call run,$(CC),test_c99.c)
 
-adeque:
+	# ENSURE ALL CTL CONTAINERS COMPILE WITH THE
+	# LATEST C++ COMPILER AND WORK LIKE THE STL
+	$(call run,$(CXX),test_vec_conformance.cc)
+
+vec:
 	$(call expand,$@,-DT=int)
-
-delist:
-	$(call expand,$@,-DT=int)
-
-array:
-	$(call expand,$@,-DT=int -DS=53)
