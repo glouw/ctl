@@ -112,6 +112,10 @@ CTL_IMPL(A, resize)(A* self, size_t size)
     else
     {
         CTL_IMPL(A, reserve)(self, size);
+        size_t diff = size - self->size;
+        static T zero;
+        for(size_t i = self->size; i < diff; i++)
+            self->value[i] = zero;
         self->size = size;
     }
 }

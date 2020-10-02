@@ -215,6 +215,18 @@ int main(void)
             for(size_t i = 0; i < x.size(); i++) assert(strcmp(*vec_str_at(&z, i), x.at(i).c_str()) == 0);
             vec_str_destruct(&y);
             vec_str_destruct(&z);
+        }{
+            size_t size = 65536;
+            std::vector<str> x; // NULL POINTER TEST.
+            vec_str y = vec_str_construct(str_destruct, str_copy);
+            x.resize(size);
+            vec_str_resize(&y, size);
+            for(size_t i = 0; i < size; i++)
+            {
+                assert(x.at(i) == NULL);
+                assert(*vec_str_at(&y, i) == NULL);
+            }
+            vec_str_destruct(&y);
         }
     }
     vec_str_destruct(&a);
