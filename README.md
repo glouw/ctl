@@ -88,7 +88,7 @@ str str_copy(str* s)
 
 int str_cmp(const void* a, const void* b)
 {
-    return strcmp((char*) a, (char*) b);
+    return strcmp((str) a, (str) b);
 }
 
 #define T str
