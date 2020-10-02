@@ -23,8 +23,8 @@ int main(void)
     vec_double_push_back(&celcius, 12.8);
     vec_double_push_back(&celcius, 24.1);
     vec_double_push_back(&celcius, 19.4);
-    vec_double_it it = vec_double_it_construct(&celcius, 0);
-    CTL_FOREACH(it, {
+    vec_double_it it = vec_double_it_construct(&celcius, 0, it.size, 1);
+    CTL_FOR(it, {
         printf("%0.2f\n", *it.value);
     })
     vec_double_destruct(&celcius);
