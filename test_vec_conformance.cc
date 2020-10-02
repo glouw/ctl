@@ -1,49 +1,72 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <assert.h>
+#include <string>
+
+typedef char* str;
+
+static void
+str_destruct(str* s)
+{
+    free(*s);
+}
+
+static str
+str_construct(const char* s)
+{
+    return strcpy((char*) malloc(strlen(s) + 1), s);
+}
+
+static str
+str_copy(str* s)
+{
+    return str_construct(*s);
+}
 
 // CTL
-#define T int
+#define T str
 #include <vec.h>
 
 // STL
 #include <vector>
 
-int main()
+int main(void)
 {
-    const int A = 11;
-    const int B = 22;
-    const int C = 33;
+    const char* const A = "A";
+    const char* const B = "B";
+    const char* const C = "C";
 
     // CTL Setup.
-    vec_int a = vec_int_construct(NULL, NULL);
-    vec_int_push_back(&a, A);
-    vec_int_push_back(&a, B);
-    vec_int_push_back(&a, C);
-    vec_int_push_back(&a, A);
-    vec_int_push_back(&a, B);
-    vec_int_push_back(&a, C);
-    vec_int_push_back(&a, A);
-    vec_int_push_back(&a, B);
-    vec_int_push_back(&a, C);
+    vec_str a = vec_str_construct(str_destruct, str_copy);
+    vec_str_push_back(&a, str_construct(A));
+    vec_str_push_back(&a, str_construct(B));
+    vec_str_push_back(&a, str_construct(C));
+    vec_str_push_back(&a, str_construct(A));
+    vec_str_push_back(&a, str_construct(B));
+    vec_str_push_back(&a, str_construct(C));
+    vec_str_push_back(&a, str_construct(A));
+    vec_str_push_back(&a, str_construct(B));
+    vec_str_push_back(&a, str_construct(C));
 
     // STL Setup.
-    std::vector<int> b;
-    b.push_back(A);
-    b.push_back(B);
-    b.push_back(C);
-    b.push_back(A);
-    b.push_back(B);
-    b.push_back(C);
-    b.push_back(A);
-    b.push_back(B);
-    b.push_back(C);
+    std::vector<std::string> b;
+    b.push_back(std::string(A));
+    b.push_back(std::string(B));
+    b.push_back(std::string(C));
+    b.push_back(std::string(A));
+    b.push_back(std::string(B));
+    b.push_back(std::string(C));
+    b.push_back(std::string(A));
+    b.push_back(std::string(B));
+    b.push_back(std::string(C));
 
     // TEST
     // CTL_FOREACH vs STL at().
     {
-        vec_int_it it = vec_int_it_construct(&a, 0, a.size, 1);
+        vec_str_it it = vec_str_it_construct(&a, 0, a.size, 1);
         CTL_FOR(it, {
-            assert(*it.value == b.at(it.index));
+            assert(strcmp(*it.value, b.at(it.index).c_str()) == 0);
         })
         assert(a.size == b.size() && a.capacity == b.capacity());
     }
@@ -54,7 +77,7 @@ int main()
         size_t index = 0;
         for(auto& value : b)
         {
-            assert(value == *vec_int_at(&a, index));
+            assert(strcmp(value.c_str(), *vec_str_at(&a, index)) == 0);
             index += 1;
         }
         assert(a.size == b.size() && a.capacity == b.capacity());
@@ -63,8 +86,8 @@ int main()
     // TEST
     // STL front() and back vs CTL front() and back().
     {
-        assert(*vec_int_front(&a) == b.front());
-        assert(*vec_int_back(&a) == b.back());
+        assert(strcmp(*vec_str_front(&a), b.front().c_str()) == 0);
+        assert(strcmp(*vec_str_back(&a), b.back().c_str()) == 0);
         assert(a.size == b.size() && a.capacity == b.capacity());
     }
 
@@ -74,124 +97,126 @@ int main()
         {
             size_t size = 1;
             b.resize(size);
-            vec_int_resize(&a, size);
+            vec_str_resize(&a, size);
             assert(a.size == b.size() && a.capacity == b.capacity());
         }{
             size_t capacity = 10;
             b.reserve(capacity);
-            vec_int_reserve(&a, capacity);
+            vec_str_reserve(&a, capacity);
             assert(a.size == b.size() && a.capacity == b.capacity());
         }{
             size_t capacity = 128;
             b.reserve(capacity);
-            vec_int_reserve(&a, capacity);
+            vec_str_reserve(&a, capacity);
             assert(a.size == b.size() && a.capacity == b.capacity());
         }{
-            size_t capacity = 65536;
-            b.resize(capacity);
-            vec_int_resize(&a, capacity);
+            size_t size = 65536;
+            b.resize(size);
+            vec_str_resize(&a, size);
             assert(a.size == b.size() && a.capacity == b.capacity());
-            vec_int_push_back(&a, A);
-            vec_int_push_back(&a, B);
-            vec_int_push_back(&a, C);
-            b.push_back(A);
-            b.push_back(B);
-            b.push_back(C);
-            for(size_t i = 0; i < capacity; i++)
-                assert(*vec_int_at(&a, i) == b.at(i));
+            vec_str_push_back(&a, str_construct(A));
+            vec_str_push_back(&a, str_construct(B));
+            vec_str_push_back(&a, str_construct(C));
+            b.push_back(std::string(A));
+            b.push_back(std::string(B));
+            b.push_back(std::string(C));
+            for(size_t i = 0; i < a.size; i++)
+            {
+                str s = *vec_str_at(&a, i); // VECTOR RESIZES INITIALIZE VALUES TO NULL.
+                if(s)
+                    assert(strcmp(s, b.at(i).c_str()) == 0);
+            }
         }{
             size_t size = 0;
             b.resize(size);
-            vec_int_resize(&a, size);
+            vec_str_resize(&a, size);
             assert(b.empty());
-            assert(vec_int_empty(&a));
+            assert(vec_str_empty(&a));
         }{
             size_t size = 1;
             b.resize(size);
-            vec_int_resize(&a, size);
+            vec_str_resize(&a, size);
             assert(!b.empty());
-            assert(!vec_int_empty(&a));
+            assert(!vec_str_empty(&a));
         }{
             size_t capacity = 4096;
             b.reserve(capacity);
-            vec_int_reserve(&a, capacity);
+            vec_str_reserve(&a, capacity);
             assert(a.size == b.size() && a.capacity == b.capacity());
             b.shrink_to_fit();
-            vec_int_shrink_to_fit(&a);
+            vec_str_shrink_to_fit(&a);
             assert(a.size == b.size() && a.capacity == b.capacity());
         }{
-            vec_int_push_back(&a, A);
-            b.push_back(A);
+            vec_str_push_back(&a, str_construct(A));
+            b.push_back(std::string(A));
             b.pop_back();
-            vec_int_pop_back(&a);
+            vec_str_pop_back(&a);
             assert(a.size == b.size() && a.capacity == b.capacity());
         }{
             size_t index = 0;
-            int value = 42;
-            vec_int_push_back(&a, A);
-            b.push_back(A);
-            b[index] = value;
-            vec_int_set(&a, index, value);
-            assert(*vec_int_at(&a, index) == b.at(index));
+            const char* value = "TEST";
+            vec_str_push_back(&a, str_construct(A));
+            b.push_back(std::string(A));
+            b[index] = std::string(value);
+            vec_str_set(&a, index, str_construct(value));
+            assert(*vec_str_at(&a, index) == b.at(index));
             assert(a.size == b.size() && a.capacity == b.capacity());
         }{
             size_t index = 1;
-            vec_int_push_back(&a, A);
-            vec_int_push_back(&a, B);
-            vec_int_push_back(&a, C);
-            b.push_back(A);
-            b.push_back(B);
-            b.push_back(C);
+            vec_str_push_back(&a, str_construct(A));
+            vec_str_push_back(&a, str_construct(B));
+            vec_str_push_back(&a, str_construct(C));
+            b.push_back(std::string(A));
+            b.push_back(std::string(B));
+            b.push_back(std::string(C));
             b.erase(b.begin() + index);
-            vec_int_erase(&a, index);
+            vec_str_erase(&a, index);
             for(size_t i = 0; i < b.size(); i++)
-                assert(*vec_int_at(&a, i) == b.at(i));
+                assert(strcmp(*vec_str_at(&a, i), b.at(i).c_str()) == 0);
         }{
-            vec_int c = vec_int_copy(&a);
-            std::vector<int> d = b;
+            vec_str c = vec_str_copy(&a);
+            std::vector<std::string> d = b;
             for(size_t i = 0; i < b.size(); i++)
-                assert(*vec_int_at(&c, i) == d.at(i));
-            vec_int_destruct(&c);
+                assert(*vec_str_at(&c, i) == d.at(i));
+            vec_str_destruct(&c);
         }{
             size_t index = 2;
-            size_t value = 100;
-            vec_int_push_back(&a, A);
-            vec_int_push_back(&a, B);
-            vec_int_push_back(&a, C);
-            b.push_back(A);
-            b.push_back(B);
-            b.push_back(C);
-            b.insert(b.begin() + index, value);
-            vec_int_insert(&a, index, value);
+            const char* value = "ANOTHER TEST";
+            vec_str_push_back(&a, str_construct(A));
+            vec_str_push_back(&a, str_construct(B));
+            vec_str_push_back(&a, str_construct(C));
+            b.push_back(std::string(A));
+            b.push_back(std::string(B));
+            b.push_back(std::string(C));
+            b.insert(b.begin() + index, std::string(value));
+            vec_str_insert(&a, index, str_construct(value));
             for(size_t i = 0; i < b.size(); i++)
-                assert(*vec_int_at(&a, i) == b.at(i));
+                assert(*vec_str_at(&a, i) == b.at(i));
         }{
-            std::vector<int> w;
-            w.push_back(A);
-            w.push_back(B);
-            w.push_back(C);
-            std::vector<int> x;
-            x.push_back(C);
-            x.push_back(B);
-            x.push_back(A);
-            vec_int y = vec_int_construct(NULL, NULL);
-            vec_int_push_back(&y, A);
-            vec_int_push_back(&y, B);
-            vec_int_push_back(&y, C);
-            vec_int z = vec_int_construct(NULL, NULL);
-            vec_int_push_back(&z, C);
-            vec_int_push_back(&z, B);
-            vec_int_push_back(&z, A);
+            std::vector<std::string> w;
+            w.push_back(std::string(A));
+            w.push_back(std::string(B));
+            w.push_back(std::string(C));
+            std::vector<std::string> x;
+            x.push_back(std::string(C));
+            x.push_back(std::string(B));
+            x.push_back(std::string(A));
+            vec_str y = vec_str_construct(str_destruct, str_copy);
+            vec_str_push_back(&y, str_construct(A));
+            vec_str_push_back(&y, str_construct(B));
+            vec_str_push_back(&y, str_construct(C));
+            vec_str z = vec_str_construct(str_destruct, str_copy);
+            vec_str_push_back(&z, str_construct(C));
+            vec_str_push_back(&z, str_construct(B));
+            vec_str_push_back(&z, str_construct(A));
             w.swap(x);
-            vec_int_swap(&y, &z);
-            for(size_t i = 0; i < w.size(); i++) assert(*vec_int_at(&y, i) == w.at(i));
-            for(size_t i = 0; i < x.size(); i++) assert(*vec_int_at(&z, i) == x.at(i));
-            vec_int_destruct(&y);
-            vec_int_destruct(&z);
+            vec_str_swap(&y, &z);
+            for(size_t i = 0; i < w.size(); i++) assert(strcmp(*vec_str_at(&y, i), w.at(i).c_str()) == 0);
+            for(size_t i = 0; i < x.size(); i++) assert(strcmp(*vec_str_at(&z, i), x.at(i).c_str()) == 0);
+            vec_str_destruct(&y);
+            vec_str_destruct(&z);
         }
     }
-
-    // CTL Cleanup.
-    vec_int_destruct(&a);
+    vec_str_destruct(&a);
     printf("%s: PASSED\n", __FILE__);
 }

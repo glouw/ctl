@@ -62,8 +62,11 @@ CTL_IMPL(A, back)(A* self)
 static inline void
 CTL_IMPL(A, pop_back)(A* self)
 {
+    T* back = CTL_IMPL(A, back)(self);
     if(self->destruct)
-        self->destruct(CTL_IMPL(A, back)(self));
+        self->destruct(back);
+    static T zero;
+    *back = zero;
     self->size -= 1;
 }
 
