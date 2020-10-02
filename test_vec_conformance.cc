@@ -31,6 +31,12 @@ str_copy(str* s)
 // STL
 #include <vector>
 
+static int
+str_cmp(const void* a, const void* b)
+{
+    return strcmp((char*) a, (char*) b);
+}
+
 int main(void)
 {
     const char* const A = "A";
@@ -213,6 +219,7 @@ int main(void)
             vec_str_swap(&y, &z);
             for(size_t i = 0; i < w.size(); i++) assert(strcmp(*vec_str_at(&y, i), w.at(i).c_str()) == 0);
             for(size_t i = 0; i < x.size(); i++) assert(strcmp(*vec_str_at(&z, i), x.at(i).c_str()) == 0);
+            vec_str_sort(&y, str_cmp);
             vec_str_destruct(&y);
             vec_str_destruct(&z);
         }{

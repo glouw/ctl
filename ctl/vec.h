@@ -178,6 +178,12 @@ CTL_IMPL(A, erase)(A* self, size_t index)
     self->size -= 1;
 }
 
+static inline void
+CTL_IMPL(A, sort)(A* self, int (*compare)(const void*, const void*))
+{
+    qsort(self->value, self->size, sizeof(T), compare);
+}
+
 static inline A
 CTL_IMPL(A, copy)(A* self)
 {

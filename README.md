@@ -86,6 +86,11 @@ str str_copy(str* s)
     return str_construct(*s);
 }
 
+int str_cmp(const void* a, const void* b)
+{
+    return strcmp((char*) a, (char*) b);
+}
+
 #define T str
 #include <vec.h>
 
@@ -97,6 +102,7 @@ int main(void)
     vec_str_push_back(&strs, str_construct("A"));
     vec_str_push_back(&strs, str_construct("Test"));
     vec_str copy = vec_str_copy(&strs);
+    vec_str_sort(&copy, str_cmp);
     vec_str_it it = vec_str_it_construct(&copy, 0, copy.size, 1);
     CTL_FOR(it, {
         puts(*it.value);
