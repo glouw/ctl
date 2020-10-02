@@ -3,7 +3,7 @@ CXX = g++ -std=c++17
 
 CFLAGS = \
 	-Ictl \
-	-Wall -Wextra -Wpedantic -Wfatal-errors -Wno-unused-function \
+	-Wall -Wextra -Wpedantic -Wfatal-errors \
 	-fsanitize=address -Og -g
 
 BIN = test

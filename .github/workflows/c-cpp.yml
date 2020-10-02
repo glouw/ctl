@@ -15,26 +15,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: make gcc C89
-      run: make CC=gcc\ -std=c89
-
-    - name: make gcc C90
-      run: make CC=gcc\ -std=c90
-
-    - name: make gcc C99
-      run: make CC=gcc\ -std=c99
-
-    - name: make gcc C11
-      run: make CC=gcc\ -std=c11
-
-    - name: make g++ C++98
-      run: make CC=g++\ -std=c++98
-
-    - name: make g++ C++03
-      run: make CC=g++\ -std=c++03
-
-    - name: make g++ C++11
-      run: make CC=g++\ -std=c++11
-
-    - name: make g++ C++17
-      run: make CC=g++\ -std=c++17
+    - name: make and test
+      run: make
