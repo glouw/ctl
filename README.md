@@ -12,24 +12,24 @@ templates to C99 to make maximum use of C99's fast compile times.
 main.c:
 
 ```C
-    #include <stdio.h>
+#include <stdio.h>
 
-    #define T double
-    #include <vec.h>
+#define T double
+#include <vec.h>
 
-    int main(void)
-    {
-        vec_double celcius = vec_double_construct(NULL, NULL);
-        vec_double_push_back(&celcius, 12.8);
-        vec_double_push_back(&celcius, 24.1);
-        vec_double_push_back(&celcius, 19.4);
-        vec_double_it it = vec_double_it_construct(&celcius, 0);
-        CTL_FOREACH(it, {
-            printf("%0.2f\n", *it.value);
-        })
-        vec_double_destruct(&celcius);
-        printf("%s: PASSED\n", __FILE__);
-    }
+int main(void)
+{
+    vec_double celcius = vec_double_construct(NULL, NULL);
+    vec_double_push_back(&celcius, 12.8);
+    vec_double_push_back(&celcius, 24.1);
+    vec_double_push_back(&celcius, 19.4);
+    vec_double_it it = vec_double_it_construct(&celcius, 0);
+    CTL_FOREACH(it, {
+        printf("%0.2f\n", *it.value);
+    })
+    vec_double_destruct(&celcius);
+    printf("%s: PASSED\n", __FILE__);
+}
 ```
 
 Compilation then requires adding CTL as a system include:
@@ -40,21 +40,21 @@ More complex types, like pointers to built in types or structs,
 are fully compatible, but must first be type defined:
 
 ```C
-    typedef char* str;
+typedef char* str;
 
-    #define T str
-    #include <vec.h>
+#define T str
+#include <vec.h>
 
-    typedef struct
-    {
-        int age;
-        double height;
-        char* name;
-    }
-    person;
+typedef struct
+{
+    int age;
+    double height;
+    char* name;
+}
+person;
 
-    #define T person
-    #include <vec.h>
+#define T person
+#include <vec.h>
 ```
 
 In the event that types use heap allocation, function pointers
@@ -65,56 +65,56 @@ looped through, and printed with an iterator:
 
 
 ```C
-    #include <stdio.h>
-    #include <stdlib.h>
-    #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-    typedef char* str;
+typedef char* str;
 
-    void str_destruct(str* s)
-    {
-        free(*s);
-    }
+void str_destruct(str* s)
+{
+    free(*s);
+}
 
-    str str_construct(const char* s)
-    {
-        return strcpy(malloc(strlen(s) + 1), s);
-    }
+str str_construct(const char* s)
+{
+    return strcpy(malloc(strlen(s) + 1), s);
+}
 
-    str str_copy(str* s)
-    {
-        return str_construct(*s);
-    }
+str str_copy(str* s)
+{
+    return str_construct(*s);
+}
 
-    #define T str
-    #include <vec.h>
+#define T str
+#include <vec.h>
 
-    int main(void)
-    {
-        vec_str strs = vec_str_construct(str_destruct, str_copy);
-        vec_str_push_back(&strs, str_construct("This"));
-        vec_str_push_back(&strs, str_construct("Is"));
-        vec_str_push_back(&strs, str_construct("A"));
-        vec_str_push_back(&strs, str_construct("Test"));
-        vec_str copy = vec_str_copy(&strs);
-        vec_str_it it = vec_str_it_construct(&copy, 0, copy.size, 1);
-        CTL_FOR(it, {
-            puts(*it.value);
-        })
-        vec_str_destruct(&strs); // No double free.
-        vec_str_destruct(&copy);
-    }
+int main(void)
+{
+    vec_str strs = vec_str_construct(str_destruct, str_copy);
+    vec_str_push_back(&strs, str_construct("This"));
+    vec_str_push_back(&strs, str_construct("Is"));
+    vec_str_push_back(&strs, str_construct("A"));
+    vec_str_push_back(&strs, str_construct("Test"));
+    vec_str copy = vec_str_copy(&strs);
+    vec_str_it it = vec_str_it_construct(&copy, 0, copy.size, 1);
+    CTL_FOR(it, {
+        puts(*it.value);
+    })
+    vec_str_destruct(&strs); // No double free.
+    vec_str_destruct(&copy);
+}
 ```
 
 Likewise, containers are type defined and can be templated
 from other templates:
 
 ```C
-    #define T int
-    #include <vec.h>
+#define T int
+#include <vec.h>
 
-    #define T vec_int
-    #include <vec.h>
+#define T vec_int
+#include <vec.h>
 ```
 
 This creates a template container named `vec_vec_int`, which is
@@ -123,12 +123,12 @@ in C++. When constructing, ensure the copy and destruct callbacks from `vec_int`
 to the `vec_vec_int` constructor`, and then simply free `vec_vec_int` at a later date:
 
 ```C
-    int main(void)
-    {
-        vec_vec_int matrix = vec_vec_int_construct(vec_int_destruct, vec_int_copy);
-        ...
-        vec_vec_int_destruct(&matrix);
-    }
+int main(void)
+{
+    vec_vec_int matrix = vec_vec_int_construct(vec_int_destruct, vec_int_copy);
+    ...
+    vec_vec_int_destruct(&matrix);
+}
 ```
 
 ## Running Tests
@@ -147,11 +147,13 @@ compatibility (read: mimicry) with the STL.
 A template type and container can only be included once. For instance,
 the following will not work:
 
-    #define T double
-    #include <vec.h>
+```C
+#define T double
+#include <vec.h>
 
-    #define T double
-    #include <vec.h>
+#define T double
+#include <vec.h>
+```
 
 To lower the number of warnings and errors emitted by CTL templated types,
 compile with `-Wfatal-errors` to stop compilation at the first template error.
