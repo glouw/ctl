@@ -2,6 +2,7 @@
 
 #define A  TEMP(T, vec)
 #define I  IMPL(A, it)
+#define TZ IMPL(T, zero)
 #define AZ IMPL(A, zero)
 #define IZ IMPL(I, zero)
 
@@ -24,9 +25,11 @@ typedef struct I
     size_t start;
     size_t end;
     size_t step_size;
-    int done;
+    bool done;
 }
 I;
+
+static T TZ;
 
 static A AZ;
 
@@ -39,6 +42,12 @@ IMPL(A, construct)(void (*destruct)(T*), T (*copy)(T*))
     self.destruct = destruct;
     self.copy = copy;
     return self;
+}
+
+static inline bool
+IMPL(A, empty)(A* self)
+{
+    return self->size == 0;
 }
 
 static inline T*
@@ -60,18 +69,22 @@ IMPL(A, back)(A* self)
 }
 
 static inline void
-IMPL(A, pop_back)(A* self)
+IMPL(A, set)(A* self, size_t index, T value)
 {
-    T* back = IMPL(A, back)(self);
+    T* ref = IMPL(A, at)(self, index);
     if(self->destruct)
-        self->destruct(back);
-    static T zero;
-    *back = zero;
-    self->size -= 1;
+        self->destruct(ref);
+    *ref = value;
 }
 
 static inline void
-IMPL(A, _clear)(A* self, size_t n)
+IMPL(A, pop_back)(A* self)
+{
+    IMPL(A, set)(self, --self->size, TZ);
+}
+
+static inline void
+IMPL(A, wipe)(A* self, size_t n)
 {
     for(size_t i = 0; i < n; i++)
         IMPL(A, pop_back)(self);
@@ -80,7 +93,7 @@ IMPL(A, _clear)(A* self, size_t n)
 static inline void
 IMPL(A, clear)(A* self)
 {
-    IMPL(A, _clear)(self, self->size);
+    IMPL(A, wipe)(self, self->size);
 }
 
 static inline void
@@ -92,15 +105,19 @@ IMPL(A, destruct)(A* self)
 }
 
 static inline void
+IMPL(A, fit)(A* self, size_t capacity)
+{
+    self->capacity = capacity;
+    self->value = (T*) realloc(self->value, sizeof(T) * capacity);
+}
+
+static inline void
 IMPL(A, reserve)(A* self, size_t capacity)
 {
     if(capacity > self->capacity)
     {
-        self->capacity = capacity;
-        self->value = (T*) realloc(self->value, sizeof(T) * capacity);
-        static T zero;
-        for(size_t i = self->size; i < self->capacity; i++)
-            self->value[i] = zero;
+        IMPL(A, fit)(self, capacity);
+        memset(&self->value[self->size], 0, sizeof(T) * (self->capacity - self->size));
     }
 }
 
@@ -108,44 +125,25 @@ static inline void
 IMPL(A, resize)(A* self, size_t size)
 {
     if(size < self->size)
-        IMPL(A, _clear)(self, self->size - size);
+        IMPL(A, wipe)(self, self->size - size);
     else
     {
-        IMPL(A, reserve)(self, size);
-        size_t diff = size - self->size;
-        static T zero;
-        for(size_t i = self->size; i < diff; i++)
-            self->value[i] = zero;
+        if(size > self->capacity)
+            IMPL(A, reserve)(self, (self->size == 0) ? size : (self->size * 2));
         self->size = size;
     }
-}
-
-static inline int
-IMPL(A, empty)(A* self)
-{
-    return self->size == 0;
 }
 
 static inline void
 IMPL(A, shrink_to_fit)(A* self)
 {
-    self->capacity = self->size;
-    self->value = (T*) realloc(self->value, sizeof(T) * self->capacity);
+    IMPL(A, fit)(self, self->size);
 }
 
 static inline T*
 IMPL(A, data)(A* self)
 {
     return IMPL(A, front)(self);
-}
-
-static inline void
-IMPL(A, set)(A* self, size_t index, T value)
-{
-    T* ref = IMPL(A, at)(self, index);
-    if(self->destruct)
-        self->destruct(ref);
-    *ref = value;
 }
 
 static inline void
@@ -171,8 +169,7 @@ IMPL(A, insert)(A* self, size_t index, T value)
 static inline void
 IMPL(A, erase)(A* self, size_t index)
 {
-    if(self->destruct)
-        self->destruct(&self->value[index]);
+    IMPL(A, set)(self, index, TZ);
     for(size_t i = index; i < self->size - 1; i++)
         self->value[i] = self->value[i + 1];
     self->size -= 1;
@@ -190,9 +187,7 @@ IMPL(A, copy)(A* self)
     A other = IMPL(A, construct)(self->destruct, self->copy);
     IMPL(A, resize)(&other, self->size);
     for(size_t i = 0; i < other.size; i++)
-        other.value[i] = other.copy
-            ? other.copy(&self->value[i])
-            : self->value[i];
+        other.value[i] = other.copy ? other.copy(&self->value[i]) : self->value[i];
     return other;
 }
 
@@ -207,9 +202,9 @@ IMPL(A, move)(A* self)
 static inline void
 IMPL(A, swap)(A* self, A* other)
 {
-    A moved = IMPL(A, move)(other);
-    *other = IMPL(A, move)(self);
-    *self = IMPL(A, move)(&moved);
+    A temp = *self;
+    *self = *other;
+    *other = temp;
 }
 
 static inline void
@@ -221,7 +216,7 @@ IMPL(I, index)(I* self, size_t index)
         self->value = &self->container->value[index];
     }
     else
-        self->done = 1;
+        self->done = true;
 }
 
 static void
@@ -245,6 +240,7 @@ IMPL(I, construct)(A* container, size_t start, size_t end, size_t step_size)
 
 #undef A
 #undef I
+#undef TZ
 #undef AZ
 #undef IZ
 

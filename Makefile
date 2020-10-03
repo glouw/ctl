@@ -9,23 +9,19 @@ CFLAGS = \
 BIN = test
 
 define run
-	$1 $(CFLAGS) $(2) -o $(BIN); ./$(BIN)
+	@$1 $(CFLAGS) tests/$(2) -o $(BIN); ./$(BIN)
 endef
 
 define expand
-	$(CC) $(CFLAGS) ctl/$(1).h -E $(2)
+	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2)
 endef
 
 clean: all
 	@rm -f $(BIN)
 
 all:
-	# ENSURE ALL CTL CONTAINERS COMPILE WITH C99
 	$(call run,$(CC),test_c99.c)
-
-	# ENSURE ALL CTL CONTAINERS COMPILE WITH THE
-	# LATEST C++ COMPILER AND WORK LIKE THE STL
-	$(call run,$(CXX),test_vec_conformance.cc)
+	$(call run,$(CXX),test_vec2.cc)
 
 vec:
 	$(call expand,$@,-DT=int)

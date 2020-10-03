@@ -37,7 +37,8 @@ str_cmp(const void* a, const void* b)
     return strcmp((str) a, (str) b);
 }
 
-int main(void)
+int
+main(void)
 {
     const char* const A = "A";
     const char* const B = "B";
@@ -68,7 +69,7 @@ int main(void)
     b.push_back(std::string(C));
 
     // TEST
-    // CTL_FOREACH vs STL at().
+    // CTL_FOR vs STL at().
     {
         vec_str_it it = vec_str_it_construct(&a, 0, a.size, 1);
         CTL_FOR(it, {
