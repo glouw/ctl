@@ -126,7 +126,7 @@ from other templates:
 This creates a template container named `vec_vec_int`, which is
 a vector of vectors of type int, or rather `std::vector<std::vector<int>>`
 in C++. When constructing, ensure the copy and destruct callbacks from `vec_int` are passed
-to the `vec_vec_int` constructor`, and then simply free `vec_vec_int` at a later date:
+to the `vec_vec_int` constructor, and then simply free `vec_vec_int` at a later date:
 
 ```C
 int main(void)
