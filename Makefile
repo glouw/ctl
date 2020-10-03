@@ -21,7 +21,7 @@ clean: all
 
 all:
 	$(call run,$(CC),test_c99.c)
-	$(call run,$(CXX),test_vec2.cc)
+	$(call run,$(CXX),test_vec.cc)
 
 vec:
 	$(call expand,$@,-DT=int)

@@ -1,242 +1,163 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <time.h>
+#include <vector>
+#include <algorithm>
 #include <assert.h>
-#include <string>
 
-typedef char* str;
+typedef struct
+{
+    int* value;
+}
+digi;
+
+static digi
+digi_construct(int value)
+{
+    digi self = { (int*) malloc(sizeof(*self.value)) };
+    *self.value = value;
+    return self;
+}
 
 static void
-str_destruct(str* s)
+digi_destruct(digi* self)
 {
-    free(*s);
+    free(self->value);
 }
-
-static str
-str_construct(const char* s)
-{
-    return strcpy((char*) malloc(strlen(s) + 1), s);
-}
-
-static str
-str_copy(str* s)
-{
-    return str_construct(*s);
-}
-
-// CTL
-#define T str
-#include <vec.h>
-
-// STL
-#include <vector>
 
 static int
-str_cmp(const void* a, const void* b)
+digi_compare(const void* a, const void* b)
 {
-    return strcmp((str) a, (str) b);
+    digi* aa = (digi*) a;
+    digi* bb = (digi*) b;
+    return *aa->value < *bb->value;
+}
+
+static digi
+digi_copy(digi* self)
+{
+    digi copy = digi_construct(0);
+    if(copy.value != NULL)
+        *copy.value = *self->value;
+    return copy;
+}
+
+#define T digi
+#include <vec.h>
+
+struct DIGI
+{
+    int* value;
+    DIGI(int value): value{new int{value}}
+    {
+    }
+    DIGI()
+    {
+        value = nullptr;
+    }
+    ~DIGI()
+    {
+        delete value;
+        value = nullptr;
+    }
+    DIGI(const DIGI& other): DIGI{0}
+    {
+        if(other.value != nullptr)
+            *value = *other.value;
+    }
+    bool operator==(const DIGI& other)
+    {
+        return *value == *other.value;
+    }
+    void operator=(const DIGI& other)
+    {
+        *value = *other.value;
+    }
+};
+
+bool DIGI_compare(const DIGI& a, const DIGI& b)
+{
+    return *b.value < *a.value;
+}
+
+static void
+test_equal(vec_digi* a, std::vector<DIGI>& b)
+{
+    int index = 0;
+    for(auto& d : b)
+    {
+        digi* ref = vec_digi_at(a, index);
+        if(d.value != nullptr && ref->value != NULL)
+            assert(*d.value == *ref->value);
+        index += 1;
+    }
+    assert(a->capacity == b.capacity());
+    assert(a->size == b.size());
+    assert(vec_digi_empty(a) == b.empty());
+    if(a->size > 0)
+    {
+        DIGI& bf = b.front();
+        DIGI& bb = b.back();
+        digi* af = vec_digi_front(a);
+        digi* ab = vec_digi_back(a);
+        if(bf.value != nullptr && af->value != NULL) assert(*af->value == *bf.value);
+        if(bb.value != nullptr && ab->value != NULL) assert(*ab->value == *bb.value);
+    }
+}
+
+static bool
+roll(int sides)
+{
+    return (rand() % sides) == 0;
 }
 
 int
 main(void)
 {
-    const char* const A = "A";
-    const char* const B = "B";
-    const char* const C = "C";
-
-    // CTL Setup.
-    vec_str a = vec_str_construct(str_destruct, str_copy);
-    vec_str_push_back(&a, str_construct(A));
-    vec_str_push_back(&a, str_construct(B));
-    vec_str_push_back(&a, str_construct(C));
-    vec_str_push_back(&a, str_construct(A));
-    vec_str_push_back(&a, str_construct(B));
-    vec_str_push_back(&a, str_construct(C));
-    vec_str_push_back(&a, str_construct(A));
-    vec_str_push_back(&a, str_construct(B));
-    vec_str_push_back(&a, str_construct(C));
-
-    // STL Setup.
-    std::vector<std::string> b;
-    b.push_back(std::string(A));
-    b.push_back(std::string(B));
-    b.push_back(std::string(C));
-    b.push_back(std::string(A));
-    b.push_back(std::string(B));
-    b.push_back(std::string(C));
-    b.push_back(std::string(A));
-    b.push_back(std::string(B));
-    b.push_back(std::string(C));
-
-    // TEST
-    // CTL_FOR vs STL at().
+    srand(time(NULL));
+    const int size = rand() % 8192;
+    const int iters = rand() % 1024;
+    for(int i = 0; i < iters; i++)
     {
-        vec_str_it it = vec_str_it_construct(&a, 0, a.size, 1);
-        CTL_FOR(it, {
-            assert(strcmp(*it.value, b.at(it.index).c_str()) == 0);
-        })
-        assert(a.size == b.size() && a.capacity == b.capacity());
-    }
-
-    // TEST
-    // STL `for` vs CTL at().
-    {
-        size_t index = 0;
-        for(auto& value : b)
+        vec_digi a = vec_digi_construct(digi_destruct, digi_copy);
+        std::vector<DIGI> b;
+        for(int i = 0; i < size; i++)
         {
-            assert(strcmp(value.c_str(), *vec_str_at(&a, index)) == 0);
-            index += 1;
+            int value = rand() % 512;
+            vec_digi_push_back(&a, digi_construct(value));
+            b.push_back(DIGI{value});
         }
-        assert(a.size == b.size() && a.capacity == b.capacity());
-    }
-
-    // TEST
-    // STL front() and back vs CTL front() and back().
-    {
-        assert(strcmp(*vec_str_front(&a), b.front().c_str()) == 0);
-        assert(strcmp(*vec_str_back(&a), b.back().c_str()) == 0);
-        assert(a.size == b.size() && a.capacity == b.capacity());
-    }
-
-    // TEST
-    // STL vs CTL Memory Management
-    {
+        if(roll(100))
         {
-            size_t size = 1;
-            b.resize(size);
-            vec_str_resize(&a, size);
-            assert(a.size == b.size() && a.capacity == b.capacity());
-        }{
-            size_t capacity = 10;
-            b.reserve(capacity);
-            vec_str_reserve(&a, capacity);
-            assert(a.size == b.size() && a.capacity == b.capacity());
-        }{
-            size_t capacity = 128;
-            b.reserve(capacity);
-            vec_str_reserve(&a, capacity);
-            assert(a.size == b.size() && a.capacity == b.capacity());
-        }{
-            size_t size = 65536;
-            b.resize(size);
-            vec_str_resize(&a, size);
-            assert(a.size == b.size() && a.capacity == b.capacity());
-            vec_str_push_back(&a, str_construct(A));
-            vec_str_push_back(&a, str_construct(B));
-            vec_str_push_back(&a, str_construct(C));
-            b.push_back(std::string(A));
-            b.push_back(std::string(B));
-            b.push_back(std::string(C));
-            for(size_t i = 0; i < a.size; i++)
-            {
-                str s = *vec_str_at(&a, i); // VECTOR RESIZES INITIALIZE VALUES TO NULL.
-                if(s)
-                    assert(strcmp(s, b.at(i).c_str()) == 0);
-            }
-        }{
-            size_t size = 0;
-            b.resize(size);
-            vec_str_resize(&a, size);
-            assert(b.empty());
-            assert(vec_str_empty(&a));
-        }{
-            size_t size = 1;
-            b.resize(size);
-            vec_str_resize(&a, size);
-            assert(!b.empty());
-            assert(!vec_str_empty(&a));
-        }{
-            size_t capacity = 4096;
-            b.reserve(capacity);
-            vec_str_reserve(&a, capacity);
-            assert(a.size == b.size() && a.capacity == b.capacity());
-            b.shrink_to_fit();
-            vec_str_shrink_to_fit(&a);
-            assert(a.size == b.size() && a.capacity == b.capacity());
-        }{
-            vec_str_push_back(&a, str_construct(A));
-            b.push_back(std::string(A));
-            b.pop_back();
-            vec_str_pop_back(&a);
-            assert(a.size == b.size() && a.capacity == b.capacity());
-        }{
-            size_t index = 0;
-            const char* value = "TEST";
-            vec_str_push_back(&a, str_construct(A));
-            b.push_back(std::string(A));
-            b[index] = std::string(value);
-            vec_str_set(&a, index, str_construct(value));
-            assert(*vec_str_at(&a, index) == b.at(index));
-            assert(a.size == b.size() && a.capacity == b.capacity());
-        }{
-            size_t index = 1;
-            vec_str_push_back(&a, str_construct(A));
-            vec_str_push_back(&a, str_construct(B));
-            vec_str_push_back(&a, str_construct(C));
-            b.push_back(std::string(A));
-            b.push_back(std::string(B));
-            b.push_back(std::string(C));
-            b.erase(b.begin() + index);
-            vec_str_erase(&a, index);
-            for(size_t i = 0; i < b.size(); i++)
-                assert(strcmp(*vec_str_at(&a, i), b.at(i).c_str()) == 0);
-        }{
-            vec_str c = vec_str_copy(&a);
-            std::vector<std::string> d = b;
-            for(size_t i = 0; i < b.size(); i++)
-                assert(*vec_str_at(&c, i) == d.at(i));
-            vec_str_destruct(&c);
-        }{
-            size_t index = 2;
-            const char* value = "ANOTHER TEST";
-            vec_str_push_back(&a, str_construct(A));
-            vec_str_push_back(&a, str_construct(B));
-            vec_str_push_back(&a, str_construct(C));
-            b.push_back(std::string(A));
-            b.push_back(std::string(B));
-            b.push_back(std::string(C));
-            b.insert(b.begin() + index, std::string(value));
-            vec_str_insert(&a, index, str_construct(value));
-            for(size_t i = 0; i < b.size(); i++)
-                assert(*vec_str_at(&a, i) == b.at(i));
-        }{
-            std::vector<std::string> w;
-            w.push_back(std::string(A));
-            w.push_back(std::string(B));
-            w.push_back(std::string(C));
-            std::vector<std::string> x;
-            x.push_back(std::string(C));
-            x.push_back(std::string(B));
-            x.push_back(std::string(A));
-            vec_str y = vec_str_construct(str_destruct, str_copy);
-            vec_str_push_back(&y, str_construct(A));
-            vec_str_push_back(&y, str_construct(B));
-            vec_str_push_back(&y, str_construct(C));
-            vec_str z = vec_str_construct(str_destruct, str_copy);
-            vec_str_push_back(&z, str_construct(C));
-            vec_str_push_back(&z, str_construct(B));
-            vec_str_push_back(&z, str_construct(A));
-            w.swap(x);
-            vec_str_swap(&y, &z);
-            for(size_t i = 0; i < w.size(); i++) assert(strcmp(*vec_str_at(&y, i), w.at(i).c_str()) == 0);
-            for(size_t i = 0; i < x.size(); i++) assert(strcmp(*vec_str_at(&z, i), x.at(i).c_str()) == 0);
-            vec_str_sort(&y, str_cmp);
-            vec_str_destruct(&y);
-            vec_str_destruct(&z);
-        }{
-            size_t size = 65536;
-            std::vector<str> x; // NULL POINTER TEST.
-            vec_str y = vec_str_construct(str_destruct, str_copy);
-            x.resize(size);
-            vec_str_resize(&y, size);
-            for(size_t i = 0; i < size; i++)
-            {
-                assert(x.at(i) == NULL);
-                assert(*vec_str_at(&y, i) == NULL);
-            }
-            vec_str_destruct(&y);
+            puts("clear");
+            b.clear();
+            vec_digi_clear(&a);
         }
+        if(roll(2))
+        {
+            if(roll(2))
+            {
+                const int resize = (size == 0) ? (rand() % 10) : (rand() % (size * 2));
+                b.resize(resize);
+                vec_digi_resize(&a, resize);
+            }
+            if(roll(2))
+            {
+                const int capacity = (a.capacity == 0) ? (rand() % 10) : (rand() % (a.capacity * 2));
+                b.reserve(capacity);
+                vec_digi_reserve(&a, capacity);
+            }
+        }
+        else
+        {
+            if(roll(2))
+            {
+                vec_digi_sort(&a, digi_compare);
+                std::sort(b.begin(), b.end(), DIGI_compare);
+            }
+        }
+        test_equal(&a, b);
+        vec_digi_destruct(&a);
     }
-    vec_str_destruct(&a);
     printf("%s: PASSED\n", __FILE__);
 }
