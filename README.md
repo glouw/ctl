@@ -166,7 +166,7 @@ compile with `-Wfatal-errors` to stop compilation at the first template error.
 
 ## Template Expansion Debugging
 
-Templates in `ctl/` can be expanded with `int` and printed to STDOUT for debugging
+Templates in `ctl/` can be expanded with `int` and printed to `stdout` for debugging
 purposes by invoking make with the container name:
 
     make vec
