@@ -18,6 +18,27 @@ Each templated container will then be compiled with a C++ compiler
 and tested against the C++ standard library (STL) to ensure maximum
 compatibility (read: mimicry) with the STL.
 
+## Usage
+
+
+```C
+#define T double
+#include <vec.h>
+
+#define T int
+#include <vec.h>
+
+typedef struct
+{
+    int age;
+    char* name;
+}
+person;
+
+#define T person
+#include <vec.h>
+```
+
 ## Caveats
 
 A template type and container can only be included once. For instance,
