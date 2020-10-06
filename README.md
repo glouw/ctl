@@ -53,7 +53,7 @@ the following will not work:
 ```
 
 To lower the number of warnings and errors emitted by CTL templated types,
-compile with `-Wfatal-errors` to stop compilation at the first template error.
+compile with `-Wfatal-errors` to stop compilation at the first templated error.
 
 ## Template Expansion Debugging
 
