@@ -15,5 +15,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: make and test
+    - name: Make and Test
       run: make
