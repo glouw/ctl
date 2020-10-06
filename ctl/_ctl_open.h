@@ -17,7 +17,6 @@
 #define __CTL__
 
 #include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
 
 #define CTL_FOR(iter, ...) while(!iter.done) { __VA_ARGS__ iter.step(&iter); }

@@ -8,6 +8,7 @@
 
 typedef struct
 {
+    T (*construct_default)(void);
     void (*destruct)(T*);
     T (*copy)(T*);
     T* value;
@@ -36,9 +37,10 @@ static A AZ;
 static I IZ;
 
 static inline A
-IMPL(A, construct)(void (*destruct)(T*), T (*copy)(T*))
+IMPL(A, construct)(T (*construct_default)(void), void (*destruct)(T*), T (*copy)(T*))
 {
     A self = AZ;
+    self.construct_default = construct_default;
     self.destruct = destruct;
     self.copy = copy;
     return self;
@@ -115,10 +117,18 @@ static inline void
 IMPL(A, reserve)(A* self, size_t capacity)
 {
     if(capacity > self->capacity)
-    {
         IMPL(A, fit)(self, capacity);
-        memset(&self->value[self->size], 0, sizeof(T) * (self->capacity - self->size));
+}
+
+static inline void
+IMPL(A, push_back)(A* self, T value)
+{
+    if(self->size == self->capacity)
+    {
+        size_t capacity = self->capacity == 0 ? 1 : 2 * self->capacity;
+        IMPL(A, reserve)(self, capacity);
     }
+    self->value[self->size++] = value;
 }
 
 static inline void
@@ -129,8 +139,15 @@ IMPL(A, resize)(A* self, size_t size)
     else
     {
         if(size > self->capacity)
-            IMPL(A, reserve)(self, (self->size == 0) ? size : (self->size * 2));
-        self->size = size;
+        {
+            size_t capacity = (self->size == 0) ? size : (self->size * 2);
+            IMPL(A, reserve)(self, capacity);
+        }
+        while(self->size < size)
+        {
+            T value = self->construct_default ? self->construct_default() : TZ;
+            IMPL(A, push_back)(self, value);
+        }
     }
 }
 
@@ -144,17 +161,6 @@ static inline T*
 IMPL(A, data)(A* self)
 {
     return IMPL(A, front)(self);
-}
-
-static inline void
-IMPL(A, push_back)(A* self, T value)
-{
-    if(self->size == self->capacity)
-    {
-        size_t capacity = self->capacity == 0 ? 1 : 2 * self->capacity;
-        IMPL(A, reserve)(self, capacity);
-    }
-    self->value[self->size++] = value;
 }
 
 static inline void
@@ -184,19 +190,14 @@ IMPL(A, sort)(A* self, int (*compare)(const void*, const void*))
 static inline A
 IMPL(A, copy)(A* self)
 {
-    A other = IMPL(A, construct)(self->destruct, self->copy);
-    IMPL(A, resize)(&other, self->size);
-    for(size_t i = 0; i < other.size; i++)
-        other.value[i] = other.copy ? other.copy(&self->value[i]) : self->value[i];
+    A other = IMPL(A, construct)(self->construct_default, self->destruct, self->copy);
+    IMPL(A, reserve)(&other, self->size);
+    while(other.size < self->size)
+    {
+        T value = other.copy ? other.copy(&self->value[other.size]) : self->value[other.size];
+        IMPL(A, push_back)(&other, value);
+    }
     return other;
-}
-
-static inline A
-IMPL(A, move)(A* self)
-{
-    A temp = *self;
-    *self = AZ;
-    return temp;
 }
 
 static inline void
