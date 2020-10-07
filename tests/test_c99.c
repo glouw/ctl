@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <str.h>
+
 #define T int
 #include <vec.h>
 
@@ -8,10 +10,6 @@
 #include <vec.h>
 
 #define T double
-#include <vec.h>
-
-typedef char* str;
-#define T str
 #include <vec.h>
 
 typedef struct

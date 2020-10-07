@@ -151,7 +151,7 @@ main(void)
             vec_digi_push_back(&a, digi_construct(value));
             b.push_back(DIGI{value});
         }
-#define LIST X(CLEAR) X(ERASE) X(RESIZE) X(CAPACITY) X(SHRINK_TO_FIT) X(SORT) X(COPY) X(SWAP) X(INSERT) X(TOTAL)
+#define LIST X(CLEAR) X(ERASE) X(RESIZE) X(CAPACITY) X(SHRINK_TO_FIT) X(SORT) X(COPY) X(SWAP) X(INSERT) X(ASSIGN) X(TOTAL)
 #define X(name) name,
         enum { LIST };
 #undef X
@@ -215,6 +215,14 @@ main(void)
                 std::vector<DIGI> bb = b;
                 test_equal(&aa, bb);
                 vec_digi_destruct(&aa);
+                break;
+            }
+        case ASSIGN:
+            {
+                const int value = rand() % MAX_VALUE;
+                const size_t size = rand() % a.size + 1;
+                vec_digi_assign(&a, size, digi_construct(value));
+                b.assign(size, DIGI{value});
                 break;
             }
         case SWAP:

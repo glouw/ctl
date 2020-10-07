@@ -16,12 +16,19 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2)
 endef
 
-clean: all
+all: run
 	@rm -f $(BIN)
 
-all:
+run:
 	$(call run,$(CC),test_c99.c)
+	$(call run,$(CXX),test_str.cc)
 	$(call run,$(CXX),test_vec.cc)
 
 vec:
 	$(call expand,$@,-DT=int)
+
+str:
+	$(call expand,$@)
+
+clean:
+	@rm -f $(BIN)

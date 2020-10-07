@@ -152,6 +152,14 @@ IMPL(A, resize)(A* self, size_t size)
 }
 
 static inline void
+IMPL(A, assign)(A* self, size_t size, T value)
+{
+    IMPL(A, resize)(self, size);
+    for(size_t i = 0; i < size; i++)
+        IMPL(A, set)(self, i, i == 0 ? value : self->copy ? self->copy(&value) : value);
+}
+
+static inline void
 IMPL(A, shrink_to_fit)(A* self)
 {
     IMPL(A, fit)(self, self->size);
