@@ -37,7 +37,12 @@ person;
 
 #define T person
 #include <vec.h>
+
 ```
+
+Compilation requires adding CTL as a system include:
+
+    gcc -isystem ctl main.c
 
 ## Caveats
 
