@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define T char
+#include <vec.h>
+
+#include <str.h>
 #include <str.h>
 
 #define T int

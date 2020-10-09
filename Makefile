@@ -4,7 +4,7 @@ CXX = g++ -std=c++17
 CFLAGS = \
 	-Ictl \
 	-Wall -Wextra -Wpedantic -Wfatal-errors \
-	-fsanitize=address -Og -g
+	-fsanitize=address -fsanitize=undefined -Og -g
 
 BIN = test
 

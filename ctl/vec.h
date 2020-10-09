@@ -124,10 +124,7 @@ static inline void
 IMPL(A, push_back)(A* self, T value)
 {
     if(self->size == self->capacity)
-    {
-        size_t capacity = self->capacity == 0 ? 1 : 2 * self->capacity;
-        IMPL(A, reserve)(self, capacity);
-    }
+        IMPL(A, reserve)(self, self->capacity == 0 ? 1 : 2 * self->capacity);
     self->value[self->size++] = value;
 }
 
@@ -140,14 +137,13 @@ IMPL(A, resize)(A* self, size_t size)
     {
         if(size > self->capacity)
         {
-            size_t capacity = (self->size == 0) ? size : (self->size * 2);
+            size_t capacity = 2 * self->size;
+            if(capacity < size)
+                capacity = size;
             IMPL(A, reserve)(self, capacity);
         }
         while(self->size < size)
-        {
-            T value = self->construct_default ? self->construct_default() : TZ;
-            IMPL(A, push_back)(self, value);
-        }
+            IMPL(A, push_back)(self, self->construct_default ? self->construct_default() : TZ);
     }
 }
 
@@ -201,10 +197,8 @@ IMPL(A, copy)(A* self)
     A other = IMPL(A, construct)(self->construct_default, self->destruct, self->copy);
     IMPL(A, reserve)(&other, self->size);
     while(other.size < self->size)
-    {
-        T value = other.copy ? other.copy(&self->value[other.size]) : self->value[other.size];
-        IMPL(A, push_back)(&other, value);
-    }
+        IMPL(A, push_back)(&other, other.copy
+                ? other.copy(&self->value[other.size]) : self->value[other.size]);
     return other;
 }
 
@@ -220,10 +214,7 @@ static inline void
 IMPL(I, index)(I* self, size_t index)
 {
     if(index >= self->start && index < self->end)
-    {
-        self->index = index;
-        self->value = &self->container->value[index];
-    }
+        self->value = IMPL(A, at)(self->container, self->index = index);
     else
         self->done = true;
 }
