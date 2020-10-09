@@ -144,6 +144,8 @@ main(void)
     for(size_t i = 0; i < iters; i++)
     {
         size_t size = rand() % MAX_SIZE;
+        if(size == 0)
+            size = 1;
         for(size_t j = 0; j < 2; j++)
         {
             vec_digi a = vec_digi_construct(digi_construct_default, digi_destruct, digi_copy);
@@ -154,6 +156,7 @@ main(void)
                 vec_digi_resize(&a, size);
                 b.resize(size);
             }
+
             // INIT WITH GROWTH.
             if(j == 1)
             {
@@ -185,23 +188,17 @@ main(void)
                 }
                 case ERASE:
                 {
-                    if(a.size > 0)
-                    {
-                        const size_t index = rand() % a.size;
-                        b.erase(b.begin() + index);
-                        vec_digi_erase(&a, index);
-                    }
+                    const size_t index = rand() % a.size;
+                    b.erase(b.begin() + index);
+                    vec_digi_erase(&a, index);
                     break;
                 }
                 case INSERT:
                 {
-                    if(a.size > 0)
-                    {
-                        const int value = rand() % MAX_VALUE;
-                        const size_t index = rand() % a.size;
-                        b.insert(b.begin() + index, DIGI{value});
-                        vec_digi_insert(&a, index, digi_construct(value));
-                    }
+                    const int value = rand() % MAX_VALUE;
+                    const size_t index = rand() % a.size;
+                    b.insert(b.begin() + index, DIGI{value});
+                    vec_digi_insert(&a, index, digi_construct(value));
                     break;
                 }
                 case RESIZE:
@@ -226,11 +223,8 @@ main(void)
                 }
                 case SORT:
                 {
-                    if(a.size > 0)
-                    {
-                        vec_digi_sort(&a, digi_compare);
-                        std::sort(b.begin(), b.end());
-                    }
+                    vec_digi_sort(&a, digi_compare);
+                    std::sort(b.begin(), b.end());
                     break;
                 }
                 case COPY:
@@ -243,15 +237,12 @@ main(void)
                 }
                 case ASSIGN:
                 {
-                    if(a.size > 0)
-                    {
-                        const int value = rand() % MAX_VALUE;
-                        size_t size = rand() % a.size;
-                        if(size == 0)
-                            size = 1;
-                        vec_digi_assign(&a, size, digi_construct(value));
-                        b.assign(size, DIGI{value});
-                    }
+                    const int value = rand() % MAX_VALUE;
+                    size_t assign_size = rand() % a.size;
+                    if(assign_size == 0)
+                        assign_size = 1;
+                    vec_digi_assign(&a, size, digi_construct(value));
+                    b.assign(size, DIGI{value});
                     break;
                 }
                 case SWAP:
