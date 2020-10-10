@@ -1,14 +1,10 @@
 #include <stdio.h>
 #include <assert.h>
 #include <algorithm>
-
 #include <str.h>
 #include <string>
 
-#define MAX_LETTERS  (23)
-#define MIN_SIZE     (30) // SHORT STRING OPTIMIZATIONS NOT SUPPORTED.
-#define MAX_SIZE    (512)
-#define MAX_ITERS  (1000)
+#include "const.h"
 
 static char*
 create_test_string(size_t size)
@@ -51,8 +47,8 @@ int main(void)
         {
             size_t size_a = rand() % MAX_SIZE;
             size_t size_b = rand() % MAX_SIZE;
-            if(size_a < MIN_SIZE) size_a = MIN_SIZE;
-            if(size_b < MIN_SIZE) size_b = MIN_SIZE;
+            if(size_a < MIN_STR_SIZE) size_a = MIN_STR_SIZE;
+            if(size_b < MIN_STR_SIZE) size_b = MIN_STR_SIZE;
             char* tsa = create_test_string(size_a);
             char* tsb = create_test_string(size_b);
             str a;

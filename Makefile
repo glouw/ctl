@@ -1,15 +1,20 @@
+VERBOSE = 0
+
 CC = gcc -std=c99
 CXX = g++ -std=c++17
 
-CFLAGS = \
-	-Ictl \
-	-Wall -Wextra -Wpedantic -Wfatal-errors \
-	-fsanitize=address -fsanitize=undefined -Og -g
+CFLAGS  = -Ictl
+CFLAGS += -Wall -Wextra -Wpedantic -Wfatal-errors
+CFLAGS += -fsanitize=address -fsanitize=undefined
+CFLAGS += -Og -g
+ifeq ($(VERBOSE), 1)
+CFLAGS += -DVERBOSE
+endif
 
 BIN = test
 
 define run
-	@$1 $(CFLAGS) tests/$(2) -o $(BIN); ./$(BIN)
+	@$1 $(CFLAGS) tests/$(2) -o $(BIN); ./$(BIN) || exit
 endef
 
 define expand

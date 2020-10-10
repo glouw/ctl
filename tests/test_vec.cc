@@ -6,9 +6,7 @@
 #include <algorithm>
 #include <assert.h>
 
-#define MAX_VALUE (INT_MAX)
-#define MAX_SIZE     (8196)
-#define MAX_ITERS    (1000)
+#include "const.h"
 
 typedef struct
 {
