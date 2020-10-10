@@ -2,10 +2,8 @@
 
 CTL is a header only, type safe, template library for C99.
 
-## Motivation
-
-The purpose of the CTL is to back port useful C++
-templates to C99 to make maximum use of C99's fast compile times.
+The purpose of the CTL is to back port useful C++ template containers
+to C99 to make maximum use of C99's portability and fast compile times.
 
 ## Running Tests
 

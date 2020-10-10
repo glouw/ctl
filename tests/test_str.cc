@@ -80,7 +80,22 @@ int main(void)
                 }
             }
             test_equal(&a, c);
-#define LIST X(APPEND) X(C_STR) X(CLEAR) X(ERASE) X(RESIZE) X(RESERVE) X(SHRINK_TO_FIT) X(SORT) X(COPY) X(SWAP) X(INSERT) X(ASSIGN) X(REPLACE) X(TOTAL)
+#define LIST X(APPEND)        \
+             X(C_STR)         \
+             X(CLEAR)         \
+             X(ERASE)         \
+             X(RESIZE)        \
+             X(RESERVE)       \
+             X(SHRINK_TO_FIT) \
+             X(SORT)          \
+             X(COPY)          \
+             X(SWAP)          \
+             X(INSERT)        \
+             X(ASSIGN)        \
+             X(REPLACE)       \
+             X(FIND)          \
+             X(RFIND)         \
+             X(TOTAL)
 #define X(name) name,
             enum { LIST };
 #undef X
@@ -197,6 +212,25 @@ int main(void)
                     c.replace(index, size, replacer);
                     free(replacer);
                     str_destruct(&other);
+                    break;
+                }
+                case FIND:
+                {
+                    const size_t size = rand() % 3;
+                    char* needle = create_test_string(size);
+                    str other = str_create(needle);
+                    assert(str_find(&a, &other) == c.find(needle));
+                    str_destruct(&other);
+                    free(needle);
+                    break;
+                }
+                case RFIND:
+                {
+                    char* needle = create_test_string(rand() % 3);
+                    str other = str_create(needle);
+                    assert(str_rfind(&a, &other) == c.rfind(needle));
+                    str_destruct(&other);
+                    free(needle);
                     break;
                 }
             }

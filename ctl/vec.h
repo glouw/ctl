@@ -110,11 +110,13 @@ IMPL(A, destruct)(A* self)
 static inline void
 IMPL(A, fit)(A* self, size_t capacity)
 {
-    size_t padding = ALIGN16 ? 1 : 0; // STRINGS ARE PADDED WITH A NULL BYTE.
-    size_t overall = capacity + padding;
+    size_t overall = capacity;
+    if(ALIGN16)
+        overall += 1;
     self->value = (T*) realloc(self->value, sizeof(T) * overall);
-    for(size_t i = self->capacity; i < overall; i++)
-        self->value[i] = TZ;
+    if(ALIGN16)
+        for(size_t i = self->capacity; i < overall; i++)
+            self->value[i] = TZ;
     self->capacity = capacity;
 }
 

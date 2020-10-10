@@ -36,9 +36,9 @@ str_insert_str(str* self, size_t index, str* other)
 {
     if(other->size > 0)
     {
-        size_t temp = self->size;
+        size_t start = self->size;
         str_resize(self, self->size + other->size);
-        self->size = temp;
+        self->size = start;
         size_t where = other->size;
         while(where != 0)
         {
@@ -63,4 +63,25 @@ static inline const char*
 str_c_str(str* self)
 {
     return str_data(self);
+}
+
+static inline size_t
+str_find(str* self, str* other)
+{
+    const char* c_str = str_c_str(self);
+    const char* found = strstr(c_str, str_c_str(other));
+    return found ? found - c_str : -1;
+}
+
+static inline size_t
+str_rfind(str* self, str* other)
+{
+    const char* c_str = str_c_str(self);
+    for(size_t i = self->size; i != 0; i--)
+    {
+        const char* found = strstr(&c_str[i], str_c_str(other));
+        if(found)
+            return found - c_str;
+    }
+    return -1;
 }
