@@ -5,6 +5,7 @@
 #define TZ IMPL(T, zero)
 #define AZ IMPL(A, zero)
 #define IZ IMPL(I, zero)
+#define ALIGN16 (sizeof(T) == sizeof(char))
 
 typedef struct
 {
@@ -109,15 +110,41 @@ IMPL(A, destruct)(A* self)
 static inline void
 IMPL(A, fit)(A* self, size_t capacity)
 {
+    size_t padding = ALIGN16 ? 1 : 0; // STRINGS ARE PADDED WITH A NULL BYTE.
+    size_t overall = capacity + padding;
+    self->value = (T*) realloc(self->value, sizeof(T) * overall);
+    for(size_t i = self->capacity; i < overall; i++)
+        self->value[i] = TZ;
     self->capacity = capacity;
-    self->value = (T*) realloc(self->value, sizeof(T) * capacity);
 }
 
 static inline void
-IMPL(A, reserve)(A* self, size_t capacity)
+IMPL(A, reserve)(A* self, const size_t capacity)
 {
-    if(capacity > self->capacity)
-        IMPL(A, fit)(self, capacity);
+    if(capacity != self->capacity)
+    {
+        size_t actual = 0;
+        if(ALIGN16) // 16 BYTE BOUNDARY ALIGNMENT FOR STRINGS.
+        {
+            if(capacity <= self->size)
+                actual = self->size;
+            else
+            if(capacity > self->size
+            && capacity < self->capacity)
+                actual = capacity;
+            else
+            {
+                actual = 2 * self->capacity;
+                if(capacity > actual)
+                    actual = capacity;
+            }
+        }
+        else
+        if(capacity > self->capacity) // REGULAR ALIGNMENT.
+            actual = capacity;
+        if(actual > 0)
+            IMPL(A, fit)(self, actual);
+    }
 }
 
 static inline void
@@ -138,7 +165,7 @@ IMPL(A, resize)(A* self, size_t size)
         if(size > self->capacity)
         {
             size_t capacity = 2 * self->size;
-            if(capacity < size)
+            if(size > capacity)
                 capacity = size;
             IMPL(A, reserve)(self, capacity);
         }
@@ -181,7 +208,10 @@ IMPL(A, erase)(A* self, size_t index)
 {
     IMPL(A, set)(self, index, TZ);
     for(size_t i = index; i < self->size - 1; i++)
+    {
         self->value[i] = self->value[i + 1];
+        self->value[i + 1] = TZ;
+    }
     self->size -= 1;
 }
 
@@ -243,5 +273,6 @@ IMPL(I, construct)(A* container, size_t start, size_t end, size_t step_size)
 #undef TZ
 #undef AZ
 #undef IZ
+#undef ALIGN
 
 #include <_ctl_close.h>

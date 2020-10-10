@@ -7,8 +7,8 @@
 #include <assert.h>
 
 #define MAX_VALUE (INT_MAX)
-#define MAX_SIZE     (1024)
-#define MAX_ITERS    (8192)
+#define MAX_SIZE     (8196)
+#define MAX_ITERS    (1000)
 
 typedef struct
 {
@@ -156,7 +156,6 @@ main(void)
                 vec_digi_resize(&a, size);
                 b.resize(size);
             }
-
             // INIT WITH GROWTH.
             if(j == 1)
             {
@@ -167,7 +166,7 @@ main(void)
                     b.push_back(DIGI{value});
                 }
             }
-#define LIST X(CLEAR) X(ERASE) X(RESIZE) X(CAPACITY) X(SHRINK_TO_FIT) X(SORT) X(COPY) X(SWAP) X(INSERT) X(ASSIGN) X(TOTAL)
+#define LIST X(CLEAR) X(ERASE) X(RESIZE) X(RESERVE) X(SHRINK_TO_FIT) X(SORT) X(COPY) X(SWAP) X(INSERT) X(ASSIGN) X(TOTAL)
 #define X(name) name,
             enum { LIST };
 #undef X
@@ -176,7 +175,7 @@ main(void)
 #define X(name) #name,
             const char* names[] = { LIST };
 #undef X
-            puts(names[which]);
+            printf("-> %s\n", names[which]);
 #endif
             switch(which)
             {
@@ -195,22 +194,26 @@ main(void)
                 }
                 case INSERT:
                 {
-                    const int value = rand() % MAX_VALUE;
-                    const size_t index = rand() % a.size;
-                    b.insert(b.begin() + index, DIGI{value});
-                    vec_digi_insert(&a, index, digi_construct(value));
+                    size_t amount = rand() % 512;
+                    for(size_t count = 0; count < amount; count++)
+                    {
+                        const int value = rand() % MAX_VALUE;
+                        const size_t index = rand() % a.size;
+                        b.insert(b.begin() + index, DIGI{value});
+                        vec_digi_insert(&a, index, digi_construct(value));
+                    }
                     break;
                 }
                 case RESIZE:
                 {
-                    const size_t resize = (size == 0) ? 0 : (rand() % (size * 2));
+                    const size_t resize = (size == 0) ? 0 : (rand() % (size * 3));
                     b.resize(resize);
                     vec_digi_resize(&a, resize);
                     break;
                 }
-                case CAPACITY:
+                case RESERVE:
                 {
-                    const size_t capacity = (b.capacity() == 0) ? 0 : (rand() % (b.capacity() * 2));
+                    const size_t capacity = (a.capacity == 0) ? 0 : (rand() % (a.capacity * 2));
                     b.reserve(capacity);
                     vec_digi_reserve(&a, capacity);
                     break;
@@ -241,8 +244,8 @@ main(void)
                     size_t assign_size = rand() % a.size;
                     if(assign_size == 0)
                         assign_size = 1;
-                    vec_digi_assign(&a, size, digi_construct(value));
-                    b.assign(size, DIGI{value});
+                    vec_digi_assign(&a, assign_size, digi_construct(value));
+                    b.assign(assign_size, DIGI{value});
                     break;
                 }
                 case SWAP:

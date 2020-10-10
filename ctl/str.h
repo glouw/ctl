@@ -24,25 +24,43 @@ str_append(str* self, str* other)
 {
     if(other->size > 0)
     {
-        size_t size = self->size + other->size;
-        if(size > self->capacity)
-        {
-            size_t capacity = 2 * self->capacity;
-            if(size > capacity)
-                capacity = size;
-            str_reserve(self, capacity);
-        }
+        size_t start = self->size;
+        str_resize(self, self->size + other->size);
         for(size_t i = 0; i < other->size; i++)
-            str_push_back(self, other->value[i]);
+            self->value[start + i] = other->value[i];
     }
 }
 
-static inline char*
+static inline void
+str_insert_str(str* self, size_t index, str* other)
+{
+    if(other->size > 0)
+    {
+        size_t temp = self->size;
+        str_resize(self, self->size + other->size);
+        self->size = temp;
+        size_t where = other->size;
+        while(where != 0)
+        {
+            where -= 1;
+            str_insert(self, index, other->value[where]);
+        }
+    }
+}
+
+static inline void
+str_replace(str* self, size_t index, size_t size, str* other)
+{
+    size_t end = index + size;
+    if(end >= self->size)
+        end = self->size;
+    for(size_t i = index; i < end; i++)
+        str_erase(self, index);
+    str_insert_str(self, index, other);
+}
+
+static inline const char*
 str_c_str(str* self)
 {
-    char* c_str = (char*) malloc(self->size + 1);
-    for(size_t i = 0; i < self->size; i++)
-        c_str[i] = self->value[i];
-    c_str[self->size] = '\0';
-    return c_str;
+    return str_data(self);
 }

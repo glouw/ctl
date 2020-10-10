@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <assert.h>
+#include <algorithm>
 
 #include <str.h>
 #include <string>
 
-#define MAX_LETTERS    (23)
-#define MAX_ITERS  (100000)
-#define MAX_SIZE     (4096)
-#define MIN_SIZE       (30) // SHORT STRING OPTIMIZATIONS NOT SUPPORTED.
+#define MAX_LETTERS  (23)
+#define MIN_SIZE     (30) // SHORT STRING OPTIMIZATIONS NOT SUPPORTED.
+#define MAX_SIZE    (512)
+#define MAX_ITERS  (1000)
 
 static char*
 create_test_string(size_t size)
@@ -26,12 +27,18 @@ create_test_string(size_t size)
 static void
 test_equal(str* a, std::string& c)
 {
-    char* c_str = str_c_str(a);
-    assert(strcmp(c_str, c.c_str()) == 0);
-    free(c_str);
+    assert(strcmp(str_c_str(a), c.c_str()) == 0);
     assert(a->capacity == c.capacity());
     assert(a->size == c.size());
     assert(str_empty(a) == c.empty());
+}
+
+static int
+char_compare(const void* a, const void* b)
+{
+    char* aa = (char*) a;
+    char* bb = (char*) b;
+    return *aa > *bb;
 }
 
 int main(void)
@@ -77,7 +84,7 @@ int main(void)
                 }
             }
             test_equal(&a, c);
-#define LIST X(APPEND) X(C_STR) X(TOTAL)
+#define LIST X(APPEND) X(C_STR) X(CLEAR) X(ERASE) X(RESIZE) X(RESERVE) X(SHRINK_TO_FIT) X(SORT) X(COPY) X(SWAP) X(INSERT) X(ASSIGN) X(REPLACE) X(TOTAL)
 #define X(name) name,
             enum { LIST };
 #undef X
@@ -86,10 +93,11 @@ int main(void)
 #define X(name) #name,
             const char* names[] = { LIST };
 #undef X
-            puts(names[which]);
+            printf("-> %s\n", names[which]);
 #endif
             switch(which)
             {
+                // NEW TO STRING.
                 case APPEND:
                 {
                     str_append(&a, &b);
@@ -98,7 +106,101 @@ int main(void)
                 }
                 case C_STR:
                 {
-                    free(str_c_str(&a));
+                    assert(strlen(str_c_str(&a)));
+                    break;
+                }
+                // INHERITED FROM VECTOR.
+                case CLEAR:
+                {
+                    str_clear(&a);
+                    c.clear();
+                    break;
+                }
+                case ERASE:
+                {
+                    const size_t index = rand() % a.size;
+                    c.erase(c.begin() + index);
+                    str_erase(&a, index);
+                    break;
+                }
+                case INSERT:
+                {
+                    size_t letters = rand() % 512;
+                    for(size_t count = 0; count < letters; count++)
+                    {
+                        const char value = rand() % MAX_LETTERS;
+                        const size_t index = rand() % a.size;
+                        c.insert(c.begin() + index, value);
+                        str_insert(&a, index, value);
+                    }
+                    break;
+                }
+                case RESIZE:
+                {
+                    const size_t resize = (a.size == 0) ? 0 : (rand() % (a.size * 3));
+                    c.resize(resize);
+                    str_resize(&a, resize);
+                    break;
+                }
+                case RESERVE:
+                {
+                    const size_t capacity = (a.capacity == 0) ? 0 : (rand() % (a.capacity * 2));
+                    c.reserve(capacity);
+                    str_reserve(&a, capacity);
+                    break;
+                }
+                case SHRINK_TO_FIT:
+                {
+                    c.shrink_to_fit();
+                    str_shrink_to_fit(&a);
+                    break;
+                }
+                case SORT:
+                {
+                    str_sort(&a, char_compare);
+                    std::sort(c.begin(), c.end());
+                    break;
+                }
+                case COPY:
+                {
+                    str ca = str_copy(&a);
+                    std::string cc = c;
+                    test_equal(&ca, cc);
+                    str_destruct(&ca);
+                    break;
+                }
+                case ASSIGN:
+                {
+                    const char value = rand() % MAX_LETTERS;
+                    size_t assign_size = rand() % a.size;
+                    if(assign_size == 0)
+                        assign_size = 1;
+                    str_assign(&a, assign_size, value);
+                    c.assign(assign_size, value);
+                    break;
+                }
+                case SWAP:
+                {
+                    str aa = str_copy(&a);
+                    str aaa;
+                    std::string cc = c;
+                    std::string ccc;
+                    str_swap(&aaa, &aa);
+                    std::swap(cc, ccc);
+                    test_equal(&aaa, ccc);
+                    str_destruct(&aaa);
+                    break;
+                }
+                case REPLACE:
+                {
+                    char* replacer = create_test_string(rand() % a.size);
+                    str other = str_create(replacer);
+                    const size_t index = rand() % a.size;
+                    const size_t size = rand() % a.size;
+                    str_replace(&a, index, size, &other);
+                    c.replace(index, size, replacer);
+                    free(replacer);
+                    str_destruct(&other);
                     break;
                 }
             }
