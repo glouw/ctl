@@ -275,6 +275,6 @@ IMPL(I, construct)(A* container, size_t start, size_t end, size_t step_size)
 #undef TZ
 #undef AZ
 #undef IZ
-#undef ALIGN
+#undef ALIGN16
 
 #include <_ctl_close.h>
