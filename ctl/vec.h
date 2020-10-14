@@ -1,46 +1,45 @@
-#include <_ctl_open.h>
+#include <ctl.h>
 
-#define A  TEMP(T, vec)
-#define I  IMPL(A, it)
-#define TZ IMPL(T, zero)
-#define AZ IMPL(A, zero)
-#define IZ IMPL(I, zero)
-#define ALIGN16 (sizeof(T) == sizeof(char))
+#define CTL_A  CTL_TEMP(CTL_T, vec)
+#define CTL_I  CTL_IMPL(CTL_A, it)
+#define CTL_TZ CTL_IMPL(CTL_T, zero)
+#define CTL_AZ CTL_IMPL(CTL_A, zero)
+#define CTL_IZ CTL_IMPL(CTL_I, zero)
 
 typedef struct
 {
-    T (*construct_default)(void);
-    void (*destruct)(T*);
-    T (*copy)(T*);
-    T* value;
+    CTL_T (*construct_default)(void);
+    void (*destruct)(CTL_T*);
+    CTL_T (*copy)(CTL_T*);
+    CTL_T* value;
     size_t size;
     size_t capacity;
 }
-A;
+CTL_A;
 
-typedef struct I
+typedef struct CTL_I
 {
-    A* container;
-    T* value;
-    void (*step)(struct I*);
+    CTL_A* container;
+    CTL_T* value;
+    void (*step)(struct CTL_I*);
     size_t index;
     size_t start;
     size_t end;
     size_t step_size;
     bool done;
 }
-I;
+CTL_I;
 
-static T TZ;
+static CTL_T CTL_TZ;
 
-static A AZ;
+static CTL_A CTL_AZ;
 
-static I IZ;
+static CTL_I CTL_IZ;
 
-static inline A
-IMPL(A, construct)(T (*construct_default)(void), void (*destruct)(T*), T (*copy)(T*))
+static inline CTL_A
+CTL_IMPL(CTL_A, construct)(CTL_T (*construct_default)(void), void (*destruct)(CTL_T*), CTL_T (*copy)(CTL_T*))
 {
-    A self = AZ;
+    CTL_A self = CTL_AZ;
     self.construct_default = construct_default;
     self.destruct = destruct;
     self.copy = copy;
@@ -48,85 +47,85 @@ IMPL(A, construct)(T (*construct_default)(void), void (*destruct)(T*), T (*copy)
 }
 
 static inline bool
-IMPL(A, empty)(A* self)
+CTL_IMPL(CTL_A, empty)(CTL_A* self)
 {
     return self->size == 0;
 }
 
-static inline T*
-IMPL(A, at)(A* self, size_t index)
+static inline CTL_T*
+CTL_IMPL(CTL_A, at)(CTL_A* self, size_t index)
 {
     return &self->value[index];
 }
 
-static inline T*
-IMPL(A, front)(A* self)
+static inline CTL_T*
+CTL_IMPL(CTL_A, front)(CTL_A* self)
 {
-    return IMPL(A, at)(self, 0);
+    return CTL_IMPL(CTL_A, at)(self, 0);
 }
 
-static inline T*
-IMPL(A, back)(A* self)
+static inline CTL_T*
+CTL_IMPL(CTL_A, back)(CTL_A* self)
 {
-    return IMPL(A, at)(self, self->size - 1);
+    return CTL_IMPL(CTL_A, at)(self, self->size - 1);
 }
 
 static inline void
-IMPL(A, set)(A* self, size_t index, T value)
+CTL_IMPL(CTL_A, set)(CTL_A* self, size_t index, CTL_T value)
 {
-    T* ref = IMPL(A, at)(self, index);
+    CTL_T* ref = CTL_IMPL(CTL_A, at)(self, index);
     if(self->destruct)
         self->destruct(ref);
     *ref = value;
 }
 
 static inline void
-IMPL(A, pop_back)(A* self)
+CTL_IMPL(CTL_A, pop_back)(CTL_A* self)
 {
-    IMPL(A, set)(self, --self->size, TZ);
+    CTL_IMPL(CTL_A, set)(self, --self->size, CTL_TZ);
 }
 
 static inline void
-IMPL(A, wipe)(A* self, size_t n)
+CTL_IMPL(CTL_A, wipe)(CTL_A* self, size_t n)
 {
     for(size_t i = 0; i < n; i++)
-        IMPL(A, pop_back)(self);
+        CTL_IMPL(CTL_A, pop_back)(self);
 }
 
 static inline void
-IMPL(A, clear)(A* self)
+CTL_IMPL(CTL_A, clear)(CTL_A* self)
 {
-    IMPL(A, wipe)(self, self->size);
+    CTL_IMPL(CTL_A, wipe)(self, self->size);
 }
 
 static inline void
-IMPL(A, destruct)(A* self)
+CTL_IMPL(CTL_A, destruct)(CTL_A* self)
 {
-    IMPL(A, clear)(self);
+    CTL_IMPL(CTL_A, clear)(self);
     free(self->value);
-    *self = AZ;
+    *self = CTL_AZ;
 }
 
 static inline void
-IMPL(A, fit)(A* self, size_t capacity)
+CTL_IMPL(CTL_A, fit)(CTL_A* self, size_t capacity)
 {
     size_t overall = capacity;
-    if(ALIGN16)
+    if(CTL_MUST_ALIGN_16)
         overall += 1;
-    self->value = (T*) realloc(self->value, sizeof(T) * overall);
-    if(ALIGN16)
+    self->value = (CTL_T*) realloc(self->value, sizeof(CTL_T) * overall);
+    if(CTL_MUST_ALIGN_16)
         for(size_t i = self->capacity; i < overall; i++)
-            self->value[i] = TZ;
+            self->value[i] = CTL_TZ;
     self->capacity = capacity;
 }
 
 static inline void
-IMPL(A, reserve)(A* self, const size_t capacity)
+CTL_IMPL(CTL_A, reserve)(CTL_A* self, const size_t capacity)
 {
     if(capacity != self->capacity)
     {
         size_t actual = 0;
-        if(ALIGN16) // 16 BYTE BOUNDARY ALIGNMENT FOR STRINGS.
+        if(CTL_MUST_ALIGN_16)
         {
             if(capacity <= self->size)
                 actual = self->size;
@@ -141,26 +140,26 @@ IMPL(A, reserve)(A* self, const size_t capacity)
             }
         }
         else
-        if(capacity > self->capacity) // REGULAR ALIGNMENT.
+        if(capacity > self->capacity)
             actual = capacity;
         if(actual > 0)
-            IMPL(A, fit)(self, actual);
+            CTL_IMPL(CTL_A, fit)(self, actual);
     }
 }
 
 static inline void
-IMPL(A, push_back)(A* self, T value)
+CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
 {
     if(self->size == self->capacity)
-        IMPL(A, reserve)(self, self->capacity == 0 ? 1 : 2 * self->capacity);
+        CTL_IMPL(CTL_A, reserve)(self, self->capacity == 0 ? 1 : 2 * self->capacity);
     self->value[self->size++] = value;
 }
 
 static inline void
-IMPL(A, resize)(A* self, size_t size)
+CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
 {
     if(size < self->size)
-        IMPL(A, wipe)(self, self->size - size);
+        CTL_IMPL(CTL_A, wipe)(self, self->size - size);
     else
     {
         if(size > self->capacity)
@@ -168,112 +167,110 @@ IMPL(A, resize)(A* self, size_t size)
             size_t capacity = 2 * self->size;
             if(size > capacity)
                 capacity = size;
-            IMPL(A, reserve)(self, capacity);
+            CTL_IMPL(CTL_A, reserve)(self, capacity);
         }
         while(self->size < size)
-            IMPL(A, push_back)(self, self->construct_default ? self->construct_default() : TZ);
+            CTL_IMPL(CTL_A, push_back)(self, self->construct_default ? self->construct_default() : CTL_TZ);
     }
 }
 
 static inline void
-IMPL(A, assign)(A* self, size_t size, T value)
+CTL_IMPL(CTL_A, assign)(CTL_A* self, size_t size, CTL_T value)
 {
-    IMPL(A, resize)(self, size);
+    CTL_IMPL(CTL_A, resize)(self, size);
     for(size_t i = 0; i < size; i++)
-        IMPL(A, set)(self, i, i == 0 ? value : self->copy ? self->copy(&value) : value);
+        CTL_IMPL(CTL_A, set)(self, i, i == 0 ? value : self->copy ? self->copy(&value) : value);
 }
 
 static inline void
-IMPL(A, shrink_to_fit)(A* self)
+CTL_IMPL(CTL_A, shrink_to_fit)(CTL_A* self)
 {
-    IMPL(A, fit)(self, self->size);
+    CTL_IMPL(CTL_A, fit)(self, self->size);
 }
 
-static inline T*
-IMPL(A, data)(A* self)
+static inline CTL_T*
+CTL_IMPL(CTL_A, data)(CTL_A* self)
 {
-    return IMPL(A, front)(self);
+    return CTL_IMPL(CTL_A, front)(self);
 }
 
 static inline void
-IMPL(A, insert)(A* self, size_t index, T value)
+CTL_IMPL(CTL_A, insert)(CTL_A* self, size_t index, CTL_T value)
 {
-    IMPL(A, push_back)(self, *IMPL(A, back)(self));
+    CTL_IMPL(CTL_A, push_back)(self, *CTL_IMPL(CTL_A, back)(self));
     for(size_t i = self->size - 2; i > index; i--)
         self->value[i] = self->value[i - 1];
     self->value[index] = value;
 }
 
 static inline void
-IMPL(A, erase)(A* self, size_t index)
+CTL_IMPL(CTL_A, erase)(CTL_A* self, size_t index)
 {
-    IMPL(A, set)(self, index, TZ);
+    CTL_IMPL(CTL_A, set)(self, index, CTL_TZ);
     for(size_t i = index; i < self->size - 1; i++)
     {
         self->value[i] = self->value[i + 1];
-        self->value[i + 1] = TZ;
+        self->value[i + 1] = CTL_TZ;
     }
     self->size -= 1;
 }
 
 static inline void
-IMPL(A, sort)(A* self, int (*compare)(const void*, const void*))
+CTL_IMPL(CTL_A, sort)(CTL_A* self, int (*compare)(const void*, const void*))
 {
-    qsort(self->value, self->size, sizeof(T), compare);
+    qsort(self->value, self->size, sizeof(CTL_T), compare);
 }
 
-static inline A
-IMPL(A, copy)(A* self)
+static inline CTL_A
+CTL_IMPL(CTL_A, copy)(CTL_A* self)
 {
-    A other = IMPL(A, construct)(self->construct_default, self->destruct, self->copy);
-    IMPL(A, reserve)(&other, self->size);
+    CTL_A other = CTL_IMPL(CTL_A, construct)(self->construct_default, self->destruct, self->copy);
+    CTL_IMPL(CTL_A, reserve)(&other, self->size);
     while(other.size < self->size)
-        IMPL(A, push_back)(&other, other.copy
+        CTL_IMPL(CTL_A, push_back)(&other, other.copy
                 ? other.copy(&self->value[other.size]) : self->value[other.size]);
     return other;
 }
 
 static inline void
-IMPL(A, swap)(A* self, A* other)
+CTL_IMPL(CTL_A, swap)(CTL_A* self, CTL_A* other)
 {
-    A temp = *self;
+    CTL_A temp = *self;
     *self = *other;
     *other = temp;
 }
 
 static inline void
-IMPL(I, index)(I* self, size_t index)
+CTL_IMPL(CTL_I, index)(CTL_I* self, size_t index)
 {
     if(index >= self->start && index < self->end)
-        self->value = IMPL(A, at)(self->container, self->index = index);
+        self->value = CTL_IMPL(CTL_A, at)(self->container, self->index = index);
     else
         self->done = true;
 }
 
 static void
-IMPL(I, step)(I* self)
+CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
-    IMPL(I, index)(self, self->index + self->step_size);
+    CTL_IMPL(CTL_I, index)(self, self->index + self->step_size);
 }
 
-static inline I
-IMPL(I, construct)(A* container, size_t start, size_t end, size_t step_size)
+static inline CTL_I
+CTL_IMPL(CTL_I, construct)(CTL_A* container, size_t start, size_t end, size_t step_size)
 {
-    I self = IZ;
+    CTL_I self = CTL_IZ;
     self.container = container;
-    self.step = IMPL(I, step);
+    self.step = CTL_IMPL(CTL_I, step);
     self.start = start;
     self.end = end;
     self.step_size = step_size;
-    IMPL(I, index)(&self, start);
+    CTL_IMPL(CTL_I, index)(&self, start);
     return self;
 }
 
-#undef A
-#undef I
-#undef TZ
-#undef AZ
-#undef IZ
-#undef ALIGN16
-
-#include <_ctl_close.h>
+#undef CTL_T
+#undef CTL_A
+#undef CTL_I
+#undef CTL_TZ
+#undef CTL_AZ
+#undef CTL_IZ

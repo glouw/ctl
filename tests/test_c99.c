@@ -1,19 +1,19 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define T char
+#define CTL_T char
 #include <vec.h>
 
 #include <str.h>
 #include <str.h>
 
-#define T int
+#define CTL_T int
 #include <vec.h>
 
-#define T float
+#define CTL_T float
 #include <vec.h>
 
-#define T double
+#define CTL_T double
 #include <vec.h>
 
 typedef struct
@@ -25,10 +25,10 @@ typedef struct
 }
 person;
 
-#define T person
+#define CTL_T person
 #include <vec.h>
 
-#define T str
+#define CTL_T str
 #include <vec.h>
 
 int main(void)

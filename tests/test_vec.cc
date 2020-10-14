@@ -52,7 +52,7 @@ digi_copy(digi* self)
     return copy;
 }
 
-#define T digi
+#define CTL_T digi
 #include <vec.h>
 
 struct DIGI
