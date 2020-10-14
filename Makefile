@@ -24,10 +24,13 @@ endef
 all: run
 	@rm -f $(BIN)
 
-run:
+run: version
 	$(call run,$(CC),test_c99.c)
 	$(call run,$(CXX),test_str.cc)
 	$(call run,$(CXX),test_vec.cc)
+
+version:
+	@$(CC) --version
 
 vec:
 	$(call expand,$@,-DT=int)
