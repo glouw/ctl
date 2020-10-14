@@ -110,10 +110,10 @@ static inline void
 CTL_IMPL(CTL_A, fit)(CTL_A* self, size_t capacity)
 {
     size_t overall = capacity;
-    if(CTL_MUST_ALIGN_16)
+    if(CTL_MUST_ALIGN_16(CTL_T))
         overall += 1;
     self->value = (CTL_T*) realloc(self->value, sizeof(CTL_T) * overall);
-    if(CTL_MUST_ALIGN_16)
+    if(CTL_MUST_ALIGN_16(CTL_T))
         for(size_t i = self->capacity; i < overall; i++)
             self->value[i] = CTL_TZ;
     self->capacity = capacity;
@@ -125,7 +125,7 @@ CTL_IMPL(CTL_A, reserve)(CTL_A* self, const size_t capacity)
     if(capacity != self->capacity)
     {
         size_t actual = 0;
-        if(CTL_MUST_ALIGN_16)
+        if(CTL_MUST_ALIGN_16(CTL_T))
         {
             if(capacity <= self->size)
                 actual = self->size;

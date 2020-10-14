@@ -14,6 +14,6 @@
 
 #define CTL_FOR(iter, ...) while(!iter.done) { __VA_ARGS__ iter.step(&iter); }
 
-#define CTL_MUST_ALIGN_16 (sizeof(CTL_T) == sizeof(char))
+#define CTL_MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 
 #endif
