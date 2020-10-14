@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define CTL_CAT(A, B) A##B
+#define CTL_CAT(a, b) a##b
 
-#define CTL_PASTE(A, B) CTL_CAT(A, B)
+#define CTL_PASTE(a, b) CTL_CAT(a, b)
 
 #define CTL_TEMP(type, name) CTL_PASTE(CTL_PASTE(name, _), type)
 
