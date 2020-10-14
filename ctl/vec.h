@@ -131,8 +131,7 @@ IMPL(A, reserve)(A* self, const size_t capacity)
             if(capacity <= self->size)
                 actual = self->size;
             else
-            if(capacity > self->size
-            && capacity < self->capacity)
+            if(capacity > self->size && capacity < self->capacity)
                 actual = capacity;
             else
             {
