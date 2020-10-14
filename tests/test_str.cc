@@ -9,15 +9,15 @@
 static char*
 create_test_string(size_t size)
 {
-    char* temp = (char*) malloc(MAX_SIZE + 1);
+    char* temp = (char*) malloc(TEST_MAX_SIZE + 1);
     for(size_t i = 0; i < size; i++)
     {
-        temp[i] = 'a' + rand() % MAX_LETTERS;
+        temp[i] = 'a' + rand() % TEST_ALPHA_LETTERS;
         if(rand() % 2)
             temp[i] = toupper(temp[i]);
     }
     temp[size] = '\0';
-    return temp ;
+    return temp;
 }
 
 static void
@@ -40,13 +40,13 @@ char_compare(const void* a, const void* b)
 int main(void)
 {
     srand(time(NULL));
-    const size_t iters = rand() % MAX_ITERS;
+    const size_t iters = rand() % TEST_MAX_ITERS;
     for(size_t i = 0; i < iters; i++)
     {
         for(size_t j = 0; j < 2; j++)
         {
-            size_t size_a = rand() % MAX_SIZE;
-            if(size_a < MIN_STR_SIZE) size_a = MIN_STR_SIZE;
+            size_t size_a = rand() % TEST_MAX_SIZE;
+            if(size_a < TEST_MIN_STR_SIZE) size_a = TEST_MIN_STR_SIZE;
             char* base = create_test_string(size_a);
             str a;
             std::string b;
@@ -176,7 +176,7 @@ int main(void)
                 {
                     const size_t index = rand() % a.size;
                     const size_t size = rand() % (a.size - index);
-                    if(size > MIN_STR_SIZE)
+                    if(size > TEST_MIN_STR_SIZE)
                     {
                         str substr1 = str_substr(&a, index, size);
                         std::string substr2 = b.substr(index, size);
@@ -194,10 +194,10 @@ int main(void)
                     str _b = str_create(_tb);
                     std::string _aa = _ta;
                     std::string _bb = _tb;
-                    assert(SIGN(str_compare(&_a, _tb)) == SIGN(_aa.compare(_tb)));
-                    assert(SIGN(str_compare(&_b, _ta)) == SIGN(_bb.compare(_ta)));
-                    assert(SIGN(str_compare(&_a, _ta)) == SIGN(_aa.compare(_ta)));
-                    assert(SIGN(str_compare(&_b, _tb)) == SIGN(_bb.compare(_tb)));
+                    assert(TEST_SIGN(str_compare(&_a, _tb)) == TEST_SIGN(_aa.compare(_tb)));
+                    assert(TEST_SIGN(str_compare(&_b, _ta)) == TEST_SIGN(_bb.compare(_ta)));
+                    assert(TEST_SIGN(str_compare(&_a, _ta)) == TEST_SIGN(_aa.compare(_ta)));
+                    assert(TEST_SIGN(str_compare(&_b, _tb)) == TEST_SIGN(_bb.compare(_tb)));
                     str_destruct(&_a);
                     str_destruct(&_b);
                     free(_ta);
@@ -223,7 +223,7 @@ int main(void)
                     size_t letters = rand() % 512;
                     for(size_t count = 0; count < letters; count++)
                     {
-                        const char value = rand() % MAX_LETTERS;
+                        const char value = rand() % TEST_ALPHA_LETTERS;
                         const size_t index = rand() % a.size;
                         b.insert(b.begin() + index, value);
                         str_insert(&a, index, value);
@@ -266,7 +266,7 @@ int main(void)
                 }
                 case ASSIGN:
                 {
-                    const char value = rand() % MAX_LETTERS;
+                    const char value = rand() % TEST_ALPHA_LETTERS;
                     size_t assign_size = rand() % a.size;
                     if(assign_size == 0)
                         assign_size = 1;

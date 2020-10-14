@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __CTL_STR_H__
+#define __CTL_STR_H__
 
 #include <string.h>
 #include <stdint.h>
@@ -149,3 +150,5 @@ str_compare(str* self, const char* s)
 {
     return strcmp(str_c_str(self), s);
 }
+
+#endif

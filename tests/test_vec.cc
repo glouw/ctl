@@ -138,10 +138,10 @@ int
 main(void)
 {
     srand(time(NULL));
-    const size_t iters = rand() % MAX_ITERS;
+    const size_t iters = rand() % TEST_MAX_ITERS;
     for(size_t i = 0; i < iters; i++)
     {
-        size_t size = rand() % MAX_SIZE;
+        size_t size = rand() % TEST_MAX_SIZE;
         if(size == 0)
             size = 1;
         for(size_t j = 0; j < 2; j++)
@@ -159,7 +159,7 @@ main(void)
             {
                 for(size_t i = 0; i < size; i++)
                 {
-                    const int value = rand() % MAX_VALUE;
+                    const int value = rand() % INT_MAX;
                     vec_digi_push_back(&a, digi_construct(value));
                     b.push_back(DIGI{value});
                 }
@@ -195,7 +195,7 @@ main(void)
                     size_t amount = rand() % 512;
                     for(size_t count = 0; count < amount; count++)
                     {
-                        const int value = rand() % MAX_VALUE;
+                        const int value = rand() % INT_MAX;
                         const size_t index = rand() % a.size;
                         b.insert(b.begin() + index, DIGI{value});
                         vec_digi_insert(&a, index, digi_construct(value));
@@ -238,7 +238,7 @@ main(void)
                 }
                 case ASSIGN:
                 {
-                    const int value = rand() % MAX_VALUE;
+                    const int value = rand() % INT_MAX;
                     size_t assign_size = rand() % a.size;
                     if(assign_size == 0)
                         assign_size = 1;
