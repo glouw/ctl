@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <assert.h>
 
-#include "const.h"
+#include "test.h"
 
 typedef struct
 {
@@ -173,7 +173,7 @@ main(void)
 #define X(name) #name,
             const char* names[] = { LIST };
 #undef X
-            printf("-> %s\n", names[which]);
+            printf("-> %lu : %s\n", j, names[which]);
 #endif
             switch(which)
             {

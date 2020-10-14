@@ -1,6 +1,6 @@
 VERBOSE = 0
 
-CC = gcc -std=c99
+CC = gcc -std=c11
 CXX = g++ -std=c++17
 
 CFLAGS  = -Ictl

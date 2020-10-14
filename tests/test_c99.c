@@ -28,6 +28,9 @@ person;
 #define T person
 #include <vec.h>
 
+#define T str
+#include <vec.h>
+
 int main(void)
 {
     printf("%s: PASSED\n", __FILE__);
