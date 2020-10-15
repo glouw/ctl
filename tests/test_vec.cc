@@ -15,7 +15,7 @@ typedef struct
 digi;
 
 static digi
-digi_construct(int value)
+digi_init(int value)
 {
     digi self = {
         (int*) malloc(sizeof(*self.value))
@@ -25,13 +25,13 @@ digi_construct(int value)
 }
 
 static digi
-digi_construct_default(void)
+digi_init_default(void)
 {
-    return digi_construct(0);
+    return digi_init(0);
 }
 
 static void
-digi_destruct(digi* self)
+digi_free(digi* self)
 {
     free(self->value);
 }
@@ -47,7 +47,7 @@ digi_compare(const void* a, const void* b)
 static digi
 digi_copy(digi* self)
 {
-    digi copy = digi_construct_default();
+    digi copy = digi_init_default();
     *copy.value = *self->value;
     return copy;
 }
@@ -146,7 +146,7 @@ main(void)
             size = 1;
         for(size_t j = 0; j < 2; j++)
         {
-            vec_digi a = vec_digi_construct(digi_construct_default, digi_destruct, digi_copy);
+            vec_digi a = vec_digi_init();
             std::vector<DIGI> b;
             // INIT DIRECTLY.
             if(j == 0)
@@ -160,7 +160,7 @@ main(void)
                 for(size_t i = 0; i < size; i++)
                 {
                     const int value = rand() % INT_MAX;
-                    vec_digi_push_back(&a, digi_construct(value));
+                    vec_digi_push_back(&a, digi_init(value));
                     b.push_back(DIGI{value});
                 }
             }
@@ -198,7 +198,7 @@ main(void)
                         const int value = rand() % INT_MAX;
                         const size_t index = rand() % a.size;
                         b.insert(b.begin() + index, DIGI{value});
-                        vec_digi_insert(&a, index, digi_construct(value));
+                        vec_digi_insert(&a, index, digi_init(value));
                     }
                     break;
                 }
@@ -233,7 +233,7 @@ main(void)
                     vec_digi aa = vec_digi_copy(&a);
                     std::vector<DIGI> bb = b;
                     test_equal(&aa, bb);
-                    vec_digi_destruct(&aa);
+                    vec_digi_free(&aa);
                     break;
                 }
                 case ASSIGN:
@@ -242,7 +242,7 @@ main(void)
                     size_t assign_size = rand() % a.size;
                     if(assign_size == 0)
                         assign_size = 1;
-                    vec_digi_assign(&a, assign_size, digi_construct(value));
+                    vec_digi_assign(&a, assign_size, digi_init(value));
                     b.assign(assign_size, DIGI{value});
                     break;
                 }
@@ -255,12 +255,12 @@ main(void)
                     vec_digi_swap(&aaa, &aa);
                     std::swap(bb, bbb);
                     test_equal(&aaa, bbb);
-                    vec_digi_destruct(&aaa);
+                    vec_digi_free(&aaa);
                     break;
                 }
             }
             test_equal(&a, b);
-            vec_digi_destruct(&a);
+            vec_digi_free(&a);
         }
     }
     printf("%s: PASSED\n", __FILE__);

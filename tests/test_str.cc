@@ -181,7 +181,7 @@ int main(void)
                         str substr1 = str_substr(&a, index, size);
                         std::string substr2 = b.substr(index, size);
                         test_equal(&substr1, substr2);
-                        str_destruct(&substr1);
+                        str_free(&substr1);
                     }
                     break;
                 }
@@ -198,8 +198,8 @@ int main(void)
                     assert(TEST_SIGN(str_compare(&_b, _ta)) == TEST_SIGN(_bb.compare(_ta)));
                     assert(TEST_SIGN(str_compare(&_a, _ta)) == TEST_SIGN(_aa.compare(_ta)));
                     assert(TEST_SIGN(str_compare(&_b, _tb)) == TEST_SIGN(_bb.compare(_tb)));
-                    str_destruct(&_a);
-                    str_destruct(&_b);
+                    str_free(&_a);
+                    str_free(&_b);
                     free(_ta);
                     free(_tb);
                     break;
@@ -261,7 +261,7 @@ int main(void)
                     str ca = str_copy(&a);
                     std::string cb = b;
                     test_equal(&ca, cb);
-                    str_destruct(&ca);
+                    str_free(&ca);
                     break;
                 }
                 case ASSIGN:
@@ -283,12 +283,12 @@ int main(void)
                     str_swap(&aaa, &aa);
                     std::swap(cb, bbb);
                     test_equal(&aaa, bbb);
-                    str_destruct(&aaa);
+                    str_free(&aaa);
                     break;
                 }
             }
             test_equal(&a, b);
-            str_destruct(&a);
+            str_free(&a);
             free(base);
         }
     }

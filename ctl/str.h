@@ -1,6 +1,8 @@
 #ifndef __CTL_STR_H__
 #define __CTL_STR_H__
 
+#include <ctl.h>
+
 #include <string.h>
 #include <stdint.h>
 
@@ -12,7 +14,7 @@
 static inline str
 str_create(const char* c_str)
 {
-    str self = str_zero;
+    str self = str_init();
     size_t len = strlen(c_str);
     size_t min = 15;
     str_reserve(&self, len < min ? min : len);
@@ -21,12 +23,21 @@ str_create(const char* c_str)
     return self;
 }
 
+static inline str
+str_init_default(void)
+{
+    return str_create("");
+}
+
 static inline void
 str_append(str* self, const char* s)
 {
     size_t start = self->size;
     size_t len = strlen(s);
-    str_resize(self, self->size + len);
+    size_t total = self->size + len;
+    if(total == SIZE_MAX) // UNREALISTIC
+        total -= 1;
+    str_resize(self, total);
     for(size_t i = 0; i < len; i++)
         self->value[start + i] = s[i];
 }
@@ -36,7 +47,10 @@ str_insert_str(str* self, size_t index, const char* s)
 {
     size_t start = self->size;
     size_t len = strlen(s);
-    str_resize(self, self->size + len);
+    size_t total = self->size + len;
+    if(total == SIZE_MAX)
+        total -= 1;
+    str_resize(self, total);
     self->size = start;
     while(len != 0)
     {

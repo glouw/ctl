@@ -16,4 +16,6 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Make and Test
-      run: make VERBOSE=1
+      run:
+        make VERBOSE=0
+        make VERBOSE=1

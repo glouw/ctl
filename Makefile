@@ -4,11 +4,13 @@ CC = gcc -std=c99
 CXX = g++ -std=c++17
 
 CFLAGS  = -Ictl
-CFLAGS += -Wall -Wextra -Wpedantic -Wfatal-errors
+CFLAGS += -Wall -Wextra -Wpedantic -Wfatal-errors -Werror
+ifeq ($(VERBOSE), 1)
 CFLAGS += -fsanitize=address -fsanitize=undefined
 CFLAGS += -Og -g
-ifeq ($(VERBOSE), 1)
 CFLAGS += -DVERBOSE
+else
+CFLAGS += -O3
 endif
 
 BIN = test
@@ -26,6 +28,7 @@ all: run
 
 run: version
 	$(call run,$(CC),test_c99.c)
+	$(call run,$(CXX),test_c99.c)
 	$(call run,$(CXX),test_str.cc)
 	$(call run,$(CXX),test_vec.cc)
 
