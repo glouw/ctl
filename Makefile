@@ -10,7 +10,7 @@ CFLAGS += -fsanitize=address -fsanitize=undefined
 CFLAGS += -Og -g
 CFLAGS += -DVERBOSE
 else
-CFLAGS += -O3
+CFLAGS += -O3 -g
 endif
 
 BIN = test
