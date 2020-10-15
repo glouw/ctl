@@ -44,7 +44,6 @@ person_init(size_t path_capacity, const char* first, const char* last)
     person self;
     self.path = vec_point_init();
     self.name = str_create(first);
-    str_append(&self.name, first);
     str_append(&self.name, " ");
     str_append(&self.name, last);
     vec_point_reserve(&self.path, path_capacity);

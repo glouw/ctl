@@ -15,9 +15,26 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Make and Test
+    - name: O0
       run:
-        make VERBOSE=0
-    - name: Make and Test (VERBOSE)
+        make O0=1
+
+    - name: O1
       run:
-        make VERBOSE=1
+        make O1=1
+
+    - name: O2
+      run:
+        make O2=1
+
+    - name: O3
+      run:
+        make O3=1
+
+    - name: Og
+      run:
+        make Og=1
+
+    - name: Ofast
+      run:
+        make Ofast=1

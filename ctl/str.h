@@ -18,8 +18,6 @@ str_create(const char* c_str)
     size_t len = strlen(c_str);
     size_t min = 15;
     size_t total = len < min ? min : len;
-    if(total == SIZE_MAX)
-        total -= 1;
     str_reserve(&self, total);
     for(const char* s = c_str; *s; s++)
         str_push_back(&self, *s);
@@ -38,8 +36,6 @@ str_append(str* self, const char* s)
     size_t start = self->size;
     size_t len = strlen(s);
     size_t total = self->size + len;
-    if(total == SIZE_MAX)
-        total -= 1;
     str_resize(self, total);
     for(size_t i = 0; i < len; i++)
         self->value[start + i] = s[i];
@@ -51,8 +47,6 @@ str_insert_str(str* self, size_t index, const char* s)
     size_t start = self->size;
     size_t len = strlen(s);
     size_t total = self->size + len;
-    if(total == SIZE_MAX)
-        total -= 1;
     str_resize(self, total);
     self->size = start;
     while(len != 0)
