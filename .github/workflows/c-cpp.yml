@@ -18,4 +18,6 @@ jobs:
     - name: Make and Test
       run:
         make VERBOSE=0
+    - name: Make and Test (VERBOSE)
+      run:
         make VERBOSE=1
