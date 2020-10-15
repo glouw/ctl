@@ -1,4 +1,5 @@
 VERBOSE = 0
+LONG = 0
 O0 = 0
 O1 = 0
 O2 = 0
@@ -45,10 +46,14 @@ ifeq ($(VERBOSE),1)
 CFLAGS += -DVERBOSE
 endif
 
+ifeq ($(LONG),1)
+CFLAGS += -DLONG
+endif
+
 BIN = test
 
 define run
-	@$1 $(CFLAGS) tests/$(2) -o $(BIN); ./$(BIN) || exit
+	$1 $(CFLAGS) tests/$(2) -o $(BIN); ./$(BIN) || exit
 endef
 
 define expand

@@ -4,7 +4,7 @@
 #define TEST_MIN_STR_SIZE  (30)
 #define TEST_ALPHA_LETTERS (23)
 
-#ifdef VERBOSE
+#ifdef LONG
 #  define TEST_MAX_SIZE  (4096)
 #  define TEST_MAX_ITERS (8096)
 #else
