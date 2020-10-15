@@ -53,7 +53,7 @@ endif
 BIN = test
 
 define run
-	$1 $(CFLAGS) tests/$(2) -o $(BIN); ./$(BIN) || exit
+	@$1 $(CFLAGS) tests/$(2) -o $(BIN); ./$(BIN) || exit
 endef
 
 define expand
