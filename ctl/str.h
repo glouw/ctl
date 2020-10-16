@@ -1,6 +1,10 @@
 #ifndef __CTL_STR_H__
 #define __CTL_STR_H__
 
+#ifdef CTL_T
+#error "CONTAINER <STR> DOES NOT ACCEPT TEMPLATE TYPE `CTL_T`"
+#endif
+
 #include <ctl.h>
 
 #include <string.h>
@@ -17,8 +21,7 @@ str_create(const char* c_str)
     str self = str_init();
     size_t len = strlen(c_str);
     size_t min = 15;
-    size_t total = len < min ? min : len;
-    str_reserve(&self, total);
+    str_reserve(&self, len < min ? min : len);
     for(const char* s = c_str; *s; s++)
         str_push_back(&self, *s);
     return self;
@@ -35,8 +38,7 @@ str_append(str* self, const char* s)
 {
     size_t start = self->size;
     size_t len = strlen(s);
-    size_t total = self->size + len;
-    str_resize(self, total);
+    str_resize(self, self->size + len);
     for(size_t i = 0; i < len; i++)
         self->value[start + i] = s[i];
 }
@@ -46,8 +48,7 @@ str_insert_str(str* self, size_t index, const char* s)
 {
     size_t start = self->size;
     size_t len = strlen(s);
-    size_t total = self->size + len;
-    str_resize(self, total);
+    str_resize(self, self->size + len);
     self->size = start;
     while(len != 0)
     {

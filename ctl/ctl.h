@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define CTL_CAT(a, b) a##b
 

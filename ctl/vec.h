@@ -20,11 +20,11 @@ CTL_A;
 typedef struct CTL_I
 {
     CTL_A* container;
-    CTL_T* value;
+    CTL_T* ref;
     void (*step)(struct CTL_I*);
+    CTL_T* begin;
+    CTL_T* end;
     size_t index;
-    size_t start;
-    size_t end;
     size_t step_size;
     bool done;
 }
@@ -35,9 +35,9 @@ CTL_IMPL(CTL_A, init)(void)
 {
     static CTL_A CTL_AZ;
     CTL_A self = CTL_AZ;
-    self.init_default = CTL_PASTE(CTL_T, CTL_PASTE(_, init_default));
-    self.free = CTL_PASTE(CTL_T, CTL_PASTE(_, free));
-    self.copy = CTL_PASTE(CTL_T, CTL_PASTE(_, copy));
+    self.init_default = CTL_IMPL(CTL_T, init_default);
+    self.free = CTL_IMPL(CTL_T, free);
+    self.copy = CTL_IMPL(CTL_T, copy);
     return self;
 }
 
@@ -65,6 +65,18 @@ CTL_IMPL(CTL_A, back)(CTL_A* self)
     return CTL_IMPL(CTL_A, at)(self, self->size - 1);
 }
 
+static inline CTL_T*
+CTL_IMPL(CTL_A, begin)(CTL_A* self)
+{
+    return CTL_IMPL(CTL_A, front)(self);
+}
+
+static inline CTL_T*
+CTL_IMPL(CTL_A, end)(CTL_A* self)
+{
+    return CTL_IMPL(CTL_A, back)(self);
+}
+
 static inline void
 CTL_IMPL(CTL_A, set)(CTL_A* self, size_t index, CTL_T value)
 {
@@ -84,8 +96,11 @@ CTL_IMPL(CTL_A, pop_back)(CTL_A* self)
 static inline void
 CTL_IMPL(CTL_A, wipe)(CTL_A* self, size_t n)
 {
-    for(size_t i = 0; i < n; i++)
+    while(n != 0)
+    {
         CTL_IMPL(CTL_A, pop_back)(self);
+        n -= 1;
+    }
 }
 
 static inline void
@@ -158,7 +173,11 @@ CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
 {
     static CTL_T CTL_TZ;
     if(size < self->size)
-        CTL_IMPL(CTL_A, wipe)(self, self->size - size);
+    {
+        ptrdiff_t less = self->size - size;
+        if(less > 0)
+            CTL_IMPL(CTL_A, wipe)(self, less);
+    }
     else
     {
         if(size > self->capacity)
@@ -240,38 +259,34 @@ CTL_IMPL(CTL_A, swap)(CTL_A* self, CTL_A* other)
 }
 
 static inline void
-CTL_IMPL(CTL_I, index)(CTL_I* self, size_t index)
+CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
-    if(index >= self->start && index < self->end)
-        self->value = CTL_IMPL(CTL_A, at)(self->container, self->index = index);
+    CTL_T* ref = self->ref + self->step_size;
+    if(ref >= self->begin && ref <= self->end)
+        self->ref = ref;
     else
         self->done = true;
 }
 
-static inline void
-CTL_IMPL(CTL_I, step)(CTL_I* self)
-{
-    CTL_IMPL(CTL_I, index)(self, self->index + self->step_size);
-}
-
 static inline CTL_I
-CTL_IMPL(CTL_I, by)(CTL_A* container, size_t start, size_t end, size_t step_size)
+CTL_IMPL(CTL_I, by)(CTL_A* container, CTL_T* begin, CTL_T* end, size_t step_size)
 {
     static CTL_I CTL_IZ;
     CTL_I self = CTL_IZ;
     self.container = container;
     self.step = CTL_IMPL(CTL_I, step);
-    self.start = start;
+    self.begin = begin;
     self.end = end;
     self.step_size = step_size;
-    CTL_IMPL(CTL_I, index)(&self, start);
+    self.ref = begin;
     return self;
 }
 
 static inline CTL_I
-CTL_IMPL(CTL_I, each)(CTL_A* container)
+CTL_IMPL(CTL_I, each)(CTL_A* a)
 {
-    return CTL_IMPL(CTL_I, by)(container, 0, container->size, 1);
+    size_t step_size = 1;
+    return CTL_IMPL(CTL_I, by)(a, CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), step_size);
 }
 
 #undef CTL_T

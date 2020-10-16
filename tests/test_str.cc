@@ -1,10 +1,8 @@
-#include <stdio.h>
-#include <assert.h>
-#include <algorithm>
-#include <str.h>
-#include <string>
-
 #include "test.h"
+
+#include <str.h>
+
+#include <string>
 
 static char*
 create_test_string(size_t size)

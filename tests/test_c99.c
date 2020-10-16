@@ -1,5 +1,8 @@
 #include <str.h>
 
+#define CTL_T int
+#include <lst.h>
+
 #define CTL_T char
 #include <vec.h>
 
@@ -87,7 +90,7 @@ int main(void)
 #ifdef VERBOSE
     vec_int_it it0 = vec_int_it_each(&a);
     CTL_FOR(it0, {
-        printf("%d\n", *it0.value);
+        printf("%d\n", *it0.ref);
     })
 #endif
     vec_int_free(&a);
@@ -100,7 +103,7 @@ int main(void)
 #ifdef VERBOSE
     vec_str_it it1 = vec_str_it_each(&b);
     CTL_FOR(it1, {
-        str* s = it1.value;
+        str* s = it1.ref;
         if(s->size > 0)
             printf("%s\n", str_c_str(s));
     })
@@ -113,7 +116,7 @@ int main(void)
 #ifdef VERBOSE
     vec_person_it it2 = vec_person_it_each(&c);
     CTL_FOR(it2, {
-        person* p = it2.value;
+        person* p = it2.ref;
         puts(p->name.value);
     })
 #endif

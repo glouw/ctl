@@ -38,3 +38,27 @@ jobs:
     - name: Ofast
       run:
         make LONG=1 Ofast=1
+
+    - name: O0 (SANITIZE=0)
+      run:
+        make LONG=1 O0=1 SANITIZE=0
+
+    - name: O1 (SANITIZE=0)
+      run:
+        make LONG=1 O1=1 SANITIZE=0
+
+    - name: O2 (SANITIZE=0)
+      run:
+        make LONG=1 O2=1 SANITIZE=0
+
+    - name: O3 (SANITIZE=0)
+      run:
+        make LONG=1 O3=1 SANITIZE=0
+
+    - name: Og (SANITIZE=0)
+      run:
+        make LONG=1 Og=1 SANITIZE=0
+
+    - name: Ofast (SANITIZE=0)
+      run:
+        make LONG=1 Ofast=1 SANITIZE=0
