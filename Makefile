@@ -19,9 +19,7 @@ CFLAGS += -march=native
 CFLAGS += -g
 
 ifeq (1, $(SANITIZE))
-CFLAGS += -Og -fsanitize=address -fsanitize=undefined
-else
-CFLAGS += -O3
+CFLAGS += -fsanitize=address -fsanitize=undefined
 endif
 
 ifeq (1, $(Og))
