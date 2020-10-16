@@ -67,6 +67,7 @@ test: tc99 tlst tstr tvec
 	$(foreach bin,$(BINS),./$(bin);)
 	@rm -f $(BINS)
 	@$(CC) --version
+	@$(CXX) --version
 
 clean:
 	@rm -f $(BINS)
