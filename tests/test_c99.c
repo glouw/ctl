@@ -1,3 +1,8 @@
+#include "test.h"
+
+#include <str.h>
+#include <str.h>
+#include <str.h>
 #include <str.h>
 
 #define CTL_T int
@@ -80,7 +85,8 @@ person_copy(person* self)
 
 #include <stdio.h>
 
-int main(void)
+int
+main(void)
 {
     vec_int a = vec_int_init();
     vec_int_push_back(&a, 1);
@@ -123,5 +129,5 @@ int main(void)
     vec_person d = vec_person_copy(&c);
     vec_person_free(&c);
     vec_person_free(&d);
-    printf("%s: PASSED\n", __FILE__);
+    TEST_PASS(__FILE__);
 }

@@ -1,12 +1,10 @@
-#ifndef __TEST_H__
-#define __TEST_H__
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <time.h>
 #include <assert.h>
-#include <algorithm>
 
 #define TEST_MIN_STR_SIZE  (30)
 #define TEST_ALPHA_LETTERS (23)
@@ -21,94 +19,6 @@
 
 #define TEST_SIGN(a) ((a < 0) ? (-1) : (a > 0) ? (1) : (0))
 
-// THESE DIGI STRUCTS BEHAVE IDENTICALLY AND ARE USED AS THE BASIS
-// FOR TESTING COPY / FREE / CONSTRUCT FOR STL AND CTL CONTAINERS.
+#define TEST_PASS(f) printf("%s: PASSED\n", f)
 
-typedef struct
-{
-    int* value;
-}
-digi;
-
-static inline digi
-digi_init(int value)
-{
-    digi self = {
-        (int*) malloc(sizeof(*self.value))
-    };
-    *self.value = value;
-    return self;
-}
-
-static inline digi
-digi_init_default(void)
-{
-    return digi_init(0);
-}
-
-static inline void
-digi_free(digi* self)
-{
-    free(self->value);
-}
-
-static inline int
-digi_compare(const void* a, const void* b)
-{
-    digi* aa = (digi*) a;
-    digi* bb = (digi*) b;
-    return *bb->value < *aa->value;
-}
-
-static inline digi
-digi_copy(digi* self)
-{
-    digi copy = digi_init_default();
-    *copy.value = *self->value;
-    return copy;
-}
-
-struct DIGI
-{
-    int* value;
-
-    DIGI(int value): value { new int {value} }
-    {
-    }
-    DIGI(): DIGI(0)
-    {
-    }
-    ~DIGI()
-    {
-        delete value;
-    }
-    DIGI(const DIGI& a): DIGI()
-    {
-        *value = *a.value;
-    }
-    DIGI& operator=(const DIGI& a)
-    {
-        delete value;
-        value = new int;
-        *value = *a.value;
-        return *this;
-    }
-    DIGI& operator=(DIGI&& a)
-    {
-        delete value;
-        value = a.value;
-        a.value = nullptr;
-        return *this;
-    }
-    DIGI(DIGI&& a)
-    {
-        value = a.value;
-        a.value = nullptr;
-    }
-    bool operator<(const DIGI& a)
-    {
-        return *value < *a.value;
-    }
-};
-
-#endif
+#define TEST_USE_SRAND (1)

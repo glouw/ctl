@@ -1,9 +1,12 @@
 #include "test.h"
 
+#include "digi.cc"
+
 #define CTL_T digi
 #include <vec.h>
 
 #include <vector>
+#include <algorithm>
 
 static void
 test_equal(vec_digi* a, std::vector<DIGI>& b)
@@ -44,7 +47,9 @@ test_equal(vec_digi* a, std::vector<DIGI>& b)
 int
 main(void)
 {
+#if TEST_USE_SRAND == 1
     srand(time(NULL));
+#endif
     const size_t iters = rand() % TEST_MAX_ITERS;
     for(size_t i = 0; i < iters; i++)
     {
@@ -71,7 +76,18 @@ main(void)
                     b.push_back(DIGI{value});
                 }
             }
-#define LIST X(CLEAR) X(ERASE) X(RESIZE) X(RESERVE) X(SHRINK_TO_FIT) X(SORT) X(COPY) X(SWAP) X(INSERT) X(ASSIGN) X(TOTAL)
+#define LIST             \
+        X(CLEAR)         \
+        X(ERASE)         \
+        X(RESIZE)        \
+        X(RESERVE)       \
+        X(SHRINK_TO_FIT) \
+        X(SORT)          \
+        X(COPY)          \
+        X(SWAP)          \
+        X(INSERT)        \
+        X(ASSIGN)        \
+        X(TOTAL)
 #define X(name) name,
             enum { LIST };
 #undef X
@@ -170,5 +186,5 @@ main(void)
             vec_digi_free(&a);
         }
     }
-    printf("%s: PASSED\n", __FILE__);
+    TEST_PASS(__FILE__);
 }

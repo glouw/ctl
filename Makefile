@@ -1,5 +1,3 @@
-BIN = test
-
 CC = gcc -std=c99
 CXX = g++ -std=c++17
 
@@ -58,35 +56,36 @@ ifeq (1, $(LONG))
 CFLAGS += -DLONG
 endif
 
-define run
-	@$1 $(CFLAGS) tests/$(2) -o $(BIN); ./$(BIN) || exit
-endef
-
 define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2)
 endef
 
-all: run
-	@rm -f $(BIN)
+BINS = a b c d e
 
-run: version
-	$(call run,$(CC),test_c99.c)
-	$(call run,$(CXX),test_c99.c)
-	$(call run,$(CXX),test_lst.cc)
-	$(call run,$(CXX),test_str.cc)
-	$(call run,$(CXX),test_vec.cc)
-
-version:
+# RUN TESTS.
+test: tc99 tlst tstr tvec
+	$(foreach bin,$(BINS),./$(bin);)
+	@rm -f $(BINS)
 	@$(CC) --version
 
+clean:
+	@rm -f $(BINS)
+
+# COMPILE TESTS.
+tc99:
+	$(CC)  $(CFLAGS) tests/test_c99.c -o a
+	$(CXX) $(CFLAGS) tests/test_c99.c -o b
+tlst:
+	$(CXX) $(CFLAGS) tests/test_lst.cc -o c
+tstr:
+	$(CXX) $(CFLAGS) tests/test_str.cc -o d
+tvec:
+	$(CXX) $(CFLAGS) tests/test_vec.cc -o e
+
+# EXPAND TEMPLATES (WITH INT).
 vec:
 	$(call expand,$@,-DCTL_T=int)
-
 str:
 	$(call expand,$@)
-
 lst:
 	$(call expand,$@,-DCTL_T=int)
-
-clean:
-	@rm -f $(BIN)

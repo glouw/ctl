@@ -1,5 +1,7 @@
 #include "test.h"
 
+#include "digi.cc"
+
 #define CTL_T digi
 #include <lst.h>
 
@@ -23,7 +25,9 @@ test_equal(lst_digi* a, std::list<DIGI>& b)
 int
 main(void)
 {
+#if TEST_USE_SRAND == 1
     srand(time(NULL));
+#endif
     const size_t iters = rand() % TEST_MAX_ITERS;
     for(size_t i = 0; i < iters; i++)
     {
@@ -38,7 +42,10 @@ main(void)
             lst_digi_push_back(&a, digi_init(value));
             b.push_back(DIGI{value});
         }
-#define LIST X(PUSH_BACK) X(PUSH_FRONT) X(TOTAL)
+#define LIST          \
+        X(PUSH_BACK)  \
+        X(PUSH_FRONT) \
+        X(TOTAL)
 #define X(name) name,
         enum { LIST };
 #undef X
@@ -69,5 +76,5 @@ main(void)
         test_equal(&a, b);
         lst_digi_free(&a);
     }
-    printf("%s: PASSED\n", __FILE__);
+    TEST_PASS(__FILE__);
 }

@@ -1,8 +1,11 @@
 #include "test.h"
 
+#include "digi.cc"
+
 #include <str.h>
 
 #include <string>
+#include <algorithm>
 
 static char*
 create_test_string(size_t size)
@@ -35,9 +38,12 @@ char_compare(const void* a, const void* b)
     return *aa > *bb;
 }
 
-int main(void)
+int
+main(void)
 {
+#if TEST_USE_SRAND == 1
     srand(time(NULL));
+#endif
     const size_t iters = rand() % TEST_MAX_ITERS;
     for(size_t i = 0; i < iters; i++)
     {
@@ -290,5 +296,5 @@ int main(void)
             free(base);
         }
     }
-    printf("%s: PASSED\n", __FILE__);
+    TEST_PASS(__FILE__);
 }

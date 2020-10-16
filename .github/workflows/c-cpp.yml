@@ -15,50 +15,54 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: LIST CPU
+      run:
+        lscpu
+
     - name: O0
       run:
-        make LONG=1 O0=1
+        make -j9 LONG=1 O0=1
 
     - name: O1
       run:
-        make LONG=1 O1=1
+        make -j9 LONG=1 O1=1
 
     - name: O2
       run:
-        make LONG=1 O2=1
+        make -j9 LONG=1 O2=1
 
     - name: O3
       run:
-        make LONG=1 O3=1
+        make -j9 LONG=1 O3=1
 
     - name: Og
       run:
-        make LONG=1 Og=1
+        make -j9 LONG=1 Og=1
 
     - name: Ofast
       run:
-        make LONG=1 Ofast=1
+        make -j9 LONG=1 Ofast=1
 
     - name: O0 (SANITIZE=0)
       run:
-        make LONG=1 O0=1 SANITIZE=0
+        make -j9 LONG=1 O0=1 SANITIZE=0
 
     - name: O1 (SANITIZE=0)
       run:
-        make LONG=1 O1=1 SANITIZE=0
+        make -j9 LONG=1 O1=1 SANITIZE=0
 
     - name: O2 (SANITIZE=0)
       run:
-        make LONG=1 O2=1 SANITIZE=0
+        make -j9 LONG=1 O2=1 SANITIZE=0
 
     - name: O3 (SANITIZE=0)
       run:
-        make LONG=1 O3=1 SANITIZE=0
+        make -j9 LONG=1 O3=1 SANITIZE=0
 
     - name: Og (SANITIZE=0)
       run:
-        make LONG=1 Og=1 SANITIZE=0
+        make -j9 LONG=1 Og=1 SANITIZE=0
 
     - name: Ofast (SANITIZE=0)
       run:
-        make LONG=1 Ofast=1 SANITIZE=0
+        make -j9 LONG=1 Ofast=1 SANITIZE=0
