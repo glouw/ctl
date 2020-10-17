@@ -183,13 +183,10 @@ CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
 {
     static CTL_T zero;
     if(size != self->size)
-    {
         while(self->size != size)
-            if(size < self->size)
-                CTL_IMPL(CTL_A, pop_back)(self);
-            else
-                CTL_IMPL(CTL_A, push_back)(self, self->init_default ? self->init_default() : zero);
-    }
+            (size < self->size)
+                ? CTL_IMPL(CTL_A, pop_back)(self)
+                : CTL_IMPL(CTL_A, push_back)(self, self->init_default ? self->init_default() : zero);
 }
 
 static inline void
