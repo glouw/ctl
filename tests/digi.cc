@@ -51,7 +51,7 @@ struct DIGI
 {
     int* value;
 
-    DIGI(int value): value { new int {value} }
+    DIGI(int _value): value { new int {_value} }
     {
     }
     DIGI(): DIGI(0)

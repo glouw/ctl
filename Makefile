@@ -4,6 +4,7 @@ CXX = g++ -std=c++17
 VERBOSE = 0
 LONG = 0
 SANITIZE = 1
+SRAND = 1
 
 O0 = 0
 O1 = 0
@@ -13,10 +14,14 @@ Og = 0
 Ofast = 0
 
 CFLAGS  = -Ictl
-CFLAGS += -Wall -Wextra -Wpedantic -Wfatal-errors
-CFLAGS += -Werror
+CFLAGS += -Wall -Wextra -Wpedantic -Wfatal-errors -Wshadow
 CFLAGS += -march=native
 CFLAGS += -g
+
+ifeq (1, $(LONG))
+CFLAGS += -Werror
+CFLAGS += -DLONG
+endif
 
 ifeq (1, $(SANITIZE))
 CFLAGS += -fsanitize=address -fsanitize=undefined
@@ -50,8 +55,8 @@ ifeq (1, $(VERBOSE))
 CFLAGS += -DVERBOSE
 endif
 
-ifeq (1, $(LONG))
-CFLAGS += -DLONG
+ifeq (1, $(SRAND))
+CFLAGS += -DSRAND
 endif
 
 define expand
@@ -62,7 +67,7 @@ BINS = a b c d e
 
 # RUN TESTS.
 test: tc99 tlst tstr tvec
-	$(foreach bin,$(BINS),./$(bin);)
+	$(foreach bin,$(BINS),./$(bin) &&) exit 0
 	@rm -f $(BINS)
 	@$(CC) --version
 	@$(CXX) --version
@@ -81,10 +86,10 @@ tstr:
 tvec:
 	$(CXX) $(CFLAGS) tests/test_vec.cc -o e
 
-# EXPAND TEMPLATES (WITH INT).
-vec:
-	$(call expand,$@,-DCTL_T=int)
+# EXPAND TEMPLATES (CTL_T DEFAULTED TO INT).
 str:
 	$(call expand,$@)
 lst:
+	$(call expand,$@,-DCTL_T=int)
+vec:
 	$(call expand,$@,-DCTL_T=int)

@@ -1,5 +1,4 @@
-#ifndef __CTL_STR_H__
-#define __CTL_STR_H__
+#pragma once
 
 #ifdef CTL_T
 #error "CONTAINER <STR> DOES NOT ACCEPT TEMPLATE TYPE `CTL_T`"
@@ -162,5 +161,3 @@ str_compare(str* self, const char* s)
 {
     return strcmp(str_c_str(self), s);
 }
-
-#endif

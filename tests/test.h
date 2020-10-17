@@ -20,5 +20,3 @@
 #define TEST_SIGN(a) ((a < 0) ? (-1) : (a > 0) ? (1) : (0))
 
 #define TEST_PASS(f) printf("%s: PASSED\n", f)
-
-#define TEST_USE_SRAND (1)

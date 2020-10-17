@@ -47,7 +47,7 @@ test_equal(vec_digi* a, std::vector<DIGI>& b)
 int
 main(void)
 {
-#if TEST_USE_SRAND == 1
+#ifdef SRAND
     srand(time(NULL));
 #endif
     const size_t iters = rand() % TEST_MAX_ITERS;
@@ -69,7 +69,7 @@ main(void)
             // INIT WITH GROWTH.
             if(j == 1)
             {
-                for(size_t i = 0; i < size; i++)
+                for(size_t pushes = 0; pushes < size; pushes++)
                 {
                     const int value = rand() % INT_MAX;
                     vec_digi_push_back(&a, digi_init(value));

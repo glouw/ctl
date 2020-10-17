@@ -1,5 +1,4 @@
-#ifndef __CTL_H__
-#define __CTL_H__
+#pragma once
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -13,13 +12,13 @@
 
 #define CTL_IMPL(container, name) CTL_PASTE(container, CTL_PASTE(_, name))
 
-#define CTL_FOR(it, ...) while(!it.done) { __VA_ARGS__ it.step(&it); }
+#define CTL_FOR(it, ...) while(!it.done) { __VA_ARGS__ it.step(&it); }; (void) 0
 
 #define CTL_MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 
 #define CTL_LEN(a) (sizeof(a) / sizeof(*a))
 
-// BUILT IN TYPES
+// BUILT IN TYPES.
 #define char_init_default     (NULL)
 #define char_copy             (NULL)
 #define char_free             (NULL)
@@ -35,5 +34,3 @@
 #define double_init_default   (NULL)
 #define double_copy           (NULL)
 #define double_free           (NULL)
-
-#endif

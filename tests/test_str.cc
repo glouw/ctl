@@ -41,7 +41,7 @@ char_compare(const void* a, const void* b)
 int
 main(void)
 {
-#if TEST_USE_SRAND == 1
+#ifdef SRAND
     srand(time(NULL));
 #endif
     const size_t iters = rand() % TEST_MAX_ITERS;
@@ -49,9 +49,10 @@ main(void)
     {
         for(size_t j = 0; j < 2; j++)
         {
-            size_t size_a = rand() % TEST_MAX_SIZE;
-            if(size_a < TEST_MIN_STR_SIZE) size_a = TEST_MIN_STR_SIZE;
-            char* base = create_test_string(size_a);
+            size_t str_size = rand() % TEST_MAX_SIZE;
+            if(str_size < TEST_MIN_STR_SIZE)
+                str_size = TEST_MIN_STR_SIZE;
+            char* base = create_test_string(str_size);
             str a;
             std::string b;
             // INIT DIRECTLY.
@@ -64,7 +65,7 @@ main(void)
             if(j == 1)
             {
                 a = str_create("");
-                for(size_t k = 0; k < size_a; k++)
+                for(size_t k = 0; k < str_size; k++)
                 {
                     str_push_back(&a, base[k]);
                     b.push_back(base[k]);

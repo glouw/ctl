@@ -97,7 +97,7 @@ main(void)
     vec_int_it it0 = vec_int_it_each(&a);
     CTL_FOR(it0, {
         printf("%d\n", *it0.ref);
-    })
+    });
 #endif
     vec_int_free(&a);
     vec_str b = vec_str_init();
@@ -112,7 +112,7 @@ main(void)
         str* s = it1.ref;
         if(s->size > 0)
             printf("%s\n", str_c_str(s));
-    })
+    });
 #endif
     vec_str_free(&b);
     vec_person c = vec_person_init();
@@ -122,9 +122,8 @@ main(void)
 #ifdef VERBOSE
     vec_person_it it2 = vec_person_it_each(&c);
     CTL_FOR(it2, {
-        person* p = it2.ref;
-        puts(p->name.value);
-    })
+        puts(it2.ref->name.value);
+    });
 #endif
     vec_person d = vec_person_copy(&c);
     vec_person_free(&c);

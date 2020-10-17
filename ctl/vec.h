@@ -19,12 +19,10 @@ CTL_A;
 
 typedef struct CTL_I
 {
-    CTL_A* container;
     CTL_T* ref;
     void (*step)(struct CTL_I*);
     CTL_T* begin;
     CTL_T* end;
-    size_t index;
     size_t step_size;
     bool done;
 }
@@ -269,11 +267,10 @@ CTL_IMPL(CTL_I, step)(CTL_I* self)
 }
 
 static inline CTL_I
-CTL_IMPL(CTL_I, by)(CTL_A* container, CTL_T* begin, CTL_T* end, size_t step_size)
+CTL_IMPL(CTL_I, by)(CTL_T* begin, CTL_T* end, size_t step_size)
 {
     static CTL_I CTL_IZ;
     CTL_I self = CTL_IZ;
-    self.container = container;
     self.step = CTL_IMPL(CTL_I, step);
     self.begin = begin;
     self.end = end;
@@ -285,8 +282,7 @@ CTL_IMPL(CTL_I, by)(CTL_A* container, CTL_T* begin, CTL_T* end, size_t step_size
 static inline CTL_I
 CTL_IMPL(CTL_I, each)(CTL_A* a)
 {
-    size_t step_size = 1;
-    return CTL_IMPL(CTL_I, by)(a, CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), step_size);
+    return CTL_IMPL(CTL_I, by)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
 }
 
 #undef CTL_T
