@@ -85,48 +85,82 @@ person_copy(person* self)
 
 #include <stdio.h>
 
+static bool
+int_match(int* a, int* b)
+{
+    return *a == *b;
+}
+
 int
 main(void)
 {
-    vec_int a = vec_int_init();
-    vec_int_push_back(&a, 1);
-    vec_int_push_back(&a, 2);
-    vec_int_push_back(&a, 3);
-    vec_int_push_back(&a, 4);
+    {
+        vec_int a = vec_int_init();
+        vec_int_push_back(&a, 1);
+        vec_int_push_back(&a, 2);
+        vec_int_push_back(&a, 3);
+        vec_int_push_back(&a, 4);
 #ifdef VERBOSE
-    vec_int_it it0 = vec_int_it_each(&a);
-    CTL_FOR(it0, {
-        printf("%d\n", *it0.ref);
-    });
+        vec_int_it it0 = vec_int_it_each(&a);
+        CTL_FOR(it0, {
+            printf("%d\n", *it0.ref);
+        });
 #endif
-    vec_int_free(&a);
-    vec_str b = vec_str_init();
-    vec_str_push_back(&b, str_create("This"));
-    vec_str_push_back(&b, str_create("is"));
-    vec_str_push_back(&b, str_create("a"));
-    vec_str_push_back(&b, str_create("test"));
-    vec_str_resize(&b, 512);
+        vec_int_free(&a);
+    }{
+        vec_str b = vec_str_init();
+        vec_str_push_back(&b, str_create("This"));
+        vec_str_push_back(&b, str_create("is"));
+        vec_str_push_back(&b, str_create("a"));
+        vec_str_push_back(&b, str_create("test"));
+        vec_str_resize(&b, 512);
 #ifdef VERBOSE
-    vec_str_it it1 = vec_str_it_each(&b);
-    CTL_FOR(it1, {
-        str* s = it1.ref;
-        if(s->size > 0)
-            printf("%s\n", str_c_str(s));
-    });
+        vec_str_it it = vec_str_it_each(&b);
+        CTL_FOR(it, {
+            str* s = it.ref;
+            if(s->size > 0)
+                printf("%s\n", str_c_str(s));
+        });
 #endif
-    vec_str_free(&b);
-    vec_person c = vec_person_init();
-    vec_person_push_back(&c, person_init(128, "GUSTAV", "LOUW"));
-    vec_person_push_back(&c, person_init(256, "SUSAN", "YU"));
-    vec_person_push_back(&c, person_init(512, "JACO", "LOUW"));
+        vec_str_free(&b);
+    }{
+        vec_person c = vec_person_init();
+        vec_person_push_back(&c, person_init(128, "GUSTAV", "LOUW"));
+        vec_person_push_back(&c, person_init(256, "SUSAN", "YU"));
+        vec_person_push_back(&c, person_init(512, "JACO", "LOUW"));
 #ifdef VERBOSE
-    vec_person_it it2 = vec_person_it_each(&c);
-    CTL_FOR(it2, {
-        puts(it2.ref->name.value);
-    });
+        vec_person_it it = vec_person_it_each(&c);
+        CTL_FOR(it, {
+            puts(it.ref->name.value);
+        });
 #endif
-    vec_person d = vec_person_copy(&c);
-    vec_person_free(&c);
-    vec_person_free(&d);
+        vec_person d = vec_person_copy(&c);
+        vec_person_free(&c);
+        vec_person_free(&d);
+    }{
+        lst_int a = lst_int_init();
+        lst_int_push_back(&a, 1);
+        lst_int_push_back(&a, 1);
+        lst_int_push_back(&a, 1);
+        lst_int_push_back(&a, 2);
+        lst_int_push_back(&a, 3);
+        lst_int_push_back(&a, 3);
+        lst_int_push_back(&a, 4);
+        lst_int_push_back(&a, 6);
+        lst_int_push_back(&a, 6);
+        lst_int_push_back(&a, 6);
+        lst_int_push_back(&a, 6);
+        lst_int_push_back(&a, 6);
+        lst_int_push_back(&a, 8);
+        lst_int_push_back(&a, 8);
+        lst_int_unique(&a, int_match);
+#ifdef VERBOSE
+        lst_int_it it = lst_int_it_each(&a);
+        CTL_FOR(it, {
+            printf("%d\n", *it.ref);
+        });
+#endif
+        lst_int_free(&a);
+    }
     TEST_PASS(__FILE__);
 }
