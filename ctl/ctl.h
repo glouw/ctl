@@ -18,7 +18,6 @@
 
 #define CTL_LEN(a) (sizeof(a) / sizeof(*a))
 
-// BUILT IN TYPES.
 #define char_init_default     (NULL)
 #define char_copy             (NULL)
 #define char_free             (NULL)

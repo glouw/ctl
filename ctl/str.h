@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef CTL_T
-#error "CONTAINER <STR> DOES NOT ACCEPT TEMPLATE TYPE `CTL_T`"
-#endif
-
 #include <ctl.h>
 
 #include <string.h>

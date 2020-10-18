@@ -25,6 +25,13 @@ test_equal(vec_digi* a, std::vector<DIGI>& b)
             index += 1;
         }
     }{
+        std::vector<DIGI>::iterator iter = b.begin();
+        vec_digi_it it = vec_digi_it_each(a);
+        CTL_FOR(it, {
+            assert(*it.ref->value == *iter->value);
+            iter++;
+        });
+    }{
         assert(a->capacity == b.capacity());
         assert(a->size == b.size());
         assert(vec_digi_empty(a) == b.empty());
@@ -50,24 +57,28 @@ main(void)
 #ifdef SRAND
     srand(time(NULL));
 #endif
-    const size_t iters = rand() % TEST_MAX_ITERS;
-    for(size_t i = 0; i < iters; i++)
+    const size_t loops = rand() % TEST_MAX_LOOPS;
+    for(size_t loop = 0; loop < loops; loop++)
     {
         size_t size = rand() % TEST_MAX_SIZE;
         if(size == 0)
             size = 1;
-        for(size_t j = 0; j < 2; j++)
+        enum
+        {
+            MODE_DIRECT,
+            MODE_GROWTH,
+            MODE_TOTAL
+        };
+        for(size_t mode = MODE_DIRECT; mode < MODE_TOTAL; mode++)
         {
             vec_digi a = vec_digi_init();
             std::vector<DIGI> b;
-            // INIT DIRECTLY.
-            if(j == 0)
+            if(mode == MODE_DIRECT)
             {
                 vec_digi_resize(&a, size);
                 b.resize(size);
             }
-            // INIT WITH GROWTH.
-            if(j == 1)
+            if(mode == MODE_GROWTH)
             {
                 for(size_t pushes = 0; pushes < size; pushes++)
                 {
@@ -76,44 +87,36 @@ main(void)
                     b.push_back(DIGI{value});
                 }
             }
-#define LIST             \
-        X(CLEAR)         \
-        X(ERASE)         \
-        X(RESIZE)        \
-        X(RESERVE)       \
-        X(SHRINK_TO_FIT) \
-        X(SORT)          \
-        X(COPY)          \
-        X(SWAP)          \
-        X(INSERT)        \
-        X(ASSIGN)        \
-        X(TOTAL)
-#define X(name) name,
-            enum { LIST };
-#undef X
-            size_t which = rand() % TOTAL;
-#ifdef VERBOSE
-#define X(name) #name,
-            const char* names[] = { LIST };
-#undef X
-            printf("-> %lu : %s\n", j, names[which]);
-#endif
-            switch(which)
+            enum
             {
-                case CLEAR:
+                TEST_CLEAR,
+                TEST_ERASE,
+                TEST_RESIZE,
+                TEST_RESERVE,
+                TEST_SHRINK_TO_FIT,
+                TEST_SORT,
+                TEST_COPY,
+                TEST_SWAP,
+                TEST_INSERT,
+                TEST_ASSIGN,
+                TEST_TOTAL,
+            };
+            switch(rand() % TEST_TOTAL)
+            {
+                case TEST_CLEAR:
                 {
                     b.clear();
                     vec_digi_clear(&a);
                     break;
                 }
-                case ERASE:
+                case TEST_ERASE:
                 {
                     const size_t index = rand() % a.size;
                     b.erase(b.begin() + index);
                     vec_digi_erase(&a, index);
                     break;
                 }
-                case INSERT:
+                case TEST_INSERT:
                 {
                     size_t amount = rand() % 512;
                     for(size_t count = 0; count < amount; count++)
@@ -125,33 +128,33 @@ main(void)
                     }
                     break;
                 }
-                case RESIZE:
+                case TEST_RESIZE:
                 {
                     const size_t resize = (size == 0) ? 0 : (rand() % (size * 3));
                     b.resize(resize);
                     vec_digi_resize(&a, resize);
                     break;
                 }
-                case RESERVE:
+                case TEST_RESERVE:
                 {
                     const size_t capacity = (a.capacity == 0) ? 0 : (rand() % (a.capacity * 2));
                     b.reserve(capacity);
                     vec_digi_reserve(&a, capacity);
                     break;
                 }
-                case SHRINK_TO_FIT:
+                case TEST_SHRINK_TO_FIT:
                 {
                     b.shrink_to_fit();
                     vec_digi_shrink_to_fit(&a);
                     break;
                 }
-                case SORT:
+                case TEST_SORT:
                 {
                     vec_digi_sort(&a, digi_compare);
                     std::sort(b.begin(), b.end());
                     break;
                 }
-                case COPY:
+                case TEST_COPY:
                 {
                     vec_digi aa = vec_digi_copy(&a);
                     std::vector<DIGI> bb = b;
@@ -159,7 +162,7 @@ main(void)
                     vec_digi_free(&aa);
                     break;
                 }
-                case ASSIGN:
+                case TEST_ASSIGN:
                 {
                     const int value = rand() % INT_MAX;
                     size_t assign_size = rand() % a.size;
@@ -169,7 +172,7 @@ main(void)
                     b.assign(assign_size, DIGI{value});
                     break;
                 }
-                case SWAP:
+                case TEST_SWAP:
                 {
                     vec_digi aa = vec_digi_copy(&a);
                     vec_digi aaa;

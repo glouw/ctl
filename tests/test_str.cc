@@ -7,6 +7,9 @@
 #include <string>
 #include <algorithm>
 
+#define TEST_MIN_STR_SIZE  (30)
+#define TEST_ALPHA_LETTERS (23)
+
 static char*
 create_test_string(size_t size)
 {
@@ -42,10 +45,16 @@ main(void)
 #ifdef SRAND
     srand(time(NULL));
 #endif
-    const size_t iters = rand() % TEST_MAX_ITERS;
-    for(size_t i = 0; i < iters; i++)
+    const size_t loops = rand() % TEST_MAX_LOOPS;
+    for(size_t loop = 0; loop < loops; loop++)
     {
-        for(size_t j = 0; j < 2; j++)
+        enum
+        {
+            MODE_DIRECT,
+            MODE_GROWTH,
+            MODE_TOTAL
+        };
+        for(size_t mode = MODE_DIRECT; mode < MODE_TOTAL; mode++)
         {
             size_t str_size = rand() % TEST_MAX_SIZE;
             if(str_size < TEST_MIN_STR_SIZE)
@@ -53,14 +62,12 @@ main(void)
             char* base = create_test_string(str_size);
             str a;
             std::string b;
-            // INIT DIRECTLY.
-            if(j == 0)
+            if(mode == MODE_DIRECT)
             {
                 a = str_create(base);
                 b = base;
             }
-            // INIT WITH GROWTH.
-            if(j == 1)
+            if(mode == MODE_GROWTH)
             {
                 a = str_create("");
                 for(size_t k = 0; k < str_size; k++)
@@ -69,42 +76,34 @@ main(void)
                     b.push_back(base[k]);
                 }
             }
-#define LIST X(APPEND)            \
-             X(C_STR)             \
-             X(CLEAR)             \
-             X(ERASE)             \
-             X(RESIZE)            \
-             X(RESERVE)           \
-             X(SHRINK_TO_FIT)     \
-             X(SORT)              \
-             X(COPY)              \
-             X(SWAP)              \
-             X(INSERT)            \
-             X(ASSIGN)            \
-             X(REPLACE)           \
-             X(FIND)              \
-             X(RFIND)             \
-             X(FIND_FIRST_OF)     \
-             X(FIND_LAST_OF)      \
-             X(FIND_FIRST_NOT_OF) \
-             X(FIND_LAST_NOT_OF)  \
-             X(SUBSTR)            \
-             X(COMPARE)           \
-             X(TOTAL)
-#define X(name) name,
-            enum { LIST };
-#undef X
-            size_t which = rand() % TOTAL;
-#ifdef VERBOSE
-#define X(name) #name,
-            const char* names[] = { LIST };
-#undef X
-            printf("-> %lu : %s\n", j, names[which]);
-#endif
-            switch(which)
+            enum
             {
-                // NEW TO STRING.
-                case APPEND:
+                TEST_APPEND,
+                TEST_C_STR,
+                TEST_CLEAR,
+                TEST_ERASE,
+                TEST_RESIZE,
+                TEST_RESERVE,
+                TEST_SHRINK_TO_FIT,
+                TEST_SORT,
+                TEST_COPY,
+                TEST_SWAP,
+                TEST_INSERT,
+                TEST_ASSIGN,
+                TEST_REPLACE,
+                TEST_FIND,
+                TEST_RFIND,
+                TEST_FIND_FIRST_OF,
+                TEST_FIND_LAST_OF,
+                TEST_FIND_FIRST_NOT_OF,
+                TEST_FIND_LAST_NOT_OF,
+                TEST_SUBSTR,
+                TEST_COMPARE,
+                TEST_TOTAL
+            };
+            switch(rand() % TEST_TOTAL)
+            {
+                case TEST_APPEND:
                 {
                     char* temp = create_test_string(rand() % 256);
                     str_append(&a, temp);
@@ -112,13 +111,13 @@ main(void)
                     free(temp);
                     break;
                 }
-                case C_STR:
+                case TEST_C_STR:
                 {
                     assert(strlen(str_c_str(&a)));
                     assert(str_c_str(&a) == str_data(&a));
                     break;
                 }
-                case REPLACE:
+                case TEST_REPLACE:
                 {
                     char* temp = create_test_string(rand() % a.size);
                     const size_t index = rand() % a.size;
@@ -128,7 +127,7 @@ main(void)
                     free(temp);
                     break;
                 }
-                case FIND:
+                case TEST_FIND:
                 {
                     const size_t size = rand() % 3;
                     char* temp = create_test_string(size);
@@ -136,14 +135,14 @@ main(void)
                     free(temp);
                     break;
                 }
-                case RFIND:
+                case TEST_RFIND:
                 {
                     char* temp = create_test_string(rand() % 3);
                     assert(str_rfind(&a, temp) == b.rfind(temp));
                     free(temp);
                     break;
                 }
-                case FIND_FIRST_OF:
+                case TEST_FIND_FIRST_OF:
                 {
                     const size_t size = rand() % 3;
                     char* temp = create_test_string(size);
@@ -151,7 +150,7 @@ main(void)
                     free(temp);
                     break;
                 }
-                case FIND_LAST_OF:
+                case TEST_FIND_LAST_OF:
                 {
                     const size_t size = rand() % 3;
                     char* temp = create_test_string(size);
@@ -159,7 +158,7 @@ main(void)
                     free(temp);
                     break;
                 }
-                case FIND_FIRST_NOT_OF:
+                case TEST_FIND_FIRST_NOT_OF:
                 {
                     const size_t size = rand() % 192;
                     char* temp = create_test_string(size);
@@ -167,7 +166,7 @@ main(void)
                     free(temp);
                     break;
                 }
-                case FIND_LAST_NOT_OF:
+                case TEST_FIND_LAST_NOT_OF:
                 {
                     const size_t size = rand() % 192;
                     char* temp = create_test_string(size);
@@ -175,7 +174,7 @@ main(void)
                     free(temp);
                     break;
                 }
-                case SUBSTR:
+                case TEST_SUBSTR:
                 {
                     const size_t index = rand() % a.size;
                     const size_t size = rand() % (a.size - index);
@@ -188,7 +187,7 @@ main(void)
                     }
                     break;
                 }
-                case COMPARE:
+                case TEST_COMPARE:
                 {
                     size_t size = rand() % 512;
                     char* _ta = create_test_string(size);
@@ -207,21 +206,20 @@ main(void)
                     free(_tb);
                     break;
                 }
-                // INHERITED FROM VECTOR.
-                case CLEAR:
+                case TEST_CLEAR:
                 {
                     str_clear(&a);
                     b.clear();
                     break;
                 }
-                case ERASE:
+                case TEST_ERASE:
                 {
                     const size_t index = rand() % a.size;
                     b.erase(b.begin() + index);
                     str_erase(&a, index);
                     break;
                 }
-                case INSERT:
+                case TEST_INSERT:
                 {
                     size_t letters = rand() % 512;
                     for(size_t count = 0; count < letters; count++)
@@ -233,33 +231,33 @@ main(void)
                     }
                     break;
                 }
-                case RESIZE:
+                case TEST_RESIZE:
                 {
                     const size_t resize = (a.size == 0) ? 0 : (rand() % (a.size * 3));
                     b.resize(resize);
                     str_resize(&a, resize);
                     break;
                 }
-                case RESERVE:
+                case TEST_RESERVE:
                 {
                     const size_t capacity = (a.capacity == 0) ? 0 : (rand() % (a.capacity * 2));
                     b.reserve(capacity);
                     str_reserve(&a, capacity);
                     break;
                 }
-                case SHRINK_TO_FIT:
+                case TEST_SHRINK_TO_FIT:
                 {
                     b.shrink_to_fit();
                     str_shrink_to_fit(&a);
                     break;
                 }
-                case SORT:
+                case TEST_SORT:
                 {
                     str_sort(&a, char_compare);
                     std::sort(b.begin(), b.end());
                     break;
                 }
-                case COPY:
+                case TEST_COPY:
                 {
                     str ca = str_copy(&a);
                     std::string cb = b;
@@ -267,7 +265,7 @@ main(void)
                     str_free(&ca);
                     break;
                 }
-                case ASSIGN:
+                case TEST_ASSIGN:
                 {
                     const char value = rand() % TEST_ALPHA_LETTERS;
                     size_t assign_size = rand() % a.size;
@@ -277,7 +275,7 @@ main(void)
                     b.assign(assign_size, value);
                     break;
                 }
-                case SWAP:
+                case TEST_SWAP:
                 {
                     str aa = str_copy(&a);
                     str aaa;

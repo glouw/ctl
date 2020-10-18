@@ -127,16 +127,56 @@ CTL_IMPL(CTL_A, push_front)(CTL_A* self, CTL_T value)
 }
 
 static inline void
-CTL_IMPL(CTL_A, erase)(CTL_A* self, CTL_B* node)
+CTL_IMPL(CTL_A, disconnect)(CTL_A* self, CTL_B* node)
 {
     if(node == self->tail) self->tail = self->tail->prev;
     if(node == self->head) self->head = self->head->next;
     if(node->prev) node->prev->next = node->next;
     if(node->next) node->next->prev = node->prev;
+    node->prev = node->next = NULL;
+    self->size -= 1;
+}
+
+static inline void
+CTL_IMPL(CTL_A, connect)(CTL_A* self, CTL_B* position, CTL_B* node, bool before)
+{
+    if(before)
+    {
+        node->next = position;
+        node->prev = position->prev;
+        if(position->prev)
+            position->prev->next = node;
+        position->prev = node;
+        if(position == self->head)
+            self->head = node;
+    }
+    else // AFTER.
+    {
+        node->prev = position;
+        node->next = position->next;
+        if(position->next)
+            position->next->prev = node;
+        position->next = node;
+        if(position == self->tail)
+            self->tail = node;
+    }
+    self->size += 1;
+}
+
+static inline void
+CTL_IMPL(CTL_A, transfer)(CTL_A* self, CTL_A* other, CTL_B* position, CTL_B* node, bool before)
+{
+    CTL_IMPL(CTL_A, disconnect)(other, node);
+    CTL_IMPL(CTL_A, connect)(self, position, node, before);
+}
+
+static inline void
+CTL_IMPL(CTL_A, erase)(CTL_A* self, CTL_B* node)
+{
+    CTL_IMPL(CTL_A, disconnect)(self, node);
     if(self->free)
         self->free(&node->value);
     free(node);
-    self->size -= 1;
 }
 
 static inline void
@@ -155,14 +195,7 @@ static inline void
 CTL_IMPL(CTL_A, insert)(CTL_A* self, CTL_B* position, CTL_T value)
 {
     CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    if(position->prev)
-        position->prev->next = node;
-    node->next = position;
-    node->prev = position->prev;
-    position->prev = node;
-    if(position == self->head)
-        self->head = node;
-    self->size += 1;
+    CTL_IMPL(CTL_A, connect)(self, position, node, true);
 }
 
 static inline void
@@ -183,21 +216,10 @@ CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
 {
     static CTL_T zero;
     if(size != CTL_IMPL(CTL_A, size)(self))
-    {
         while(size != CTL_IMPL(CTL_A, size)(self))
-            if(size < CTL_IMPL(CTL_A, size)(self))
-                CTL_IMPL(CTL_A, pop_back)(self);
-            else
-                CTL_IMPL(CTL_A, push_back)(self, self->init_default ? self->init_default() : zero);
-    }
-}
-
-static inline void
-CTL_IMPL(CTL_A, assign)(CTL_A* self, size_t size, CTL_T value)
-{
-    CTL_IMPL(CTL_A, clear)(self); // XXX: MEMORY SHOULD NOT BE CLEARED.
-    for(size_t i = 0; i < size; i++)
-        CTL_IMPL(CTL_A, push_back)(self, i == 0 ? value : self->copy ? self->copy(&value) : value);
+            (size < CTL_IMPL(CTL_A, size)(self))
+                ? CTL_IMPL(CTL_A, pop_back)(self)
+                : CTL_IMPL(CTL_A, push_back)(self, self->init_default ? self->init_default() : zero);
 }
 
 static inline void
@@ -243,6 +265,7 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
     self.end = end;
     self.step_size = step_size;
     self.ref = &self.node->value;
+    self.done = begin == end;
     return self;
 }
 
@@ -250,6 +273,20 @@ static inline CTL_I
 CTL_IMPL(CTL_I, each)(CTL_A* a)
 {
     return CTL_IMPL(CTL_I, by)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
+}
+
+static inline void
+CTL_IMPL(CTL_A, assign)(CTL_A* self, size_t size, CTL_T value)
+{
+    CTL_IMPL(CTL_A, resize)(self, size);
+    size_t index = 0;
+    CTL_I it = CTL_IMPL(CTL_I, each)(self);
+    CTL_FOR(it, {
+        if(self->free)
+            self->free(it.ref);
+        *it.ref = (index == 0) ? value : self->copy ? self->copy(&value) : value;
+        index += 1;
+    });
 }
 
 static inline void
@@ -283,8 +320,7 @@ CTL_IMPL(CTL_A, splice)(CTL_A* self, CTL_B* position, CTL_A* other)
 {
     CTL_I it = CTL_IMPL(CTL_I, each)(other);
     CTL_FOR(it, {
-        CTL_IMPL(CTL_A, insert)(self, position, self->copy ? self->copy(&it.node->value) : it.node->value); // XXX. MUST MAINTAIN ALLOCATION.
-        CTL_IMPL(CTL_A, erase)(other, it.node);
+        CTL_IMPL(CTL_A, transfer)(self, other, position, it.node, true);
     });
 }
 
@@ -295,22 +331,11 @@ CTL_IMPL(CTL_A, merge)(CTL_A* self, CTL_A* other, int compare(CTL_T*, CTL_T*))
         CTL_IMPL(CTL_A, swap)(self, other);
     else
     {
-        CTL_B* node = self->head;
-        while(node)
-        {
+        for(CTL_B* node = self->head; node; node = node->next)
             while(!CTL_IMPL(CTL_A, empty)(other) && compare(&node->value, &other->head->value))
-            {
-                CTL_IMPL(CTL_A, insert)(self, node, self->copy ? self->copy(&other->head->value) : other->head->value); // XXX. MUST MAINTAIN ALLOCATION
-                CTL_IMPL(CTL_A, pop_front)(other);
-            }
-            node = node->next;
-        }
-        // REMAINDER - APPENDS TO TAIL SINCE INSERT CAN ONLY PREPEND NODES.
-        while(!CTL_IMPL(CTL_A, empty)(other))
-        {
-            CTL_IMPL(CTL_A, push_back)(self, self->copy ? self->copy(&other->head->value) : other->head->value);
-            CTL_IMPL(CTL_A, pop_front)(other);
-        }
+                CTL_IMPL(CTL_A, transfer)(self, other, node, other->head, true);
+        while(!CTL_IMPL(CTL_A, empty)(other)) // REMAINDER.
+            CTL_IMPL(CTL_A, transfer)(self, other, self->tail, other->head, false);
     }
 }
 
@@ -341,7 +366,7 @@ CTL_IMPL(CTL_A, sort)(CTL_A* self, int compare(CTL_T*, CTL_T*))
         for(size_t i = 0; i < CTL_LEN(temp); i++)
             temp[i] = CTL_IMPL(CTL_A, init)();
         CTL_A* fill = &temp[0];
-        CTL_A* counter;
+        CTL_A* counter = NULL;
         do
         {
             CTL_IMPL(CTL_A, push_front)(&carry, self->copy ? self->copy(&self->head->value) : self->head->value);

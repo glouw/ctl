@@ -235,11 +235,7 @@ CTL_IMPL(CTL_A, erase)(CTL_A* self, size_t index)
 static inline void
 CTL_IMPL(CTL_A, sort)(CTL_A* self, int (*compare)(CTL_T*, CTL_T*))
 {
-    qsort(
-        self->value,
-        self->size,
-        sizeof(CTL_T),
-        (__compar_fn_t) compare); // ASSUME CASTS TO (CONST VOID*, CONST VOID*) ARE SAFE.
+    qsort(self->value, self->size, sizeof(CTL_T), (__compar_fn_t) compare); // ASSUME POINTER FUNCTION CAST IS SAFE.
 }
 
 static inline CTL_A
@@ -280,6 +276,7 @@ CTL_IMPL(CTL_I, by)(CTL_T* begin, CTL_T* end, size_t step_size)
     self.end = end;
     self.step_size = step_size;
     self.ref = begin;
+    self.done = begin >= end;
     return self;
 }
 

@@ -44,7 +44,7 @@ DIGI_is_odd(DIGI& d)
 }
 
 static void
-setup_lists(lst_digi* a, std::list<DIGI>& b, size_t size, int* max)
+setup_lists(lst_digi* a, std::list<DIGI>& b, size_t size, int* max_value)
 {
     *a = lst_digi_init();
     size_t min = 2;
@@ -52,12 +52,23 @@ setup_lists(lst_digi* a, std::list<DIGI>& b, size_t size, int* max)
         size = min;
     for(size_t pushes = 0; pushes < size; pushes++)
     {
-        int value = rand() % (INT_MAX - 1);
-        if(max && value > *max)
-            *max = value;
+        int value = rand() % (INT_MAX - 1); // SEE COMMENT IN CASE MERGE.
+        if(max_value && value > *max_value)
+            *max_value = value;
         lst_digi_push_back(a, digi_init(value));
         b.push_back(DIGI{value});
     }
+}
+
+static uint64_t
+xor_lst(lst_digi* a)
+{
+    uint64_t xorred = 0x0;
+    lst_digi_it it = lst_digi_it_each(a);
+    CTL_FOR(it, {
+        xorred ^= (uint64_t) it.ref;
+    });
+    return xorred;
 }
 
 int
@@ -66,72 +77,64 @@ main(void)
 #ifdef SRAND
     srand(time(NULL));
 #endif
-    const size_t iters = rand() % TEST_MAX_ITERS;
-    for(size_t i = 0; i < iters; i++)
+    const size_t loops = rand() % TEST_MAX_LOOPS;
+    for(size_t loop = 0; loop < loops; loop++)
     {
         lst_digi a;
         std::list<DIGI> b;
-        int max = 0;
-        setup_lists(&a, b, rand() % TEST_MAX_SIZE, &max);
-#define LIST          \
-        X(PUSH_BACK)  \
-        X(PUSH_FRONT) \
-        X(POP_BACK)   \
-        X(POP_FRONT)  \
-        X(ERASE)      \
-        X(INSERT)     \
-        X(CLEAR)      \
-        X(RESIZE)     \
-        X(ASSIGN)     \
-        X(SWAP)       \
-        X(COPY)       \
-        X(REVERSE)    \
-        X(REMOVE_IF)  \
-        X(SPLICE)     \
-        X(MERGE)      \
-        X(EQUAL)      \
-        X(SORT)       \
-        X(UNIQUE)     \
-        X(TOTAL)
-#define X(name) name,
-        enum { LIST };
-#undef X
-        size_t which = rand() % TOTAL;
-#ifdef VERBOSE
-#define X(name) #name,
-        const char* names[] = { LIST };
-#undef X
-        printf("-> %s\n", names[which]);
-#endif
-        switch(which)
+        int max_value = 0;
+        setup_lists(&a, b, rand() % TEST_MAX_SIZE, &max_value);
+        enum
         {
-            case PUSH_FRONT:
+            TEST_PUSH_BACK,
+            TEST_PUSH_FRONT,
+            TEST_POP_BACK,
+            TEST_POP_FRONT,
+            TEST_ERASE,
+            TEST_INSERT,
+            TEST_CLEAR,
+            TEST_RESIZE,
+            TEST_ASSIGN,
+            TEST_SWAP,
+            TEST_COPY,
+            TEST_REVERSE,
+            TEST_REMOVE_IF,
+            TEST_SPLICE,
+            TEST_MERGE,
+            TEST_EQUAL,
+            TEST_SORT,
+            TEST_UNIQUE,
+            TEST_TOTAL
+        };
+        switch(rand() % TEST_TOTAL)
+        {
+            case TEST_PUSH_FRONT: // POINTER XOR ENSURE VALUE LOCATION DOES NOT CHANGE.
             {
                 int value = rand() % INT_MAX;
                 lst_digi_push_front(&a, digi_init(value));
                 b.push_front(DIGI{value});
                 break;
             }
-            case PUSH_BACK:
+            case TEST_PUSH_BACK:
             {
                 int value = rand() % INT_MAX;
                 lst_digi_push_back(&a, digi_init(value));
                 b.push_back(DIGI{value});
                 break;
             }
-            case POP_FRONT:
+            case TEST_POP_FRONT:
             {
                 lst_digi_pop_front(&a);
                 b.pop_front();
                 break;
             }
-            case POP_BACK:
+            case TEST_POP_BACK:
             {
                 lst_digi_pop_back(&a);
                 b.pop_back();
                 break;
             }
-            case ERASE:
+            case TEST_ERASE:
             {
                 size_t index = rand() % a.size;
                 size_t current = 0;
@@ -150,7 +153,7 @@ main(void)
                 });
                 break;
             }
-            case INSERT:
+            case TEST_INSERT:
             {
                 size_t index = rand() % a.size;
                 int value = rand() % INT_MAX;
@@ -170,20 +173,20 @@ main(void)
                 });
                 break;
             }
-            case CLEAR:
+            case TEST_CLEAR:
             {
                 lst_digi_clear(&a);
                 b.clear();
                 break;
             }
-            case RESIZE:
+            case TEST_RESIZE:
             {
                 size_t resize = rand() % (3 * a.size);
                 lst_digi_resize(&a, resize);
                 b.resize(resize);
                 break;
             }
-            case ASSIGN:
+            case TEST_ASSIGN:
             {
                 size_t width = rand() % a.size;
                 if(width > 2)
@@ -194,7 +197,7 @@ main(void)
                 }
                 break;
             }
-            case SWAP:
+            case TEST_SWAP:
             {
                 lst_digi aa = lst_digi_copy(&a);
                 lst_digi aaa;
@@ -206,7 +209,7 @@ main(void)
                 lst_digi_free(&aaa);
                 break;
             }
-            case COPY:
+            case TEST_COPY:
             {
                 lst_digi aa = lst_digi_copy(&a);
                 std::list<DIGI> bb = b;
@@ -214,19 +217,19 @@ main(void)
                 lst_digi_free(&aa);
                 break;
             }
-            case REVERSE:
+            case TEST_REVERSE:
             {
                 lst_digi_reverse(&a);
                 b.reverse();
                 break;
             }
-            case REMOVE_IF:
+            case TEST_REMOVE_IF:
             {
                 lst_digi_remove_if(&a, digi_is_odd);
                 b.remove_if(DIGI_is_odd);
                 break;
             }
-            case SPLICE:
+            case TEST_SPLICE:
             {
                 size_t index = rand() % a.size;
                 size_t current = 0;
@@ -243,10 +246,13 @@ main(void)
                 std::list<DIGI> bb;
                 setup_lists(&aa, bb, rand() % TEST_MAX_SIZE, NULL);
                 b.splice(iter, bb);
+                uint64_t xa = xor_lst(&a) ^ xor_lst(&aa);
                 lst_digi_splice(&a, it.node, &aa);
+                uint64_t xb = xor_lst(&a);
+                assert(xa == xb);
                 break;
             }
-            case MERGE:
+            case TEST_MERGE:
             {
                 lst_digi aa = lst_digi_init();
                 std::list<DIGI> bb;
@@ -254,19 +260,21 @@ main(void)
                 int total = 0;
                 for(size_t pushes = 0; pushes < size; pushes++)
                 {
-                    // MAX + 1 ENSURES MERGE CAN APPEND TO TAIL.
-                    int value = rand() % 128;
+                    int value = rand() % 128; // MAX + 1 ENSURES MERGE CAN APPEND TO TAIL.
                     total += value;
                     if(pushes == (size - 1))
-                        total = max + 1;
+                        total = max_value + 1;
                     lst_digi_push_back(&aa, digi_init(total));
                     bb.push_back(DIGI{total});
                 }
-                lst_digi_merge(&a, &aa, digi_compare);
                 b.merge(bb);
+                uint64_t xa = xor_lst(&a) ^ xor_lst(&aa);
+                lst_digi_merge(&a, &aa, digi_compare);
+                uint64_t xb = xor_lst(&a);
+                assert(xa == xb);
                 break;
             }
-            case EQUAL:
+            case TEST_EQUAL:
             {
                 lst_digi aa = lst_digi_copy(&a);
                 std::list<DIGI> bb = b;
@@ -275,13 +283,13 @@ main(void)
                 lst_digi_free(&aa);
                 break;
             }
-            case SORT:
+            case TEST_SORT:
             {
                 lst_digi_sort(&a, digi_compare);
                 b.sort();
                 break;
             }
-            case UNIQUE:
+            case TEST_UNIQUE:
             {
                 lst_digi_unique(&a, digi_match);
                 b.unique();
