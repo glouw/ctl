@@ -32,11 +32,9 @@ digi_free(digi* self)
 }
 
 static inline int
-digi_compare(const void* a, const void* b)
+digi_compare(digi* a, digi* b)
 {
-    digi* aa = (digi*) a;
-    digi* bb = (digi*) b;
-    return *bb->value < *aa->value;
+    return *b->value < *a->value;
 }
 
 static inline digi
@@ -84,8 +82,12 @@ struct DIGI
         value = a.value;
         a.value = nullptr;
     }
-    bool operator<(const DIGI& a)
+    bool operator<(const DIGI& a) const
     {
         return *value < *a.value;
+    }
+    bool operator==(const DIGI& a) const
+    {
+        return *value == *a.value;
     }
 };

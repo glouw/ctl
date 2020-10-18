@@ -31,11 +31,9 @@ test_equal(str* a, std::string& b)
 }
 
 static int
-char_compare(const void* a, const void* b)
+char_compare(char* a, char* b)
 {
-    char* aa = (char*) a;
-    char* bb = (char*) b;
-    return *aa > *bb;
+    return *a > *b;
 }
 
 int

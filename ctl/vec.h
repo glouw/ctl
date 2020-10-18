@@ -233,9 +233,13 @@ CTL_IMPL(CTL_A, erase)(CTL_A* self, size_t index)
 }
 
 static inline void
-CTL_IMPL(CTL_A, sort)(CTL_A* self, int (*compare)(const void*, const void*))
+CTL_IMPL(CTL_A, sort)(CTL_A* self, int (*compare)(CTL_T*, CTL_T*))
 {
-    qsort(self->value, self->size, sizeof(CTL_T), compare);
+    qsort(
+        self->value,
+        self->size,
+        sizeof(CTL_T),
+        (__compar_fn_t) compare); // ASSUME CASTS TO (CONST VOID*, CONST VOID*) ARE SAFE.
 }
 
 static inline CTL_A

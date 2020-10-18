@@ -195,7 +195,7 @@ CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
 static inline void
 CTL_IMPL(CTL_A, assign)(CTL_A* self, size_t size, CTL_T value)
 {
-    CTL_IMPL(CTL_A, clear)(self);
+    CTL_IMPL(CTL_A, clear)(self); // XXX: MEMORY SHOULD NOT BE CLEARED.
     for(size_t i = 0; i < size; i++)
         CTL_IMPL(CTL_A, push_back)(self, i == 0 ? value : self->copy ? self->copy(&value) : value);
 }
@@ -253,16 +253,6 @@ CTL_IMPL(CTL_I, each)(CTL_A* a)
 }
 
 static inline void
-CTL_IMPL(CTL_A, remove_if)(CTL_A* self, bool (*match)(CTL_T*))
-{
-    CTL_I it = CTL_IMPL(CTL_I, each)(self);
-    CTL_FOR(it, {
-        if(match(it.ref))
-            CTL_IMPL(CTL_A, erase)(self, it.node);
-    });
-}
-
-static inline void
 CTL_IMPL(CTL_A, reverse)(CTL_A* self)
 {
     CTL_I it = CTL_IMPL(CTL_I, each)(self);
@@ -279,28 +269,49 @@ CTL_IMPL(CTL_A, reverse)(CTL_A* self)
 }
 
 static inline void
+CTL_IMPL(CTL_A, remove_if)(CTL_A* self, bool (*match)(CTL_T*))
+{
+    CTL_I it = CTL_IMPL(CTL_I, each)(self);
+    CTL_FOR(it, {
+        if(match(it.ref))
+            CTL_IMPL(CTL_A, erase)(self, it.node);
+    });
+}
+
+static inline void
 CTL_IMPL(CTL_A, splice)(CTL_A* self, CTL_B* position, CTL_A* other)
 {
     CTL_I it = CTL_IMPL(CTL_I, each)(other);
     CTL_FOR(it, {
-        CTL_B* node = it.node;
-        CTL_IMPL(CTL_A, insert)(self, position, self->copy ? self->copy(&node->value) : node->value);
-        CTL_IMPL(CTL_A, erase)(self, node);
+        CTL_IMPL(CTL_A, insert)(self, position, self->copy ? self->copy(&it.node->value) : it.node->value); // XXX. MUST MAINTAIN ALLOCATION.
+        CTL_IMPL(CTL_A, erase)(other, it.node);
     });
 }
 
 static inline void
 CTL_IMPL(CTL_A, merge)(CTL_A* self, CTL_A* other, int compare(CTL_T*, CTL_T*))
 {
-    CTL_I a = CTL_IMPL(CTL_I, each)(self);
-    CTL_FOR(a, {
-        CTL_T* ref = CTL_IMPL(CTL_A, front)(other);
-        if(compare(a.ref, ref) < 0)
+    if(CTL_IMPL(CTL_A, empty)(self))
+        CTL_IMPL(CTL_A, swap)(self, other);
+    else
+    {
+        CTL_B* node = self->head;
+        while(node)
         {
-            CTL_IMPL(CTL_A, insert)(self, a.node, self->copy ? self->copy(ref) : *ref);
+            while(!CTL_IMPL(CTL_A, empty)(other) && compare(&node->value, &other->head->value))
+            {
+                CTL_IMPL(CTL_A, insert)(self, node, self->copy ? self->copy(&other->head->value) : other->head->value); // XXX. MUST MAINTAIN ALLOCATION
+                CTL_IMPL(CTL_A, pop_front)(other);
+            }
+            node = node->next;
+        }
+        // REMAINDER - APPENDS TO TAIL SINCE INSERT CAN ONLY PREPEND NODES.
+        while(!CTL_IMPL(CTL_A, empty)(other))
+        {
+            CTL_IMPL(CTL_A, push_back)(self, self->copy ? self->copy(&other->head->value) : other->head->value);
             CTL_IMPL(CTL_A, pop_front)(other);
         }
-    });
+    }
 }
 
 static inline bool
@@ -330,10 +341,11 @@ CTL_IMPL(CTL_A, sort)(CTL_A* self, int compare(CTL_T*, CTL_T*))
         for(size_t i = 0; i < CTL_LEN(temp); i++)
             temp[i] = CTL_IMPL(CTL_A, init)();
         CTL_A* fill = &temp[0];
-        CTL_A* counter = NULL;
+        CTL_A* counter;
         do
         {
-            CTL_IMPL(CTL_A, splice)(&carry, CTL_IMPL(CTL_A, begin)(&carry), self);
+            CTL_IMPL(CTL_A, push_front)(&carry, self->copy ? self->copy(&self->head->value) : self->head->value);
+            CTL_IMPL(CTL_A, pop_front)(self);
             for(counter = &temp[0]; counter != fill && !CTL_IMPL(CTL_A, empty)(counter); counter++)
             {
                 CTL_IMPL(CTL_A, merge)(counter, &carry, compare);
@@ -351,11 +363,11 @@ CTL_IMPL(CTL_A, sort)(CTL_A* self, int compare(CTL_T*, CTL_T*))
 }
 
 static inline void
-CTL_IMPL(CTL_A, unique)(CTL_A* self, bool equal(CTL_T*, CTL_T*))
+CTL_IMPL(CTL_A, unique)(CTL_A* self, bool match(CTL_T*, CTL_T*))
 {
     CTL_I a = CTL_IMPL(CTL_I, each)(self);
     CTL_FOR(a, {
-        if(a.next && equal(a.ref, &a.next->value))
+        if(a.next && match(a.ref, &a.next->value))
             CTL_IMPL(CTL_A, erase)(self, a.node);
     });
 }
