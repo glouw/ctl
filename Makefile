@@ -1,7 +1,6 @@
 CC = gcc -std=c99
 CXX = g++ -std=c++17
 
-VERBOSE = 0
 LONG = 0
 SANITIZE = 1
 SRAND = 1
@@ -49,10 +48,6 @@ endif
 
 ifeq (1, $(Ofast))
 CFLAGS += -Ofast
-endif
-
-ifeq (1, $(VERBOSE))
-CFLAGS += -DVERBOSE
 endif
 
 ifeq (1, $(SRAND))
