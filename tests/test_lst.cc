@@ -255,8 +255,10 @@ main(void)
                 for(size_t pushes = 0; pushes < size; pushes++)
                 {
                     // MAX + 1 ENSURES MERGE CAN APPEND TO TAIL.
-                    int value = pushes == (size - 1) ? (max + 1) : (rand() % 128);
+                    int value = rand() % 128;
                     total += value;
+                    if(pushes == (size - 1))
+                        total = max + 1;
                     lst_digi_push_back(&aa, digi_init(total));
                     bb.push_back(DIGI{total});
                 }
