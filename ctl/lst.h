@@ -246,15 +246,18 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
     static CTL_I CTL_IZ;
     CTL_I self = CTL_IZ;
     self.step = CTL_IMPL(CTL_I, step);
-    self.begin = begin;
-    self.node = begin;
-    self.next = begin->next;
-    self.end = end;
-    self.step_size = step_size;
-    self.ref = &self.node->value;
-    self.done = begin == end;
     if(begin == NULL || end == NULL)
         self.done = true;
+    else
+    {
+        self.begin = begin;
+        self.node = begin;
+        self.next = begin->next;
+        self.end = end;
+        self.step_size = step_size;
+        self.ref = &self.node->value;
+        self.done = begin == end;
+    }
     return self;
 }
 
