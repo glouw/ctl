@@ -266,6 +266,8 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
     self.step_size = step_size;
     self.ref = &self.node->value;
     self.done = begin == end;
+    if(begin == NULL || end == NULL)
+        self.done = true;
     return self;
 }
 
