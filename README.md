@@ -125,6 +125,9 @@ the form of `CTL_T function(void)` for the default constructor,
 `CTL_T function(CTL_T*)` for the copy constructor, and `void function(CTL_T*)` for the destructor:
 
 ```C
+
+#include <str.h>
+
 typedef struct
 {
     vec_point path;
