@@ -124,7 +124,7 @@ by `malloc` through CTL or other invocations thereof) require function definitio
 the form of `CTL_T function(void)` for the default constructor,
 `CTL_T function(CTL_T*)` for the copy constructor, and `void function(CTL_T*)` for the destructor:
 
-C```
+```C
 typedef struct
 {
     vec_point path;
