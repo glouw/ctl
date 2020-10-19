@@ -36,7 +36,7 @@ Define type `CTL_T` before including a CTL container:
 
 ```
 
-To instantiate and iterate over a vector of ints:
+To instantiate and iterate over a vector of integers:
 
 ```C
 int main(void)
@@ -54,11 +54,11 @@ int main(void)
 }
 ```
 
-To compile, include the ctl/ directory as a system directory:
+To compile, include the `ctl` directory as a system directory:
 
     gcc main.c -isystem ctl
 
-To swap the container type, replace all instances of `int` with a new type, eg. double:
+To swap the container type, replace all instances of `int` with a new type, eg. `double`:
 
 ```C
 int main(void)
@@ -120,9 +120,9 @@ point;
 ```
 
 More complex types requiring internal memory management (memory acquired
-by malloc through CTL or other invocations thereof) require function definitions in
+by `malloc` through CTL or other invocations thereof) require function definitions in
 the form of `CTL_T function(void)` for the default constructor,
-`CTL_T function(CTL_T*)` for the copy constructor, and `void function(CTL_T*) for the destructor:
+`CTL_T function(CTL_T*)` for the copy constructor, and `void function(CTL_T*)` for the destructor:
 
 C```
 typedef struct
