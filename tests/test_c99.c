@@ -5,11 +5,11 @@
 #include <str.h>
 #include <str.h>
 
-#define CTL_T int
-#include <lst.h>
-
 #define CTL_T char
 #include <vec.h>
+
+#define CTL_T int
+#include <lst.h>
 
 #define CTL_T int
 #include <vec.h>
