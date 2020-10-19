@@ -160,10 +160,13 @@ CTL_IMPL(CTL_A, transfer)(CTL_A* self, CTL_A* other, CTL_B* position, CTL_B* nod
 static inline void
 CTL_IMPL(CTL_A, erase)(CTL_A* self, CTL_B* node)
 {
-    CTL_IMPL(CTL_A, disconnect)(self, node);
-    if(self->free)
-        self->free(&node->value);
-    free(node);
+    if(CTL_IMPL(CTL_A, size)(self) > 0)
+    {
+        CTL_IMPL(CTL_A, disconnect)(self, node);
+        if(self->free)
+            self->free(&node->value);
+        free(node);
+    }
 }
 
 static inline void
