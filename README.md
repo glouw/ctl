@@ -54,6 +54,10 @@ int main(void)
 }
 ```
 
+To compile, include the ctl/ directory as a system directory:
+
+    gcc main.c -isystem ctl
+
 To swap the container type, replace all instances of `int` with a new type, eg. double:
 
 ```C
