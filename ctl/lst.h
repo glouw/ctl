@@ -97,36 +97,6 @@ CTL_IMPL(CTL_B, init)(CTL_T value)
 }
 
 static inline void
-CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
-{
-    CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    if(CTL_IMPL(CTL_A, empty)(self))
-        self->head = self->tail = node;
-    else
-    {
-        node->prev = self->tail;
-        self->tail->next = node;
-        self->tail = node;
-    }
-    self->size += 1;
-}
-
-static inline void
-CTL_IMPL(CTL_A, push_front)(CTL_A* self, CTL_T value)
-{
-    CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    if(CTL_IMPL(CTL_A, empty)(self))
-        self->head = self->tail = node;
-    else
-    {
-        node->next = self->head;
-        self->head->prev = node;
-        self->head = node;
-    }
-    self->size += 1;
-}
-
-static inline void
 CTL_IMPL(CTL_A, disconnect)(CTL_A* self, CTL_B* node)
 {
     if(node == self->tail) self->tail = self->tail->prev;
@@ -140,6 +110,9 @@ CTL_IMPL(CTL_A, disconnect)(CTL_A* self, CTL_B* node)
 static inline void
 CTL_IMPL(CTL_A, connect)(CTL_A* self, CTL_B* position, CTL_B* node, bool before)
 {
+    if(CTL_IMPL(CTL_A, empty)(self))
+        self->head = self->tail = node;
+    else
     if(before)
     {
         node->next = position;
@@ -161,6 +134,20 @@ CTL_IMPL(CTL_A, connect)(CTL_A* self, CTL_B* position, CTL_B* node, bool before)
             self->tail = node;
     }
     self->size += 1;
+}
+
+static inline void
+CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
+{
+    CTL_B* node = CTL_IMPL(CTL_B, init)(value);
+    CTL_IMPL(CTL_A, connect)(self, self->tail, node, false);
+}
+
+static inline void
+CTL_IMPL(CTL_A, push_front)(CTL_A* self, CTL_T value)
+{
+    CTL_B* node = CTL_IMPL(CTL_B, init)(value);
+    CTL_IMPL(CTL_A, connect)(self, self->head, node, true);
 }
 
 static inline void
@@ -371,8 +358,7 @@ CTL_IMPL(CTL_A, sort)(CTL_A* self, int compare(CTL_T*, CTL_T*))
         CTL_A* counter = NULL;
         do
         {
-            CTL_IMPL(CTL_A, push_front)(&carry, self->copy ? self->copy(&self->head->value) : self->head->value);
-            CTL_IMPL(CTL_A, pop_front)(self);
+            CTL_IMPL(CTL_A, transfer)(&carry, self, carry.head, self->head, true);
             for(counter = &temp[0]; counter != fill && !CTL_IMPL(CTL_A, empty)(counter); counter++)
             {
                 CTL_IMPL(CTL_A, merge)(counter, &carry, compare);
