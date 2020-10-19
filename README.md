@@ -115,8 +115,8 @@ point;
 #include <vec.h>
 ```
 
-More complex types requireing internal memory management (memory acquired
-by malloc through CTL or other invocations thereof) require function defintions in
+More complex types requiring internal memory management (memory acquired
+by malloc through CTL or other invocations thereof) require function definitions in
 the form of `CTL_T function(void)` for the default constructor,
 `CTL_T function(CTL_T*)` for the copy constructor, and `void function(CTL_T*) for the destructor:
 
