@@ -99,7 +99,8 @@ int main(void)
 ```
 
 Custom types declared with `typedef` require definitions for a default constructor,
-a copy constructor, and destructor.
+a copy constructor, and a destructor. These defintions must take the form of
+`CTL_T + init_default`, `CTL_T + copy`, and `CTL_T + free`.
 
 Simple types that do not require internal memory management can nullify these
 definitions:
