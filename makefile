@@ -60,6 +60,8 @@ endef
 
 BINS = tc99_cc tc99_cxx tlst tstr tvec tvecap
 
+TESTS = tests
+
 test: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
 	@rm -f $(BINS)
@@ -67,22 +69,22 @@ test: $(BINS)
 	@$(CXX) --version
 
 tc99_cc: ALWAYS
-	$(CC) $(CFLAGS) tests/test_c99.c -o $@
+	$(CC) $(CFLAGS) $(TESTS)/test_c99.c -o $@
 
 tc99_cxx: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_c99.c -o $@
+	$(CXX) $(CFLAGS) $(TESTS)/test_c99.c -o $@
 
 tlst: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_lst.cc -o $@
+	$(CXX) $(CFLAGS) $(TESTS)/test_lst.cc -o $@
 
 tstr: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_str.cc -o $@
+	$(CXX) $(CFLAGS) $(TESTS)/test_str.cc -o $@
 
 tvec: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_vec.cc -o $@
+	$(CXX) $(CFLAGS) $(TESTS)/test_vec.cc -o $@
 
 tvecap: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_vec_capacity.cc -o $@
+	$(CXX) $(CFLAGS) $(TESTS)/test_vec_capacity.cc -o $@
 
 clean:
 	@rm -f $(BINS)
