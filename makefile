@@ -55,7 +55,7 @@ CFLAGS += -DSRAND
 endif
 
 define expand
-	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2)
+	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
 BINS = tc99_cc tc99_cxx tlst tstr tvec tvecap
@@ -68,14 +68,19 @@ test: $(BINS)
 
 tc99_cc: ALWAYS
 	$(CC) $(CFLAGS) tests/test_c99.c -o $@
+
 tc99_cxx: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_c99.c -o $@
+
 tlst: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_lst.cc -o $@
+
 tstr: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_str.cc -o $@
+
 tvec: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_vec.cc -o $@
+
 tvecap: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_vec_capacity.cc -o $@
 
@@ -85,8 +90,10 @@ clean:
 # EXPANSIONS.
 str:
 	$(call expand,$@)
+
 lst:
 	$(call expand,$@,-DCTL_T=int)
+
 vec:
 	$(call expand,$@,-DCTL_T=int)
 
