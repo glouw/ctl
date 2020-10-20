@@ -359,12 +359,12 @@ CTL_IMPL(CTL_A, sort)(CTL_A* self, int compare(CTL_T*, CTL_T*))
         CTL_A temp[64];
         for(size_t i = 0; i < CTL_LEN(temp); i++)
             temp[i] = CTL_IMPL(CTL_A, init)();
-        CTL_A* fill = &temp[0];
+        CTL_A* fill = temp;
         CTL_A* counter = NULL;
         do
         {
             CTL_IMPL(CTL_A, transfer)(&carry, self, carry.head, self->head, true);
-            for(counter = &temp[0]; counter != fill && !CTL_IMPL(CTL_A, empty)(counter); counter++)
+            for(counter = temp; counter != fill && !CTL_IMPL(CTL_A, empty)(counter); counter++)
             {
                 CTL_IMPL(CTL_A, merge)(counter, &carry, compare);
                 CTL_IMPL(CTL_A, swap)(&carry, counter);
@@ -374,7 +374,7 @@ CTL_IMPL(CTL_A, sort)(CTL_A* self, int compare(CTL_T*, CTL_T*))
                 fill++;
         }
         while(!CTL_IMPL(CTL_A, empty)(self));
-        for(counter = &temp[1]; counter != fill; counter++)
+        for(counter = temp + 1; counter != fill; counter++)
             CTL_IMPL(CTL_A, merge)(counter, counter - 1, compare);
         CTL_IMPL(CTL_A, swap)(self, fill - 1);
     }
