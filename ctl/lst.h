@@ -39,16 +39,10 @@ typedef struct CTL_I
 }
 CTL_I;
 
-static inline size_t
-CTL_IMPL(CTL_A, size)(CTL_A* self)
-{
-    return self->size;
-}
-
 static inline bool
 CTL_IMPL(CTL_A, empty)(CTL_A* self)
 {
-    return CTL_IMPL(CTL_A, size)(self) == 0;
+    return self->size == 0;
 }
 
 static inline CTL_T*
@@ -160,13 +154,10 @@ CTL_IMPL(CTL_A, transfer)(CTL_A* self, CTL_A* other, CTL_B* position, CTL_B* nod
 static inline void
 CTL_IMPL(CTL_A, erase)(CTL_A* self, CTL_B* node)
 {
-    if(CTL_IMPL(CTL_A, size)(self) > 0)
-    {
-        CTL_IMPL(CTL_A, disconnect)(self, node);
-        if(self->free)
-            self->free(&node->value);
-        free(node);
-    }
+    CTL_IMPL(CTL_A, disconnect)(self, node);
+    if(self->free)
+        self->free(&node->value);
+    free(node);
 }
 
 static inline void
@@ -205,9 +196,9 @@ static inline void
 CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
 {
     static CTL_T zero;
-    if(size != CTL_IMPL(CTL_A, size)(self))
-        while(size != CTL_IMPL(CTL_A, size)(self))
-            (size < CTL_IMPL(CTL_A, size)(self))
+    if(size != self->size)
+        while(size != self->size)
+            (size < self->size)
                 ? CTL_IMPL(CTL_A, pop_back)(self)
                 : CTL_IMPL(CTL_A, push_back)(self, self->init_default ? self->init_default() : zero);
 }
@@ -233,7 +224,7 @@ static inline void
 CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
     for(size_t i = 0; i < self->step_size; i++)
-        if(self->node == self->end)
+        if(self->node == self->end || self->next == NULL)
             self->done = true;
         else
         {
@@ -248,18 +239,17 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
 {
     static CTL_I CTL_IZ;
     CTL_I self = CTL_IZ;
-    self.step = CTL_IMPL(CTL_I, step);
     if(begin == NULL || end == NULL)
         self.done = true;
     else
     {
+        self.step = CTL_IMPL(CTL_I, step);
         self.begin = begin;
         self.node = begin;
         self.next = begin->next;
         self.end = end;
         self.step_size = step_size;
         self.ref = &self.node->value;
-        self.done = begin == end;
     }
     return self;
 }
@@ -313,10 +303,15 @@ CTL_IMPL(CTL_A, remove_if)(CTL_A* self, bool (*match)(CTL_T*))
 static inline void
 CTL_IMPL(CTL_A, splice)(CTL_A* self, CTL_B* position, CTL_A* other)
 {
-    CTL_I it = CTL_IMPL(CTL_I, each)(other);
-    CTL_FOR(it, {
-        CTL_IMPL(CTL_A, transfer)(self, other, position, it.node, true);
-    });
+    if(self->size == 0 && position == NULL)
+        CTL_IMPL(CTL_A, swap)(self, other);
+    else
+    {
+        CTL_I it = CTL_IMPL(CTL_I, each)(other);
+        CTL_FOR(it, {
+            CTL_IMPL(CTL_A, transfer)(self, other, position, it.node, true);
+        });
+    }
 }
 
 static inline void
@@ -337,7 +332,7 @@ CTL_IMPL(CTL_A, merge)(CTL_A* self, CTL_A* other, int compare(CTL_T*, CTL_T*))
 static inline bool
 CTL_IMPL(CTL_A, equal)(CTL_A* self, CTL_A* other, bool match(CTL_T*, CTL_T*))
 {
-    if(CTL_IMPL(CTL_A, size)(self) != CTL_IMPL(CTL_A, size)(other))
+    if(self->size != other->size)
         return false;
     CTL_I a = CTL_IMPL(CTL_I, each)(self);
     CTL_I b = CTL_IMPL(CTL_I, each)(other);
@@ -354,7 +349,7 @@ CTL_IMPL(CTL_A, equal)(CTL_A* self, CTL_A* other, bool match(CTL_T*, CTL_T*))
 static inline void
 CTL_IMPL(CTL_A, sort)(CTL_A* self, int compare(CTL_T*, CTL_T*))
 {
-    if(CTL_IMPL(CTL_A, size)(self) > 1)
+    if(self->size > 1)
     {
         CTL_A carry = CTL_IMPL(CTL_A, init)();
         CTL_A temp[64];

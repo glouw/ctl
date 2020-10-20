@@ -72,7 +72,7 @@ clean:
 
 # COMPILE TESTS.
 tc99:
-	$(CC)  $(CFLAGS) tests/test_c99.c -o a
+	$(CC) $(CFLAGS) tests/test_c99.c -o a
 	$(CXX) $(CFLAGS) tests/test_c99.c -o b
 tlst:
 	$(CXX) $(CFLAGS) tests/test_lst.cc -o c

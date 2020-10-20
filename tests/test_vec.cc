@@ -36,11 +36,10 @@ test_equal(vec_digi* a, std::vector<DIGI>& b)
         assert(a->size == b.size());
         assert(vec_digi_empty(a) == b.empty());
     }{
-        assert(&a->value[0] == vec_digi_data(a));
-        assert(&b[0] == b.data());
-    }{
         if(a->size > 0)
         {
+            assert(&a->value[0] == vec_digi_data(a));
+            assert(&b[0] == b.data());
             DIGI& bf = b.front();
             DIGI& bb = b.back();
             digi* af = vec_digi_front(a);
@@ -57,12 +56,10 @@ main(void)
 #ifdef SRAND
     srand(time(NULL));
 #endif
-    const size_t loops = rand() % TEST_MAX_LOOPS;
+    const size_t loops = TEST_RAND(TEST_MAX_LOOPS);
     for(size_t loop = 0; loop < loops; loop++)
     {
-        size_t size = rand() % TEST_MAX_SIZE;
-        if(size == 0)
-            size = 1;
+        size_t size = TEST_RAND(TEST_MAX_SIZE);
         enum
         {
             MODE_DIRECT,
@@ -82,13 +79,15 @@ main(void)
             {
                 for(size_t pushes = 0; pushes < size; pushes++)
                 {
-                    const int value = rand() % INT_MAX;
+                    const int value = TEST_RAND(INT_MAX);
                     vec_digi_push_back(&a, digi_init(value));
                     b.push_back(DIGI{value});
                 }
             }
             enum
             {
+                TEST_PUSH_BACK,
+                TEST_POP_BACK,
                 TEST_CLEAR,
                 TEST_ERASE,
                 TEST_RESIZE,
@@ -101,8 +100,25 @@ main(void)
                 TEST_ASSIGN,
                 TEST_TOTAL,
             };
-            switch(rand() % TEST_TOTAL)
+            int which = TEST_RAND(TEST_TOTAL);
+            switch(which)
             {
+                case TEST_PUSH_BACK:
+                {
+                    const int value = TEST_RAND(INT_MAX);
+                    b.push_back(DIGI{value});
+                    vec_digi_push_back(&a, digi_init(value));
+                    break;
+                }
+                case TEST_POP_BACK:
+                {
+                    if(a.size > 0)
+                    {
+                        b.pop_back();
+                        vec_digi_pop_back(&a);
+                    }
+                    break;
+                }
                 case TEST_CLEAR:
                 {
                     b.clear();
@@ -111,33 +127,36 @@ main(void)
                 }
                 case TEST_ERASE:
                 {
-                    const size_t index = rand() % a.size;
-                    b.erase(b.begin() + index);
-                    vec_digi_erase(&a, index);
+                    if(a.size > 0)
+                    {
+                        const size_t index = TEST_RAND(a.size);
+                        b.erase(b.begin() + index);
+                        vec_digi_erase(&a, vec_digi_begin(&a) + index);
+                    }
                     break;
                 }
                 case TEST_INSERT:
                 {
-                    size_t amount = rand() % 512;
+                    size_t amount = TEST_RAND(512);
                     for(size_t count = 0; count < amount; count++)
                     {
-                        const int value = rand() % INT_MAX;
-                        const size_t index = rand() % a.size;
+                        const int value = TEST_RAND(INT_MAX);
+                        const size_t index = TEST_RAND(a.size);
                         b.insert(b.begin() + index, DIGI{value});
-                        vec_digi_insert(&a, index, digi_init(value));
+                        vec_digi_insert(&a, vec_digi_begin(&a) + index, digi_init(value));
                     }
                     break;
                 }
                 case TEST_RESIZE:
                 {
-                    const size_t resize = (size == 0) ? 0 : (rand() % (size * 3));
+                    const size_t resize = 3 * TEST_RAND(a.size) + 1;
                     b.resize(resize);
                     vec_digi_resize(&a, resize);
                     break;
                 }
                 case TEST_RESERVE:
                 {
-                    const size_t capacity = (a.capacity == 0) ? 0 : (rand() % (a.capacity * 2));
+                    const size_t capacity = 3 * TEST_RAND(a.capacity) + 1;
                     b.reserve(capacity);
                     vec_digi_reserve(&a, capacity);
                     break;
@@ -164,11 +183,10 @@ main(void)
                 }
                 case TEST_ASSIGN:
                 {
-                    const int value = rand() % INT_MAX;
-                    size_t assign_size = rand() % a.size;
-                    if(assign_size == 0)
-                        assign_size = 1;
-                    vec_digi_assign(&a, assign_size, digi_init(value));
+                    const int value = TEST_RAND(INT_MAX);
+                    size_t assign_size = TEST_RAND(a.size) + 1;
+                    digi d = digi_init(value);
+                    vec_digi_assign(&a, assign_size, d);
                     b.assign(assign_size, DIGI{value});
                     break;
                 }

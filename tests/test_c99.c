@@ -100,7 +100,18 @@ main(void)
         vec_int_push_back(&a, 2);
         vec_int_push_back(&a, 3);
         vec_int_push_back(&a, 4);
+        vec_int_erase(&a, vec_int_begin(&a) + 2);
+        vec_int_insert(&a, vec_int_begin(&a) + 2, 42);
         vec_int_free(&a);
+    }{
+        lst_int a = lst_int_init();
+        lst_int_push_back(&a, 1);
+        lst_int_push_back(&a, 2);
+        lst_int_push_back(&a, 3);
+        lst_int_push_back(&a, 4);
+        lst_int_erase(&a, lst_int_begin(&a));
+        lst_int_insert(&a, lst_int_begin(&a), 42);
+        lst_int_free(&a);
     }{
         vec_str b = vec_str_init();
         vec_str_push_back(&b, str_create("This"));

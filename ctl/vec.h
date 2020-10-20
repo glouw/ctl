@@ -21,6 +21,7 @@ typedef struct CTL_I
 {
     CTL_T* ref;
     void (*step)(struct CTL_I*);
+    CTL_T* node;
     CTL_T* begin;
     CTL_T* end;
     size_t step_size;
@@ -104,7 +105,8 @@ CTL_IMPL(CTL_A, wipe)(CTL_A* self, size_t n)
 static inline void
 CTL_IMPL(CTL_A, clear)(CTL_A* self)
 {
-    CTL_IMPL(CTL_A, wipe)(self, self->size);
+    if(self->size > 0)
+        CTL_IMPL(CTL_A, wipe)(self, self->size);
 }
 
 static inline void
@@ -211,18 +213,25 @@ CTL_IMPL(CTL_A, data)(CTL_A* self)
 }
 
 static inline void
-CTL_IMPL(CTL_A, insert)(CTL_A* self, size_t index, CTL_T value)
+CTL_IMPL(CTL_A, insert)(CTL_A* self, CTL_T* position, CTL_T value)
 {
-    CTL_IMPL(CTL_A, push_back)(self, *CTL_IMPL(CTL_A, back)(self));
-    for(size_t i = self->size - 2; i > index; i--)
-        self->value[i] = self->value[i - 1];
-    self->value[index] = value;
+    if(self->size > 0)
+    {
+        size_t index = position - CTL_IMPL(CTL_A, begin)(self);
+        CTL_IMPL(CTL_A, push_back)(self, *CTL_IMPL(CTL_A, back)(self));
+        for(size_t i = self->size - 2; i > index; i--)
+            self->value[i] = self->value[i - 1];
+        self->value[index] = value;
+    }
+    else
+        CTL_IMPL(CTL_A, push_back)(self, value);
 }
 
 static inline void
-CTL_IMPL(CTL_A, erase)(CTL_A* self, size_t index)
+CTL_IMPL(CTL_A, erase)(CTL_A* self, CTL_T* position)
 {
     static CTL_T CTL_TZ;
+    size_t index = position - CTL_IMPL(CTL_A, begin)(self);
     CTL_IMPL(CTL_A, set)(self, index, CTL_TZ);
     for(size_t i = index; i < self->size - 1; i++)
     {
@@ -235,7 +244,8 @@ CTL_IMPL(CTL_A, erase)(CTL_A* self, size_t index)
 static inline void
 CTL_IMPL(CTL_A, sort)(CTL_A* self, int (*compare)(CTL_T*, CTL_T*))
 {
-    qsort(self->value, self->size, sizeof(CTL_T), (__compar_fn_t) compare); // ASSUME POINTER FUNCTION CAST IS SAFE.
+    if(self->size > 0)
+        qsort(self->value, self->size, sizeof(CTL_T), (__compar_fn_t) compare); // ASSUME POINTER FUNCTION CAST IS SAFE.
 }
 
 static inline CTL_A
@@ -261,7 +271,7 @@ CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
     CTL_T* ref = self->ref + self->step_size;
     if(ref >= self->begin && ref <= self->end)
-        self->ref = ref;
+        self->ref = self->node = ref;
     else
         self->done = true;
 }
@@ -271,15 +281,15 @@ CTL_IMPL(CTL_I, by)(CTL_T* begin, CTL_T* end, size_t step_size)
 {
     static CTL_I CTL_IZ;
     CTL_I self = CTL_IZ;
-    self.step = CTL_IMPL(CTL_I, step);
     if(begin == NULL || end == NULL)
         self.done = true;
     else
     {
+        self.step = CTL_IMPL(CTL_I, step);
         self.begin = begin;
         self.end = end;
         self.step_size = step_size;
-        self.ref = begin;
+        self.ref = self.node = begin;
         self.done = begin >= end;
     }
     return self;
@@ -288,7 +298,9 @@ CTL_IMPL(CTL_I, by)(CTL_T* begin, CTL_T* end, size_t step_size)
 static inline CTL_I
 CTL_IMPL(CTL_I, each)(CTL_A* a)
 {
-    return CTL_IMPL(CTL_I, by)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
+    return CTL_IMPL(CTL_A, empty)(a)
+        ? CTL_IMPL(CTL_I, by)(NULL, NULL, 1)
+        : CTL_IMPL(CTL_I, by)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
 }
 
 #undef CTL_T

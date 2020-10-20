@@ -10,8 +10,8 @@
 static void
 test_equal(lst_digi* a, std::list<DIGI>& b)
 {
-    assert(lst_digi_size(a) == b.size());
-    if(lst_digi_size(a) && b.size() > 0)
+    assert(a->size == b.size());
+    if(a->size > 0 && b.size() > 0)
     {
         assert(lst_digi_empty(a) == b.empty());
         assert(*lst_digi_front(a)->value == *b.front().value);
@@ -47,28 +47,14 @@ static void
 setup_lists(lst_digi* a, std::list<DIGI>& b, size_t size, int* max_value)
 {
     *a = lst_digi_init();
-    size_t min = 2;
-    if(size < min)
-        size = min;
     for(size_t pushes = 0; pushes < size; pushes++)
     {
-        int value = rand() % (INT_MAX - 1); // SEE COMMENT IN CASE MERGE.
+        int value = TEST_RAND(INT_MAX - 1); // SEE COMMENT IN CASE MERGE.
         if(max_value && value > *max_value)
             *max_value = value;
         lst_digi_push_back(a, digi_init(value));
         b.push_back(DIGI{value});
     }
-}
-
-static uint64_t
-xor_lst(lst_digi* a)
-{
-    uint64_t xorred = 0x0;
-    lst_digi_it it = lst_digi_it_each(a);
-    CTL_FOR(it, {
-        xorred ^= (uint64_t) it.ref;
-    });
-    return xorred;
 }
 
 int
@@ -77,13 +63,13 @@ main(void)
 #ifdef SRAND
     srand(time(NULL));
 #endif
-    const size_t loops = rand() % TEST_MAX_LOOPS;
+    const size_t loops = TEST_RAND(TEST_MAX_LOOPS);
     for(size_t loop = 0; loop < loops; loop++)
     {
         lst_digi a;
         std::list<DIGI> b;
         int max_value = 0;
-        setup_lists(&a, b, rand() % TEST_MAX_SIZE, &max_value);
+        setup_lists(&a, b, TEST_RAND(TEST_MAX_SIZE), &max_value);
         enum
         {
             TEST_PUSH_BACK,
@@ -106,37 +92,44 @@ main(void)
             TEST_UNIQUE,
             TEST_TOTAL
         };
-        switch(rand() % TEST_TOTAL)
+        int which = TEST_RAND(TEST_TOTAL);
+        switch(which)
         {
             case TEST_PUSH_FRONT: // POINTER XOR ENSURE VALUE LOCATION DOES NOT CHANGE.
             {
-                int value = rand() % INT_MAX;
+                int value = TEST_RAND(INT_MAX);
                 lst_digi_push_front(&a, digi_init(value));
                 b.push_front(DIGI{value});
                 break;
             }
             case TEST_PUSH_BACK:
             {
-                int value = rand() % INT_MAX;
+                int value = TEST_RAND(INT_MAX);
                 lst_digi_push_back(&a, digi_init(value));
                 b.push_back(DIGI{value});
                 break;
             }
             case TEST_POP_FRONT:
             {
-                lst_digi_pop_front(&a);
-                b.pop_front();
+                if(a.size > 0)
+                {
+                    lst_digi_pop_front(&a);
+                    b.pop_front();
+                }
                 break;
             }
             case TEST_POP_BACK:
             {
-                lst_digi_pop_back(&a);
-                b.pop_back();
+                if(a.size > 0)
+                {
+                    lst_digi_pop_back(&a);
+                    b.pop_back();
+                }
                 break;
             }
             case TEST_ERASE:
             {
-                size_t index = rand() % a.size;
+                size_t index = TEST_RAND(a.size);
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
                 lst_digi_it it = lst_digi_it_each(&a);
@@ -155,8 +148,8 @@ main(void)
             }
             case TEST_INSERT:
             {
-                size_t index = rand() % a.size;
-                int value = rand() % INT_MAX;
+                size_t index = TEST_RAND(a.size);
+                int value = TEST_RAND(INT_MAX);
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
                 lst_digi_it it = lst_digi_it_each(&a);
@@ -181,17 +174,17 @@ main(void)
             }
             case TEST_RESIZE:
             {
-                size_t resize = rand() % (3 * a.size);
+                size_t resize = 3 * TEST_RAND(a.size);
                 lst_digi_resize(&a, resize);
                 b.resize(resize);
                 break;
             }
             case TEST_ASSIGN:
             {
-                size_t width = rand() % a.size;
+                size_t width = TEST_RAND(a.size);
                 if(width > 2)
                 {
-                    int value = rand() % INT_MAX;
+                    int value = TEST_RAND(INT_MAX);
                     lst_digi_assign(&a, width, digi_init(value));
                     b.assign(width, DIGI{value});
                 }
@@ -231,7 +224,7 @@ main(void)
             }
             case TEST_SPLICE:
             {
-                size_t index = rand() % a.size;
+                size_t index = TEST_RAND(a.size);
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
                 lst_digi_it it = lst_digi_it_each(&a);
@@ -244,34 +237,28 @@ main(void)
                 });
                 lst_digi aa;
                 std::list<DIGI> bb;
-                setup_lists(&aa, bb, rand() % TEST_MAX_SIZE, NULL);
+                setup_lists(&aa, bb, TEST_RAND(TEST_MAX_SIZE), NULL);
                 b.splice(iter, bb);
-                uint64_t xa = xor_lst(&a) ^ xor_lst(&aa);
                 lst_digi_splice(&a, it.node, &aa);
-                uint64_t xb = xor_lst(&a);
-                assert(xa == xb);
                 break;
             }
             case TEST_MERGE:
             {
                 lst_digi aa = lst_digi_init();
                 std::list<DIGI> bb;
-                size_t size = rand() % TEST_MAX_SIZE;
+                size_t size = TEST_RAND(TEST_MAX_SIZE);
                 int total = 0;
                 for(size_t pushes = 0; pushes < size; pushes++)
                 {
-                    int value = rand() % 128; // MAX + 1 ENSURES MERGE CAN APPEND TO TAIL.
+                    int value = TEST_RAND(128);
                     total += value;
                     if(pushes == (size - 1))
-                        total = max_value + 1;
+                        total = max_value + 1; // MAX + 1 ENSURES MERGE CAN APPEND TO TAIL.
                     lst_digi_push_back(&aa, digi_init(total));
                     bb.push_back(DIGI{total});
                 }
                 b.merge(bb);
-                uint64_t xa = xor_lst(&a) ^ xor_lst(&aa);
                 lst_digi_merge(&a, &aa, digi_compare);
-                uint64_t xb = xor_lst(&a);
-                assert(xa == xb);
                 break;
             }
             case TEST_EQUAL:
