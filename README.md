@@ -4,41 +4,19 @@ CTL is a type safe header only template library for ISO C99.
 
 ## Motivation
 
-The primary motivation of the CTL is to back port useful C++ template containers
-to C99 to make maximum use of C99's portability and fast compile times.
-
-The secondary motivation of the CTL is to provide embedded systems without an ISO compatible
-implementation of the C++ Standard Template Library (STL) with an ISO conforming
-C99 implementation.
+CTL aims to back port useful C++ template containers to C99 to
+make maximum use of C99's portability and fast compile times.
 
 ## Usage
 
 Define type `CTL_T` before including a CTL container:
 
 ```C
+
+#define CTL_POD
 #define CTL_T int
 #include <vec.h>
 
-#define CTL_T char
-#include <vec.h>
-
-#define CTL_T int
-#include <vec.h>
-
-#define CTL_T unsigned
-#include <vec.h>
-
-#define CTL_T float
-#include <vec.h>
-
-#define CTL_T double
-#include <vec.h>
-
-```
-
-To instantiate and iterate over a vector of integers:
-
-```C
 int main(void)
 {
     vec_int a = vec_int_init();
@@ -54,76 +32,43 @@ int main(void)
 }
 ```
 
-To compile, include the `ctl` directory as a system directory:
+Compile by including the `ctl` directory as a system directory:
 
     gcc main.c -isystem ctl
 
-To swap the container type, replace all instances of `int` with a new type, eg. `double`:
+Containers and types are hot swappable:
 
 ```C
-int main(void)
+
+typedef struct
 {
-    vec_double a = vec_double_init();
-    vec_double_push_back(&a, 1.1);
-    vec_double_push_back(&a, 2.2);
-    vec_double_push_back(&a, 3.3);
-    vec_double_push_back(&a, 4.4);
-    vec_double_it it = vec_double_it_each(&a);
-    CTL_FOR(it, {
-        printf("%f\n", *it.ref);
-    });
-    vec_double_free(&a);
+    double x;
+    double y;
 }
-```
+point;
 
-To swap the container, replace all instances of `vec` with the new container name (eg. `lst`),
-provided the templated container was previously included with the correct type:
-
-```C
-#define CTL_T double
+#define CTL_POD
+#define CTL_T point
 #include <lst.h>
 
 int main(void)
 {
-    lst_double a = lst_double_init();
-    lst_double_push_back(&a, 1.1);
-    lst_double_push_back(&a, 2.2);
-    lst_double_push_back(&a, 3.3);
-    lst_double_push_back(&a, 4.4);
-    lst_double_it it = lst_double_it_each(&a);
+    vec_point a = vec_point_init();
+    vec_point_push_back(&a, (point) { 1.1, 2.2 });
+    vec_point_push_back(&a, (point) { 3.3, 4.4 });
+    vec_point_push_back(&a, (point) { 5.5, 6.6 });
+    vec_point_push_back(&a, (point) { 7.7, 8.8 });
+    vec_point_it it = vec_point_it_each(&a);
     CTL_FOR(it, {
-        printf("%f\n", *it.ref);
+        printf("%f %f\n", it.ref->x, it.ref->y);
     });
-    lst_double_free(&a);
+    vec_point_free(&a);
 }
 ```
-
-Custom types declared with `typedef` require definitions for a default constructor,
-a copy constructor, and a destructor. These defintions must take the form of
-`CTL_T + init_default`, `CTL_T + copy`, and `CTL_T + free`.
-
-Simple types that do not require internal memory management can nullify these
-definitions:
-
-```C
-typedef struct
-{
-    int x;
-    int y;
-}
-point;
-
-#define point_init_default NULL
-#define point_copy NULL
-#define point_free NULL
-#define CTL_T point
-#include <vec.h>
-```
-
-More complex types requiring internal memory management (memory acquired
-by `malloc` through CTL or other invocations thereof) require function definitions in
-the form of `CTL_T function(void)` for the default constructor,
-`CTL_T function(CTL_T*)` for the copy constructor, and `void function(CTL_T*)` for the destructor:
+Plain Old Data (POD) types do not require require definitions for a default constructor,
+a copy constructor, and a destructor. Types that acquire resources with malloc do, and
+the aforementioned constructors and destructor must take the form of `CTL_T + init_default`,
+`CTL_T + copy`, and `CTL_T + free`, respectively:
 
 ```C
 
@@ -172,14 +117,7 @@ person_copy(person* self)
 
 #define CTL_T person
 #include <vec.h>
-```
 
-The default constructor, for instance, is used internally by CTL when a container is resized.
-
-To use the container, initialize it, and manually destruct the container when desired:
-
-
-```C
 int main(void)
 {
     vec_person a = vec_person_init();
@@ -195,26 +133,27 @@ int main(void)
 ## Caveats
 
 Two containers with the same type may not be instantiated. For instance, the following
-will result in multiple defintion compile time errors:
+will result in multiple definition compile time errors:
 
 ```C
+#define CTL_POD
 #define CTL_T char
 #include <vec.h>
 
+#define CTL_POD
 #define CTL_T char
 #include <vec.h>
 ```
-
-Proper design would probably dictate that all templated instatiations be done in a single
-`templates.h` header file to keep track of template interactions, but for whatever reason
-if the above scenario is encountered and needs a work around, a template expansion can be renamed:
+If the above scenario is encountered and needs a work around, a template expansion can be renamed:
 
 ```C
+#define CTL_POD
 #define CTL_T char
 #include <vec.h>
 
-#define vec_char str
+#define vec_char my_char_vec
+#define CTL_POD
 #define CTL_T char
 #include <vec.h>
-#undef vec_char
+#undef my_char_vec
 ```
