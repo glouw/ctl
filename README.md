@@ -65,7 +65,7 @@ int main(void)
     lst_point_free(&a);
 }
 ```
-Plain Old Data (POD) types do not require require definitions for a default constructor,
+Plain Old Data (POD) types do not require definitions for a default constructor,
 a copy constructor, and a destructor. Types that acquire resources with malloc do, and
 the aforementioned constructors and destructor must take the form of `CTL_T + init_default`,
 `CTL_T + copy`, and `CTL_T + free`, respectively:
