@@ -58,7 +58,7 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2)
 endef
 
-BINS = tc99 tlst tstr tvec tvecap
+BINS = tc99_cc tc99_cxx tlst tstr tvec tvecap
 
 test: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
@@ -66,8 +66,9 @@ test: $(BINS)
 	@$(CC) --version
 	@$(CXX) --version
 
-tc99: ALWAYS
+tc99_cc: ALWAYS
 	$(CC) $(CFLAGS) tests/test_c99.c -o $@
+tc99_cxx: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_c99.c -o $@
 tlst: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_lst.cc -o $@
