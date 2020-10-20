@@ -1,4 +1,4 @@
-# THE C TEMPLATE LIBRARY (CTL)
+# C TEMPLATE LIBRARY (CTL)
 
 CTL is a type safe header only template library for ISO C99.
 
