@@ -53,16 +53,16 @@ point;
 
 int main(void)
 {
-    vec_point a = vec_point_init();
-    vec_point_push_back(&a, (point) { 1.1, 2.2 });
-    vec_point_push_back(&a, (point) { 3.3, 4.4 });
-    vec_point_push_back(&a, (point) { 5.5, 6.6 });
-    vec_point_push_back(&a, (point) { 7.7, 8.8 });
-    vec_point_it it = vec_point_it_each(&a);
+    lst_point a = lst_point_init();
+    lst_point_push_back(&a, (point) { 1.1, 2.2 });
+    lst_point_push_back(&a, (point) { 3.3, 4.4 });
+    lst_point_push_back(&a, (point) { 5.5, 6.6 });
+    lst_point_push_back(&a, (point) { 7.7, 8.8 });
+    lst_point_it it = lst_point_it_each(&a);
     CTL_FOR(it, {
         printf("%f %f\n", it.ref->x, it.ref->y);
     });
-    vec_point_free(&a);
+    lst_point_free(&a);
 }
 ```
 Plain Old Data (POD) types do not require require definitions for a default constructor,
