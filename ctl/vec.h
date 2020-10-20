@@ -34,9 +34,13 @@ CTL_IMPL(CTL_A, init)(void)
 {
     static CTL_A CTL_AZ;
     CTL_A self = CTL_AZ;
+#ifndef CTL_POD
     self.init_default = CTL_IMPL(CTL_T, init_default);
     self.free = CTL_IMPL(CTL_T, free);
     self.copy = CTL_IMPL(CTL_T, copy);
+#else
+#undef CTL_POD
+#endif
     return self;
 }
 

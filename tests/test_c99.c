@@ -1,29 +1,34 @@
 #include "test.h"
 
-#include <str.h>
+#include <stdio.h>
+
+#include <str.h> // MULTIPLE INCLUDES OKAY.
 #include <str.h>
 #include <str.h>
 #include <str.h>
 
+#define CTL_POD
 #define CTL_T char
 #include <vec.h>
 
+#define CTL_POD
 #define CTL_T int
 #include <lst.h>
 
+#define CTL_POD
 #define CTL_T int
 #include <vec.h>
 
+#define CTL_POD
 #define CTL_T unsigned
 #include <vec.h>
 
+#define CTL_POD
 #define CTL_T float
 #include <vec.h>
 
+#define CTL_POD
 #define CTL_T double
-#include <vec.h>
-
-#define CTL_T str
 #include <vec.h>
 
 typedef struct
@@ -33,10 +38,11 @@ typedef struct
 }
 point;
 
-#define point_init_default NULL
-#define point_copy NULL
-#define point_free NULL
+#define CTL_POD
 #define CTL_T point
+#include <vec.h>
+
+#define CTL_T str
 #include <vec.h>
 
 typedef struct
@@ -46,7 +52,7 @@ typedef struct
 }
 person;
 
-person
+static person
 person_init(size_t path_capacity, const char* first, const char* last)
 {
     person self;
@@ -58,20 +64,20 @@ person_init(size_t path_capacity, const char* first, const char* last)
     return self;
 }
 
-person
+static person
 person_init_default(void)
 {
     return person_init(0, "NONE", "NONE");
 }
 
-void
+static void
 person_free(person* self)
 {
     vec_point_free(&self->path);
     str_free(&self->name);
 }
 
-person
+static person
 person_copy(person* self)
 {
     person copy;
@@ -82,8 +88,6 @@ person_copy(person* self)
 
 #define CTL_T person
 #include <vec.h>
-
-#include <stdio.h>
 
 static bool
 int_match(int* a, int* b)

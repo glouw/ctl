@@ -1,4 +1,3 @@
-[x] parallel execution - can one fail and return 1?
 [x] container sizes - is size 0 supported?
 [x] make vec operations use begin/end
-[ ] vector capacity - all sizes align properly?
+[x] vector capacity - all sizes align properly?

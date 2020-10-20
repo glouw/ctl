@@ -58,33 +58,35 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2)
 endef
 
-BINS = a b c d e
+BINS = tc99 tlst tstr tvec tvecap
 
-# RUN TESTS.
-test: tc99 tlst tstr tvec
+test: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
 	@rm -f $(BINS)
 	@$(CC) --version
 	@$(CXX) --version
 
+tc99: ALWAYS
+	$(CC) $(CFLAGS) tests/test_c99.c -o $@
+	$(CXX) $(CFLAGS) tests/test_c99.c -o $@
+tlst: ALWAYS
+	$(CXX) $(CFLAGS) tests/test_lst.cc -o $@
+tstr: ALWAYS
+	$(CXX) $(CFLAGS) tests/test_str.cc -o $@
+tvec: ALWAYS
+	$(CXX) $(CFLAGS) tests/test_vec.cc -o $@
+tvecap: ALWAYS
+	$(CXX) $(CFLAGS) tests/test_vec_capacity.cc -o $@
+
 clean:
 	@rm -f $(BINS)
 
-# COMPILE TESTS.
-tc99:
-	$(CC) $(CFLAGS) tests/test_c99.c -o a
-	$(CXX) $(CFLAGS) tests/test_c99.c -o b
-tlst:
-	$(CXX) $(CFLAGS) tests/test_lst.cc -o c
-tstr:
-	$(CXX) $(CFLAGS) tests/test_str.cc -o d
-tvec:
-	$(CXX) $(CFLAGS) tests/test_vec.cc -o e
-
-# EXPAND TEMPLATES (CTL_T DEFAULTED TO INT).
+# EXPANSIONS.
 str:
 	$(call expand,$@)
 lst:
 	$(call expand,$@,-DCTL_T=int)
 vec:
 	$(call expand,$@,-DCTL_T=int)
+
+ALWAYS:
