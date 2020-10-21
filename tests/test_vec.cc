@@ -98,6 +98,7 @@ main(void)
                 TEST_SWAP,
                 TEST_INSERT,
                 TEST_ASSIGN,
+                TEST_REMOVE_IF,
                 TEST_TOTAL,
             };
             int which = TEST_RAND(TEST_TOTAL);
@@ -200,6 +201,12 @@ main(void)
                     std::swap(bb, bbb);
                     test_equal(&aaa, bbb);
                     vec_digi_free(&aaa);
+                    break;
+                }
+                case TEST_REMOVE_IF:
+                {
+                    vec_digi_remove_if(&a, digi_is_odd);
+                    b.erase(std::remove_if(b.begin(), b.end(), DIGI_is_odd), b.end());
                     break;
                 }
             }

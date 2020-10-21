@@ -91,3 +91,15 @@ struct DIGI
         return *value == *a.value;
     }
 };
+
+static inline bool
+digi_is_odd(digi* d)
+{
+    return *d->value % 2;
+}
+
+static inline bool
+DIGI_is_odd(DIGI& d)
+{
+    return *d.value % 2;
+}

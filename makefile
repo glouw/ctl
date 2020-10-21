@@ -99,4 +99,7 @@ lst:
 vec:
 	$(call expand,$@,-DCTL_T=int)
 
+deq:
+	$(call expand,$@,-DCTL_T=int)
+
 ALWAYS:

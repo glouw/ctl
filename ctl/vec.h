@@ -2,9 +2,6 @@
 
 #define CTL_A  CTL_TEMP(CTL_T, vec)
 #define CTL_I  CTL_IMPL(CTL_A, it)
-#define CTL_TZ CTL_IMPL(CTL_T, zero)
-#define CTL_AZ CTL_IMPL(CTL_A, zero)
-#define CTL_IZ CTL_IMPL(CTL_I, zero)
 
 typedef struct
 {
@@ -24,6 +21,7 @@ typedef struct CTL_I
     CTL_T* node;
     CTL_T* begin;
     CTL_T* end;
+    CTL_T* next;
     size_t step_size;
     bool done;
 }
@@ -32,8 +30,8 @@ CTL_I;
 static inline CTL_A
 CTL_IMPL(CTL_A, init)(void)
 {
-    static CTL_A CTL_AZ;
-    CTL_A self = CTL_AZ;
+    static CTL_A zero;
+    CTL_A self = zero;
 #ifndef CTL_POD
     self.init_default = CTL_IMPL(CTL_T, init_default);
     self.free = CTL_IMPL(CTL_T, free);
@@ -92,8 +90,8 @@ CTL_IMPL(CTL_A, set)(CTL_A* self, size_t index, CTL_T value)
 static inline void
 CTL_IMPL(CTL_A, pop_back)(CTL_A* self)
 {
-    static CTL_T CTL_TZ;
-    CTL_IMPL(CTL_A, set)(self, --self->size, CTL_TZ);
+    static CTL_T zero;
+    CTL_IMPL(CTL_A, set)(self, --self->size, zero);
 }
 
 static inline void
@@ -116,23 +114,23 @@ CTL_IMPL(CTL_A, clear)(CTL_A* self)
 static inline void
 CTL_IMPL(CTL_A, free)(CTL_A* self)
 {
-    static CTL_A CTL_AZ;
+    static CTL_A zero;
     CTL_IMPL(CTL_A, clear)(self);
     free(self->value);
-    *self = CTL_AZ;
+    *self = zero;
 }
 
 static inline void
 CTL_IMPL(CTL_A, fit)(CTL_A* self, size_t capacity)
 {
-    static CTL_T CTL_TZ;
+    static CTL_T zero;
     size_t overall = capacity;
     if(CTL_MUST_ALIGN_16(CTL_T))
         overall += 1;
     self->value = (CTL_T*) realloc(self->value, sizeof(CTL_T) * overall);
     if(CTL_MUST_ALIGN_16(CTL_T))
         for(size_t i = self->capacity; i < overall; i++)
-            self->value[i] = CTL_TZ;
+            self->value[i] = zero;
     self->capacity = capacity;
 }
 
@@ -175,7 +173,7 @@ CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
 static inline void
 CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
 {
-    static CTL_T CTL_TZ;
+    static CTL_T zero;
     if(size < self->size)
     {
         ptrdiff_t less = self->size - size;
@@ -192,7 +190,7 @@ CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
             CTL_IMPL(CTL_A, reserve)(self, capacity);
         }
         while(self->size < size)
-            CTL_IMPL(CTL_A, push_back)(self, self->init_default ? self->init_default() : CTL_TZ);
+            CTL_IMPL(CTL_A, push_back)(self, self->init_default ? self->init_default() : zero);
     }
 }
 
@@ -234,13 +232,13 @@ CTL_IMPL(CTL_A, insert)(CTL_A* self, CTL_T* position, CTL_T value)
 static inline void
 CTL_IMPL(CTL_A, erase)(CTL_A* self, CTL_T* position)
 {
-    static CTL_T CTL_TZ;
+    static CTL_T zero;
     size_t index = position - CTL_IMPL(CTL_A, begin)(self);
-    CTL_IMPL(CTL_A, set)(self, index, CTL_TZ);
+    CTL_IMPL(CTL_A, set)(self, index, zero);
     for(size_t i = index; i < self->size - 1; i++)
     {
         self->value[i] = self->value[i + 1];
-        self->value[i + 1] = CTL_TZ;
+        self->value[i + 1] = zero;
     }
     self->size -= 1;
 }
@@ -273,9 +271,12 @@ CTL_IMPL(CTL_A, swap)(CTL_A* self, CTL_A* other)
 static inline void
 CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
-    CTL_T* ref = self->ref + self->step_size;
-    if(ref >= self->begin && ref <= self->end)
-        self->ref = self->node = ref;
+    if(self->next >= self->begin
+    && self->next <= self->end)
+    {
+        self->ref = self->node = self->next;
+        self->next = self->ref + self->step_size;
+    }
     else
         self->done = true;
 }
@@ -283,18 +284,17 @@ CTL_IMPL(CTL_I, step)(CTL_I* self)
 static inline CTL_I
 CTL_IMPL(CTL_I, by)(CTL_T* begin, CTL_T* end, size_t step_size)
 {
-    static CTL_I CTL_IZ;
-    CTL_I self = CTL_IZ;
+    static CTL_I zero;
+    CTL_I self = zero;
     if(begin == NULL || end == NULL)
         self.done = true;
     else
     {
         self.step = CTL_IMPL(CTL_I, step);
-        self.begin = begin;
         self.end = end;
-        self.step_size = step_size;
-        self.ref = self.node = begin;
-        self.done = begin >= end;
+        self.begin = self.ref = self.next = self.node = begin;
+        self.step_size = step_size; // PRIME THE PUMP.
+        self.step(&self);
     }
     return self;
 }
@@ -307,9 +307,21 @@ CTL_IMPL(CTL_I, each)(CTL_A* a)
         : CTL_IMPL(CTL_I, by)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
 }
 
+
+static inline void
+CTL_IMPL(CTL_A, remove_if)(CTL_A* self, bool (*match)(CTL_T*))
+{
+    CTL_I it = CTL_IMPL(CTL_I, each)(self);
+    CTL_FOR(it, {
+        if(match(it.ref))
+        {
+            CTL_IMPL(CTL_A, erase)(self, it.node);
+            it.end = CTL_IMPL(CTL_A, end)(self);
+            it.next = it.node;
+        }
+    });
+}
+
 #undef CTL_T
 #undef CTL_A
 #undef CTL_I
-#undef CTL_TZ
-#undef CTL_AZ
-#undef CTL_IZ

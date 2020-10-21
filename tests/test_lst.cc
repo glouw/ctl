@@ -26,21 +26,9 @@ test_equal(lst_digi* a, std::list<DIGI>& b)
 }
 
 static bool
-digi_is_odd(digi* d)
-{
-    return *d->value % 2;
-}
-
-static bool
 digi_match(digi* a, digi* b)
 {
     return *a->value == *b->value;
-}
-
-static bool
-DIGI_is_odd(DIGI& d)
-{
-    return *d.value % 2;
 }
 
 static void
