@@ -1,6 +1,5 @@
 #include "test.h"
-
-#include "digi.cc"
+#include "digi.h"
 
 #define CTL_T digi
 #include <vec.h>
