@@ -1,3 +1,0 @@
-[x] container sizes - is size 0 supported?
-[x] make vec operations use begin/end
-[x] vector capacity - all sizes align properly?
