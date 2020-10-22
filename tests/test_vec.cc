@@ -7,8 +7,6 @@
 #include <vector>
 #include <algorithm>
 
-// EXPANDED INLINE SO ASSERTS CAN CATCH SWITCH STATEMENT PROBLEMS.
-
 #define CHECK(_a, _b) {                                 \
     {                                                   \
         for(auto _d : _b)                               \

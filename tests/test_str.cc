@@ -9,8 +9,6 @@
 #define MIN_STR_SIZE  (30) // NO SUPPORT FOR SMALL STRINGS.
 #define ALPHA_LETTERS (23)
 
-// THIS MUST BE A MACRO SO SWITCH PRINT LINE NUMBER WHEN THEY FAIL THEIR TESTS.
-
 #define CHECK(a, b) {                              \
     assert(strcmp(str_c_str(&a), b.c_str()) == 0); \
     assert(a.capacity == b.capacity());            \

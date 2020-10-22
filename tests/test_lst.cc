@@ -6,8 +6,6 @@
 
 #include <list>
 
-// BEST COPY AND PASTED SO ASSERTS CAN CATCH SWITCH STATEMENT CRASHES.
-
 #define CHECK(a, b) {                                           \
     assert(a.size == b.size());                                 \
     if(a.size > 0 && b.size() > 0) {                            \
