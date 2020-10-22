@@ -12,7 +12,7 @@
 #include <lst.h>
 
 #define CTL_POD
-#define CTL_T double
+#define CTL_T int
 #include <deq.h>
 
 #define CTL_POD
@@ -128,6 +128,12 @@ main(void)
         vec_int_push_back(&a, 3);
         vec_int_remove_if(&a, int_is_3);
         vec_int_free(&a);
+    }{
+        deq_int a = deq_int_init();
+        size_t size = 1024;
+        for(size_t i = 0; i < size; i++)
+            deq_int_push_back(&a, i);
+        deq_int_free(&a);
     }{
         lst_int a = lst_int_init();
         lst_int_push_back(&a, 2);

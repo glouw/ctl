@@ -41,12 +41,12 @@ CTL_IMPL(CTL_A, init)(void)
 {
     static CTL_A zero;
     CTL_A self = zero;
-#ifndef CTL_POD
+#ifdef CTL_POD
+#undef CTL_POD
+#else
     self.init_default = CTL_IMPL(CTL_T, init_default);
     self.free = CTL_IMPL(CTL_T, free);
     self.copy = CTL_IMPL(CTL_T, copy);
-#else
-#undef CTL_POD
 #endif
     return self;
 }
@@ -90,7 +90,45 @@ CTL_IMPL(CTL_A, end)(CTL_A* self)
     return self->tail;
 }
 
-#include <shared/link.h>
+static inline void
+CTL_IMPL(CTL_A, link_disconnect)(CTL_A* self, CTL_B* node)
+{
+    if(node == self->tail) self->tail = self->tail->prev;
+    if(node == self->head) self->head = self->head->next;
+    if(node->prev) node->prev->next = node->next;
+    if(node->next) node->next->prev = node->prev;
+    node->prev = node->next = NULL;
+    self->size -= 1;
+}
+
+static inline void
+CTL_IMPL(CTL_A, link_connect)(CTL_A* self, CTL_B* position, CTL_B* node, bool before)
+{
+    if(CTL_IMPL(CTL_A, empty)(self))
+        self->head = self->tail = node;
+    else
+    if(before)
+    {
+        node->next = position;
+        node->prev = position->prev;
+        if(position->prev)
+            position->prev->next = node;
+        position->prev = node;
+        if(position == self->head)
+            self->head = node;
+    }
+    else
+    {
+        node->prev = position;
+        node->next = position->next;
+        if(position->next)
+            position->next->prev = node;
+        position->next = node;
+        if(position == self->tail)
+            self->tail = node;
+    }
+    self->size += 1;
+}
 
 static inline void
 CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
@@ -208,7 +246,7 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
         self.step = CTL_IMPL(CTL_I, step);
         self.end = end;
         self.begin = self.next = self.node = begin;
-        self.step_size = 1; // PRIME THE PUMP.
+        self.step_size = 1; // PRIME.
         self.step(&self);
         self.step_size = step_size;
     }

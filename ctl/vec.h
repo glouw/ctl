@@ -16,8 +16,8 @@ CTL_A;
 
 typedef struct CTL_I
 {
-    CTL_T* ref;
     void (*step)(struct CTL_I*);
+    CTL_T* ref;
     CTL_T* node;
     CTL_T* begin;
     CTL_T* end;
@@ -32,12 +32,12 @@ CTL_IMPL(CTL_A, init)(void)
 {
     static CTL_A zero;
     CTL_A self = zero;
-#ifndef CTL_POD
+#ifdef CTL_POD
+#undef CTL_POD
+#else
     self.init_default = CTL_IMPL(CTL_T, init_default);
     self.free = CTL_IMPL(CTL_T, free);
     self.copy = CTL_IMPL(CTL_T, copy);
-#else
-#undef CTL_POD
 #endif
     return self;
 }
@@ -293,7 +293,7 @@ CTL_IMPL(CTL_I, by)(CTL_T* begin, CTL_T* end, size_t step_size)
         self.step = CTL_IMPL(CTL_I, step);
         self.end = end;
         self.begin = self.ref = self.next = self.node = begin;
-        self.step_size = step_size; // PRIME THE PUMP.
+        self.step_size = step_size;
         self.step(&self);
     }
     return self;
@@ -306,7 +306,6 @@ CTL_IMPL(CTL_I, each)(CTL_A* a)
         ? CTL_IMPL(CTL_I, by)(NULL, NULL, 1)
         : CTL_IMPL(CTL_I, by)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
 }
-
 
 static inline void
 CTL_IMPL(CTL_A, remove_if)(CTL_A* self, bool (*match)(CTL_T*))

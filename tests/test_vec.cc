@@ -7,46 +7,46 @@
 #include <vector>
 #include <algorithm>
 
-static void
-test_equal(vec_digi* a, std::vector<DIGI>& b)
-{
-    {
-        for(auto d : b)
-            assert(d.value != nullptr);
-        for(size_t i = 0; i < a->size; i++)
-            assert(vec_digi_at(a, i) != NULL);
-    }{
-        size_t index = 0;
-        for(auto& d : b)
-        {
-            digi* ref = vec_digi_at(a, index);
-            assert(*d.value == *ref->value);
-            index += 1;
-        }
-    }{
-        std::vector<DIGI>::iterator iter = b.begin();
-        vec_digi_it it = vec_digi_it_each(a);
-        CTL_FOR(it, {
-            assert(*it.ref->value == *iter->value);
-            iter++;
-        });
-    }{
-        assert(a->capacity == b.capacity());
-        assert(a->size == b.size());
-        assert(vec_digi_empty(a) == b.empty());
-    }{
-        if(a->size > 0)
-        {
-            assert(&a->value[0] == vec_digi_data(a));
-            assert(&b[0] == b.data());
-            DIGI& bf = b.front();
-            DIGI& bb = b.back();
-            digi* af = vec_digi_front(a);
-            digi* ab = vec_digi_back(a);
-            assert(*af->value == *bf.value);
-            assert(*ab->value == *bb.value);
-        }
-    }
+// EXPANDED INLINE SO ASSERTS CAN CATCH SWITCH STATEMENT PROBLEMS.
+
+#define CHECK(_a, _b) {                                 \
+    {                                                   \
+        for(auto _d : _b)                               \
+            assert(_d.value != nullptr);                \
+        for(size_t i = 0; i < _a.size; i++)             \
+            assert(vec_digi_at(&_a, i) != NULL);        \
+    }{                                                  \
+        size_t index = 0;                               \
+        for(auto& _d : _b)                              \
+        {                                               \
+            digi* _ref = vec_digi_at(&_a, index);       \
+            assert(*_d.value == *_ref->value);          \
+            index += 1;                                 \
+        }                                               \
+    }{                                                  \
+        std::vector<DIGI>::iterator _iter = _b.begin(); \
+        vec_digi_it _it = vec_digi_it_each(&_a);        \
+        CTL_FOR(_it, {                                  \
+            assert(*_it.ref->value == *_iter->value);   \
+            _iter++;                                    \
+        });                                             \
+    }{                                                  \
+        assert(_a.capacity == _b.capacity());           \
+        assert(_a.size == _b.size());                   \
+        assert(vec_digi_empty(&_a) == _b.empty());      \
+    }{                                                  \
+        if(_a.size > 0)                                 \
+        {                                               \
+            assert(&_a.value[0] == vec_digi_data(&_a)); \
+            assert(&_b[0] == _b.data());                \
+            DIGI& _bf = _b.front();                     \
+            DIGI& _bb = _b.back();                      \
+            digi* _af = vec_digi_front(&_a);            \
+            digi* _ab = vec_digi_back(&_a);             \
+            assert(*_af->value == *_bf.value);          \
+            assert(*_ab->value == *_bb.value);          \
+        }                                               \
+    }                                                   \
 }
 
 int
@@ -108,6 +108,7 @@ main(void)
                     const int value = TEST_RAND(INT_MAX);
                     b.push_back(DIGI{value});
                     vec_digi_push_back(&a, digi_init(value));
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_POP_BACK:
@@ -117,12 +118,14 @@ main(void)
                         b.pop_back();
                         vec_digi_pop_back(&a);
                     }
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_CLEAR:
                 {
                     b.clear();
                     vec_digi_clear(&a);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_ERASE:
@@ -133,6 +136,7 @@ main(void)
                         b.erase(b.begin() + index);
                         vec_digi_erase(&a, vec_digi_begin(&a) + index);
                     }
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_INSERT:
@@ -145,6 +149,7 @@ main(void)
                         b.insert(b.begin() + index, DIGI{value});
                         vec_digi_insert(&a, vec_digi_begin(&a) + index, digi_init(value));
                     }
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_RESIZE:
@@ -152,6 +157,7 @@ main(void)
                     const size_t resize = 3 * TEST_RAND(a.size) + 1;
                     b.resize(resize);
                     vec_digi_resize(&a, resize);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_RESERVE:
@@ -159,26 +165,30 @@ main(void)
                     const size_t capacity = 3 * TEST_RAND(a.capacity) + 1;
                     b.reserve(capacity);
                     vec_digi_reserve(&a, capacity);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_SHRINK_TO_FIT:
                 {
                     b.shrink_to_fit();
                     vec_digi_shrink_to_fit(&a);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_SORT:
                 {
                     vec_digi_sort(&a, digi_compare);
                     std::sort(b.begin(), b.end());
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_COPY:
                 {
                     vec_digi aa = vec_digi_copy(&a);
                     std::vector<DIGI> bb = b;
-                    test_equal(&aa, bb);
+                    CHECK(aa, bb);
                     vec_digi_free(&aa);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_ASSIGN:
@@ -188,6 +198,7 @@ main(void)
                     digi d = digi_init(value);
                     vec_digi_assign(&a, assign_size, d);
                     b.assign(assign_size, DIGI{value});
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_SWAP:
@@ -198,18 +209,20 @@ main(void)
                     std::vector<DIGI> bbb;
                     vec_digi_swap(&aaa, &aa);
                     std::swap(bb, bbb);
-                    test_equal(&aaa, bbb);
+                    CHECK(aaa, bbb);
                     vec_digi_free(&aaa);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_REMOVE_IF:
                 {
                     vec_digi_remove_if(&a, digi_is_odd);
                     b.erase(std::remove_if(b.begin(), b.end(), DIGI_is_odd), b.end());
+                    CHECK(a, b);
                     break;
                 }
             }
-            test_equal(&a, b);
+            CHECK(a, b);
             vec_digi_free(&a);
         }
     }

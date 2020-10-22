@@ -9,6 +9,15 @@
 #define MIN_STR_SIZE  (30) // NO SUPPORT FOR SMALL STRINGS.
 #define ALPHA_LETTERS (23)
 
+// THIS MUST BE A MACRO SO SWITCH PRINT LINE NUMBER WHEN THEY FAIL THEIR TESTS.
+
+#define CHECK(a, b) {                              \
+    assert(strcmp(str_c_str(&a), b.c_str()) == 0); \
+    assert(a.capacity == b.capacity());            \
+    assert(a.size == b.size());                    \
+    assert(str_empty(&a) == b.empty());            \
+}
+
 static char*
 create_test_string(size_t size)
 {
@@ -21,15 +30,6 @@ create_test_string(size_t size)
     }
     temp[size] = '\0';
     return temp;
-}
-
-static void
-test_equal(str* a, std::string& b)
-{
-    assert(strcmp(str_c_str(a), b.c_str()) == 0);
-    assert(a->capacity == b.capacity());
-    assert(a->size == b.size());
-    assert(str_empty(a) == b.empty());
 }
 
 static int
@@ -110,6 +110,7 @@ main(void)
                     const char value = TEST_RAND(ALPHA_LETTERS);
                     b.push_back(value);
                     str_push_back(&a, value);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_POP_BACK:
@@ -119,6 +120,7 @@ main(void)
                         b.pop_back();
                         str_pop_back(&a);
                     }
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_APPEND:
@@ -127,12 +129,14 @@ main(void)
                     str_append(&a, temp);
                     b.append(temp);
                     free(temp);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_C_STR:
                 {
                     assert(strlen(str_c_str(&a)));
                     assert(str_c_str(&a) == str_data(&a));
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_REPLACE:
@@ -143,6 +147,7 @@ main(void)
                     str_replace(&a, index, size, temp);
                     b.replace(index, size, temp);
                     free(temp);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_FIND:
@@ -151,6 +156,7 @@ main(void)
                     char* temp = create_test_string(size);
                     assert(str_find(&a, temp) == b.find(temp));
                     free(temp);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_RFIND:
@@ -158,6 +164,7 @@ main(void)
                     char* temp = create_test_string(TEST_RAND(3));
                     assert(str_rfind(&a, temp) == b.rfind(temp));
                     free(temp);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_FIND_FIRST_OF:
@@ -166,6 +173,7 @@ main(void)
                     char* temp = create_test_string(size);
                     assert(str_find_first_of(&a, temp) == b.find_first_of(temp));
                     free(temp);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_FIND_LAST_OF:
@@ -174,6 +182,7 @@ main(void)
                     char* temp = create_test_string(size);
                     assert(str_find_last_of(&a, temp) == b.find_last_of(temp));
                     free(temp);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_FIND_FIRST_NOT_OF:
@@ -182,6 +191,7 @@ main(void)
                     char* temp = create_test_string(size);
                     assert(str_find_first_not_of(&a, temp) == b.find_first_not_of(temp));
                     free(temp);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_FIND_LAST_NOT_OF:
@@ -190,6 +200,7 @@ main(void)
                     char* temp = create_test_string(size);
                     assert(str_find_last_not_of(&a, temp) == b.find_last_not_of(temp));
                     free(temp);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_SUBSTR:
@@ -200,9 +211,10 @@ main(void)
                     {
                         str substr1 = str_substr(&a, index, size);
                         std::string substr2 = b.substr(index, size);
-                        test_equal(&substr1, substr2);
+                        CHECK(substr1, substr2);
                         str_free(&substr1);
                     }
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_COMPARE:
@@ -222,12 +234,14 @@ main(void)
                     str_free(&_b);
                     free(_ta);
                     free(_tb);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_CLEAR:
                 {
                     str_clear(&a);
                     b.clear();
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_ERASE:
@@ -235,6 +249,7 @@ main(void)
                     const size_t index = TEST_RAND(a.size);
                     b.erase(b.begin() + index);
                     str_erase(&a, str_begin(&a) + index);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_INSERT:
@@ -247,6 +262,7 @@ main(void)
                         b.insert(b.begin() + index, value);
                         str_insert(&a, str_begin(&a) + index, value);
                     }
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_RESIZE:
@@ -254,6 +270,7 @@ main(void)
                     const size_t resize = 3 * TEST_RAND(a.size);
                     b.resize(resize);
                     str_resize(&a, resize);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_RESERVE:
@@ -261,26 +278,30 @@ main(void)
                     const size_t capacity = 3 * TEST_RAND(a.capacity);
                     b.reserve(capacity);
                     str_reserve(&a, capacity);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_SHRINK_TO_FIT:
                 {
                     b.shrink_to_fit();
                     str_shrink_to_fit(&a);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_SORT:
                 {
                     str_sort(&a, char_compare);
                     std::sort(b.begin(), b.end());
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_COPY:
                 {
                     str ca = str_copy(&a);
                     std::string cb = b;
-                    test_equal(&ca, cb);
+                    CHECK(ca, cb);
                     str_free(&ca);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_ASSIGN:
@@ -289,6 +310,7 @@ main(void)
                     size_t assign_size = TEST_RAND(a.size);
                     str_assign(&a, assign_size, value);
                     b.assign(assign_size, value);
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_SWAP:
@@ -299,12 +321,13 @@ main(void)
                     std::string bbb;
                     str_swap(&aaa, &aa);
                     std::swap(cb, bbb);
-                    test_equal(&aaa, bbb);
+                    CHECK(aaa, bbb);
                     str_free(&aaa);
+                    CHECK(a, b);
                     break;
                 }
             }
-            test_equal(&a, b);
+            CHECK(a, b);
             str_free(&a);
             free(base);
         }

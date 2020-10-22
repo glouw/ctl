@@ -6,22 +6,21 @@
 
 #include <list>
 
-static void
-test_equal(lst_digi* a, std::list<DIGI>& b)
-{
-    assert(a->size == b.size());
-    if(a->size > 0 && b.size() > 0)
-    {
-        assert(lst_digi_empty(a) == b.empty());
-        assert(*lst_digi_front(a)->value == *b.front().value);
-        assert(*lst_digi_back(a)->value == *b.back().value);
-        std::list<DIGI>::iterator iter = b.begin();
-        lst_digi_it it = lst_digi_it_each(a);
-        CTL_FOR(it, {
-            assert(*it.ref->value == *iter->value);
-            iter++;
-        });
-    }
+// BEST COPY AND PASTED SO ASSERTS CAN CATCH SWITCH STATEMENT CRASHES.
+
+#define CHECK(a, b) {                                           \
+    assert(a.size == b.size());                                 \
+    if(a.size > 0 && b.size() > 0) {                            \
+        assert(lst_digi_empty(&a) == b.empty());                \
+        assert(*lst_digi_front(&a)->value == *b.front().value); \
+        assert(*lst_digi_back(&a)->value == *b.back().value);   \
+        std::list<DIGI>::iterator _iter = b.begin();            \
+        lst_digi_it _it = lst_digi_it_each(&a);                 \
+        CTL_FOR(_it, {                                          \
+            assert(*_it.ref->value == *_iter->value);           \
+            _iter++;                                            \
+        });                                                     \
+    }                                                           \
 }
 
 static bool
@@ -87,6 +86,7 @@ main(void)
                 int value = TEST_RAND(INT_MAX);
                 lst_digi_push_front(&a, digi_init(value));
                 b.push_front(DIGI{value});
+                CHECK(a, b);
                 break;
             }
             case TEST_PUSH_BACK:
@@ -94,6 +94,7 @@ main(void)
                 int value = TEST_RAND(INT_MAX);
                 lst_digi_push_back(&a, digi_init(value));
                 b.push_back(DIGI{value});
+                CHECK(a, b);
                 break;
             }
             case TEST_POP_FRONT:
@@ -103,6 +104,7 @@ main(void)
                     lst_digi_pop_front(&a);
                     b.pop_front();
                 }
+                CHECK(a, b);
                 break;
             }
             case TEST_POP_BACK:
@@ -112,6 +114,7 @@ main(void)
                     lst_digi_pop_back(&a);
                     b.pop_back();
                 }
+                CHECK(a, b);
                 break;
             }
             case TEST_ERASE:
@@ -131,6 +134,7 @@ main(void)
                     iter++;
                     current += 1;
                 });
+                CHECK(a, b);
                 break;
             }
             case TEST_INSERT:
@@ -151,12 +155,14 @@ main(void)
                     iter++;
                     current += 1;
                 });
+                CHECK(a, b);
                 break;
             }
             case TEST_CLEAR:
             {
                 lst_digi_clear(&a);
                 b.clear();
+                CHECK(a, b);
                 break;
             }
             case TEST_RESIZE:
@@ -164,6 +170,7 @@ main(void)
                 size_t resize = 3 * TEST_RAND(a.size);
                 lst_digi_resize(&a, resize);
                 b.resize(resize);
+                CHECK(a, b);
                 break;
             }
             case TEST_ASSIGN:
@@ -175,6 +182,7 @@ main(void)
                     lst_digi_assign(&a, width, digi_init(value));
                     b.assign(width, DIGI{value});
                 }
+                CHECK(a, b);
                 break;
             }
             case TEST_SWAP:
@@ -185,28 +193,32 @@ main(void)
                 std::list<DIGI> bbb;
                 lst_digi_swap(&aaa, &aa);
                 std::swap(bb, bbb);
-                test_equal(&aaa, bbb);
+                CHECK(aaa, bbb)
                 lst_digi_free(&aaa);
+                CHECK(a, b);
                 break;
             }
             case TEST_COPY:
             {
                 lst_digi aa = lst_digi_copy(&a);
                 std::list<DIGI> bb = b;
-                test_equal(&aa, bb);
+                CHECK(aa, bb);
                 lst_digi_free(&aa);
+                CHECK(a, b);
                 break;
             }
             case TEST_REVERSE:
             {
                 lst_digi_reverse(&a);
                 b.reverse();
+                CHECK(a, b);
                 break;
             }
             case TEST_REMOVE_IF:
             {
                 lst_digi_remove_if(&a, digi_is_odd);
                 b.remove_if(DIGI_is_odd);
+                CHECK(a, b);
                 break;
             }
             case TEST_SPLICE:
@@ -227,6 +239,7 @@ main(void)
                 setup_lists(&aa, bb, TEST_RAND(TEST_MAX_SIZE), NULL);
                 b.splice(iter, bb);
                 lst_digi_splice(&a, it.node, &aa);
+                CHECK(a, b);
                 break;
             }
             case TEST_MERGE:
@@ -246,6 +259,7 @@ main(void)
                 }
                 b.merge(bb);
                 lst_digi_merge(&a, &aa, digi_compare);
+                CHECK(a, b);
                 break;
             }
             case TEST_EQUAL:
@@ -255,22 +269,25 @@ main(void)
                 assert(lst_digi_equal(&a, &aa, digi_match));
                 assert(b == bb);
                 lst_digi_free(&aa);
+                CHECK(a, b);
                 break;
             }
             case TEST_SORT:
             {
                 lst_digi_sort(&a, digi_compare);
                 b.sort();
+                CHECK(a, b);
                 break;
             }
             case TEST_UNIQUE:
             {
                 lst_digi_unique(&a, digi_match);
                 b.unique();
+                CHECK(a, b);
                 break;
             }
         }
-        test_equal(&a, b);
+        CHECK(a, b);
         lst_digi_free(&a);
     }
     TEST_PASS(__FILE__);
