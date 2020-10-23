@@ -57,7 +57,7 @@ main(void)
         for(size_t mode = MODE_DIRECT; mode < MODE_TOTAL; mode++)
         {
             char* base = create_test_string(str_size);
-            str a;
+            str a = str_init();
             std::string b;
             if(mode == MODE_DIRECT)
             {
