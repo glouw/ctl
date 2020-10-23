@@ -25,8 +25,8 @@ CTL_A;
 
 typedef struct CTL_I
 {
-    CTL_T* ref;
     void (*step)(struct CTL_I*);
+    CTL_T* ref;
     CTL_B* begin;
     CTL_B* node;
     CTL_B* next;
@@ -87,7 +87,8 @@ CTL_IMPL(CTL_A, begin)(CTL_A* self)
 static inline CTL_B*
 CTL_IMPL(CTL_A, end)(CTL_A* self)
 {
-    return self->tail;
+    (void) self;
+    return NULL;
 }
 
 static inline void
@@ -224,7 +225,8 @@ static inline void
 CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
     for(size_t i = 0; i < self->step_size; i++)
-        if(self->node == self->end)
+    {
+        if(self->next == self->end)
             self->done = true;
         else
         {
@@ -232,6 +234,7 @@ CTL_IMPL(CTL_I, step)(CTL_I* self)
             self->ref = &self->node->value;
             self->next = self->node->next;
         }
+    }
 }
 
 static inline CTL_I
@@ -239,15 +242,16 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
 {
     static CTL_I zero;
     CTL_I self = zero;
-    if(begin == NULL || end == NULL)
+    if(begin == NULL)
         self.done = true;
     else
     {
         self.step = CTL_IMPL(CTL_I, step);
+        self.begin = begin;
         self.end = end;
-        self.begin = self.next = self.node = begin;
-        self.step_size = 1; // PRIME.
-        self.step(&self);
+        self.next = begin->next;
+        self.node = begin;
+        self.ref = &begin->value;
         self.step_size = step_size;
     }
     return self;

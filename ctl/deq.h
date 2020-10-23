@@ -65,7 +65,7 @@ CTL_IMPL(CTL_A, begin)(CTL_A* self)
 static inline CTL_T*
 CTL_IMPL(CTL_A, end)(CTL_A* self)
 {
-    return CTL_IMPL(CTL_A, back)(self);
+    return CTL_IMPL(CTL_A, back)(self) + 1;
 }
 
 static inline CTL_A
@@ -183,6 +183,7 @@ CTL_IMPL(CTL_A, free)(CTL_A* self)
         CTL_IMPL(CTL_A, pop_back)(self);
 }
 
+#undef CTL_DEQ_PAGE_SIZE
 #undef CTL_T
 #undef CTL_U
 #undef CTL_A

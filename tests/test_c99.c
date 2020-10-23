@@ -99,9 +99,6 @@ int_match(int* a, int* b)
     return *a == *b;
 }
 
-static bool int_is_2(int* a) { return *a == 2; }
-static bool int_is_3(int* a) { return *a == 3; }
-
 int
 main(void)
 {
@@ -126,7 +123,9 @@ main(void)
         vec_int_push_back(&a, 3);
         vec_int_push_back(&a, 3);
         vec_int_push_back(&a, 3);
-        vec_int_remove_if(&a, int_is_3);
+        CTL_FOREACH(vec_int, &a, it, {
+            (void) 0;
+        });
         vec_int_free(&a);
     }{
         deq_int a = deq_int_init();
@@ -136,16 +135,14 @@ main(void)
         deq_int_free(&a);
     }{
         lst_int a = lst_int_init();
-        lst_int_push_back(&a, 2);
         lst_int_push_back(&a, 1);
-        lst_int_push_back(&a, 2);
-        lst_int_push_back(&a, 2);
-        lst_int_push_back(&a, 2);
         lst_int_push_back(&a, 2);
         lst_int_push_back(&a, 3);
         lst_int_push_back(&a, 4);
-        lst_int_push_back(&a, 2);
-        lst_int_remove_if(&a, int_is_2);
+        lst_int_push_back(&a, 5);
+        lst_int_push_back(&a, 6);
+        lst_int_push_back(&a, 7);
+        lst_int_push_back(&a, 8);
         lst_int_free(&a);
     }{
         vec_str b = vec_str_init();

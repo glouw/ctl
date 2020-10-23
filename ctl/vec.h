@@ -5,10 +5,10 @@
 
 typedef struct
 {
+    CTL_T* value;
     CTL_T (*init_default)(void);
     void (*free)(CTL_T*);
     CTL_T (*copy)(CTL_T*);
-    CTL_T* value;
     size_t size;
     size_t capacity;
 }
@@ -75,7 +75,7 @@ CTL_IMPL(CTL_A, begin)(CTL_A* self)
 static inline CTL_T*
 CTL_IMPL(CTL_A, end)(CTL_A* self)
 {
-    return CTL_IMPL(CTL_A, back)(self);
+    return CTL_IMPL(CTL_A, back)(self) + 1;
 }
 
 static inline void
@@ -271,14 +271,13 @@ CTL_IMPL(CTL_A, swap)(CTL_A* self, CTL_A* other)
 static inline void
 CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
-    if(self->next >= self->begin
-    && self->next <= self->end)
+    if(self->next < self->begin || self->next >= self->end)
+        self->done = true;
+    else
     {
         self->ref = self->node = self->next;
-        self->next = self->ref + self->step_size;
+        self->next += self->step_size;
     }
-    else
-        self->done = true;
 }
 
 static inline CTL_I
@@ -291,10 +290,12 @@ CTL_IMPL(CTL_I, by)(CTL_T* begin, CTL_T* end, size_t step_size)
     else
     {
         self.step = CTL_IMPL(CTL_I, step);
+        self.begin = begin;
         self.end = end;
-        self.begin = self.ref = self.next = self.node = begin;
+        self.next = begin + step_size;
+        self.node = begin;
+        self.ref = begin;
         self.step_size = step_size;
-        self.step(&self);
     }
     return self;
 }

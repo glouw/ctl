@@ -12,7 +12,7 @@
 #define TEST_MAX_LOOPS (8096)
 #else
 #define TEST_MAX_SIZE  (1024)
-#define TEST_MAX_LOOPS (1024)
+#define TEST_MAX_LOOPS (2048)
 #endif
 
 #define TEST_SIGN(a) ((a < 0) ? (-1) : (a > 0) ? (1) : (0))

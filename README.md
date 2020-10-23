@@ -12,33 +12,46 @@ make maximum use of C99's portability and fast compile times.
 Define type `CTL_T` before including a CTL container:
 
 ```C
+#include <stdio.h>
 
 #define CTL_POD
 #define CTL_T int
 #include <vec.h>
 
+int compare(int* a, int* b)
+{
+    return *b < *a;
+}
+
 int main(void)
 {
     vec_int a = vec_int_init();
-    vec_int_push_back(&a, 1);
     vec_int_push_back(&a, 2);
-    vec_int_push_back(&a, 3);
+    vec_int_push_back(&a, 1);
+    vec_int_push_back(&a, 9);
     vec_int_push_back(&a, 4);
-    vec_int_it it = vec_int_it_each(&a);
-    CTL_FOR(it, {
+    vec_int_push_back(&a, 3);
+    vec_int_sort(&a, compare);
+    CTL_FOREACH(vec_int, &a, it, {
         printf("%d\n", *it.ref);
     });
     vec_int_free(&a);
 }
 ```
 
-Compile by including the `ctl` directory as a system directory:
+The definition `CTL_POD` implies no copy constructor, default constructor,
+or destructor is needed. Both `CTL_POD` and `CTL_T` definitions are consumed
+(#undef) by a CTL container include directive.
+
+To compile, include `ctl` directory as a system directory:
 
     gcc main.c -isystem ctl
 
 Containers and types are hot swappable:
 
 ```C
+#include <stdio.h>
+#include <math.h>
 
 typedef struct
 {
@@ -51,28 +64,50 @@ point;
 #define CTL_T point
 #include <lst.h>
 
+double mag(point* p)
+{
+    return sqrt(p->x * p->x + p->y * p->y);
+}
+
+int compare(point* a, point* b)
+{
+    return mag(b) < mag(a);
+}
+
 int main(void)
 {
     lst_point a = lst_point_init();
+    lst_point_push_back(&a, (point) { 5.5, 6.6 });
     lst_point_push_back(&a, (point) { 1.1, 2.2 });
     lst_point_push_back(&a, (point) { 3.3, 4.4 });
-    lst_point_push_back(&a, (point) { 5.5, 6.6 });
     lst_point_push_back(&a, (point) { 7.7, 8.8 });
-    lst_point_it it = lst_point_it_each(&a);
-    CTL_FOR(it, {
+    lst_point_sort(&a, compare);
+    CTL_FOREACH(lst_point, &a, it, {
         printf("%f %f\n", it.ref->x, it.ref->y);
     });
     lst_point_free(&a);
 }
 ```
-Plain Old Data (POD) types do not require definitions for a default constructor,
-a copy constructor, and a destructor. Types that acquire resources with malloc do, and
-the aforementioned constructors and destructor must take the form of `CTL_T + init_default`,
-`CTL_T + copy`, and `CTL_T + free`, respectively:
+Types that acquire resources with malloc require that the `CTL_POD` definition be omitted,
+and require function definitions for the type's default constructor, copy constructor,
+and destructor in the form of `CTL_T + init_default`, `CTL_T + copy`, and `CTL_T + free`,
+respectively:
 
 ```C
 
+#include <stdio.h>
 #include <str.h>
+
+typedef struct
+{
+    double x;
+    double y;
+}
+point;
+
+#define CTL_POD
+#define CTL_T point
+#include <vec.h>
 
 typedef struct
 {
@@ -124,16 +159,73 @@ int main(void)
     vec_person_push_back(&a, person_init(128, "Midnight", "Walker"));
     vec_person_push_back(&a, person_init(256, "Moonlit", "Sunrise"));
     vec_person_push_back(&a, person_init(512, "Daytime", "Eclipse"));
-    vec_person b = vec_person_copy(&a);
-    vec_person_free(&a);
-    vec_person_free(&b);
+    vec_person_resize(&a, 8); // Default constructor called for indices 3, 4, 5, 6, 7.
+    CTL_FOREACH(vec_person, &a, it, {
+        printf("%lu %lu %s\n", it.ref->path.size, it.ref->path.capacity, it.ref->name.value);
+    });
+    vec_person b = vec_person_copy(&a); // Copy constructor called for each index.
+    vec_person_free(&a); // Default constructor called for each index.
+    vec_person_free(&b); // Likewise, but on the copy.
 }
 ```
 
-## Caveats
+### Using Pointers
 
-Two containers with the same type may not be instantiated. For instance, the following
-will result in multiple definition compile time errors:
+If pointers wish to be stored within a container, typedef a pointer type
+before including the template container header:
+
+```C
+typedef int* intp;
+#define CTL_POD
+#define CTL_T intp
+#include <vec.h>
+```
+
+### Templating Containers with Containers
+
+Containers can be templated from other containers. For instance, a list of
+vectors holding integers:
+
+```C
+#define CTL_POD
+#define CTL_T TYPE
+#include <vec.h>
+
+#define CTL_POD
+#define CTL_T CTL_IMPL(vec, TYPE)
+#include <lst.h>
+
+#undef TYPE
+
+#ifdef CTL_POD
+#undef CTL_POD
+#endif
+```
+
+Packaging the above into `container.h` yields a templatable data structure
+that can be used for any type:
+
+```C
+#include <str.h>
+#define TYPE str
+#include "container.h"
+
+int main(void)
+{
+    lst_vec_str list = lst_vec_str_init();
+    lst_vec_str_resize(&list, 8);
+    CTL_FOREACH(lst_vec_str, &list, it, {
+        vec_str_push_back(it.ref, str_create("EXAMPLE STRING"));
+    });
+    lst_vec_str_free(&list);
+}
+```
+
+### Resolving Namespace Collisions
+
+Two containers with the same type may not be instantiated.
+For instance, the following examples result in multiple definition
+compile time errors:
 
 ```C
 #define CTL_POD
@@ -144,7 +236,8 @@ will result in multiple definition compile time errors:
 #define CTL_T char
 #include <vec.h>
 ```
-If the above scenario is encountered and needs a work around, a template expansion can be renamed:
+If the above scenario is encountered and needs a work around,
+a template expansion can be renamed:
 
 ```C
 #define CTL_POD
@@ -157,3 +250,23 @@ If the above scenario is encountered and needs a work around, a template expansi
 #include <vec.h>
 #undef my_char_vec
 ```
+
+## Running Tests
+
+Each test randomly fills both CTL and STL containers with random data and then
+proceeds to randomly call functions. A test passes when the maximum number of
+iterations within `test.h` is reached, and the container meta data, as well actual data,
+within both CTL and STL containers, match for each iteration.
+
+To compile and run all tests, run:
+
+    make
+
+To compile and run all tests with greater memory usage and more max iterations,
+pass the `LONG=1` flag to make:
+
+    make LONG=1
+
+To run overnight and catch subtle regressions:
+
+    while true; do make LONG=1 || break; done

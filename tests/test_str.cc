@@ -19,7 +19,7 @@
 static char*
 create_test_string(size_t size)
 {
-    char* temp = (char*) malloc(TEST_MAX_SIZE + 1);
+    char* temp = (char*) malloc(size + 1);
     for(size_t i = 0; i < size; i++)
     {
         temp[i] = 'a' + TEST_RAND(ALPHA_LETTERS);
