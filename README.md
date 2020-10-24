@@ -84,7 +84,7 @@ int main(void)
     lst_point_push_back(&a, (point) { 3.3, 4.4 });
     lst_point_push_back(&a, (point) { 7.7, 8.8 });
     lst_point_sort(&a, compare);
-    CTL_FOREACH(lst_point, &a, it, {
+    foreach(lst_point, &a, it, {
         printf("%f %f\n", it.ref->x, it.ref->y);
     });
     lst_point_free(&a);
