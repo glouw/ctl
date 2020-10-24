@@ -92,7 +92,7 @@ CTL_IMPL(CTL_A, end)(CTL_A* self)
 }
 
 static inline void
-CTL_IMPL(CTL_A, link_disconnect)(CTL_A* self, CTL_B* node)
+CTL_IMPL(CTL_A, disconnect)(CTL_A* self, CTL_B* node)
 {
     if(node == self->tail) self->tail = self->tail->prev;
     if(node == self->head) self->head = self->head->next;
@@ -103,7 +103,7 @@ CTL_IMPL(CTL_A, link_disconnect)(CTL_A* self, CTL_B* node)
 }
 
 static inline void
-CTL_IMPL(CTL_A, link_connect)(CTL_A* self, CTL_B* position, CTL_B* node, bool before)
+CTL_IMPL(CTL_A, connect)(CTL_A* self, CTL_B* position, CTL_B* node, bool before)
 {
     if(CTL_IMPL(CTL_A, empty)(self))
         self->head = self->tail = node;
@@ -135,27 +135,27 @@ static inline void
 CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
 {
     CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    CTL_IMPL(CTL_A, link_connect)(self, self->tail, node, false);
+    CTL_IMPL(CTL_A, connect)(self, self->tail, node, false);
 }
 
 static inline void
 CTL_IMPL(CTL_A, push_front)(CTL_A* self, CTL_T value)
 {
     CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    CTL_IMPL(CTL_A, link_connect)(self, self->head, node, true);
+    CTL_IMPL(CTL_A, connect)(self, self->head, node, true);
 }
 
 static inline void
 CTL_IMPL(CTL_A, transfer)(CTL_A* self, CTL_A* other, CTL_B* position, CTL_B* node, bool before)
 {
-    CTL_IMPL(CTL_A, link_disconnect)(other, node);
-    CTL_IMPL(CTL_A, link_connect)(self, position, node, before);
+    CTL_IMPL(CTL_A, disconnect)(other, node);
+    CTL_IMPL(CTL_A, connect)(self, position, node, before);
 }
 
 static inline void
 CTL_IMPL(CTL_A, erase)(CTL_A* self, CTL_B* node)
 {
-    CTL_IMPL(CTL_A, link_disconnect)(self, node);
+    CTL_IMPL(CTL_A, disconnect)(self, node);
     if(self->free)
         self->free(&node->value);
     free(node);
@@ -177,7 +177,7 @@ static inline void
 CTL_IMPL(CTL_A, insert)(CTL_A* self, CTL_B* position, CTL_T value)
 {
     CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    CTL_IMPL(CTL_A, link_connect)(self, position, node, true);
+    CTL_IMPL(CTL_A, connect)(self, position, node, true);
 }
 
 static inline void

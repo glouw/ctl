@@ -17,6 +17,11 @@
 
 #define CTL_POD
 #define CTL_T char
+#define CTL_U 16
+#include <deq.h>
+
+#define CTL_POD
+#define CTL_T char
 #include <vec.h>
 
 #define CTL_POD
@@ -48,6 +53,8 @@ point;
 
 #define CTL_T str
 #include <vec.h>
+
+#define foreach CTL_FOREACH
 
 typedef struct
 {
@@ -104,34 +111,15 @@ main(void)
 {
     {
         vec_int a = vec_int_init();
-        vec_int_push_back(&a, 3);
         vec_int_push_back(&a, 1);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 1);
-        vec_int_push_back(&a, 3);
         vec_int_push_back(&a, 2);
         vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
         vec_int_push_back(&a, 4);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        vec_int_push_back(&a, 3);
-        CTL_FOREACH(vec_int, &a, it, {
-            (void) 0;
-        });
         vec_int_free(&a);
     }{
         deq_int a = deq_int_init();
-        size_t size = 1024;
-        for(size_t i = 0; i < size; i++)
-            deq_int_push_back(&a, i);
+        for(int i = 0; i < 1020; i++) deq_int_push_back(&a, i);
+        for(int i = 0; i < 1021; i++) deq_int_push_front(&a, -i);
         deq_int_free(&a);
     }{
         lst_int a = lst_int_init();

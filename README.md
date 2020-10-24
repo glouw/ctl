@@ -41,7 +41,7 @@ int main(void)
 
 The definition `CTL_POD` implies no copy constructor, default constructor,
 or destructor is needed. Both `CTL_POD` and `CTL_T` definitions are consumed
-(#undef) by a CTL container include directive.
+(`#undef`) by a CTL container include directive.
 
 To compile, include `ctl` directory as a system directory:
 
@@ -88,7 +88,7 @@ int main(void)
     lst_point_free(&a);
 }
 ```
-Types that acquire resources with malloc require that the `CTL_POD` definition be omitted,
+Types that acquire resources with `malloc` require that the `CTL_POD` definition be omitted,
 and require function definitions for the type's default constructor, copy constructor,
 and destructor in the form of `CTL_T + init_default`, `CTL_T + copy`, and `CTL_T + free`,
 respectively:
@@ -164,14 +164,14 @@ int main(void)
         printf("%lu %lu %s\n", it.ref->path.size, it.ref->path.capacity, it.ref->name.value);
     });
     vec_person b = vec_person_copy(&a); // Copy constructor called for each index.
-    vec_person_free(&a); // Default constructor called for each index.
+    vec_person_free(&a); // Default destructor called for each index.
     vec_person_free(&b); // Likewise, but on the copy.
 }
 ```
 
 ### Using Pointers
 
-If pointers wish to be stored within a container, typedef a pointer type
+If pointers wish to be stored within a container, type define a pointer type
 before including the template container header:
 
 ```C

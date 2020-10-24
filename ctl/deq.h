@@ -1,20 +1,21 @@
 #include <ctl.h>
 
 #define CTL_A  CTL_TEMP(CTL_T, deq)
-#define CTL_B  CTL_IMPL(CTL_A, page)
+#define CTL_B  CTL_IMPL(CTL_A, bucket)
 
 #ifdef CTL_U
-#define CTL_DEQ_PAGE_SIZE CTL_U
+#define CTL_DEQ_BUCKET_SIZE CTL_U
 #else
-#define CTL_DEQ_PAGE_SIZE (512)
+#define CTL_DEQ_BUCKET_SIZE (512)
 #endif
 
 typedef struct CTL_B
 {
     struct CTL_B* prev;
     struct CTL_B* next;
-    size_t size;
-    CTL_T value[CTL_DEQ_PAGE_SIZE];
+    size_t a;
+    size_t b;
+    CTL_T value[CTL_DEQ_BUCKET_SIZE];
 }
 CTL_B;
 
@@ -26,22 +27,30 @@ typedef struct
     CTL_B* head;
     CTL_B* tail;
     size_t size;
-    size_t page_size;
-    size_t pages;
+    size_t buckets;
 }
 CTL_A;
 
 static inline CTL_T*
 CTL_IMPL(CTL_A, at)(CTL_A* self, size_t index)
 {
-    size_t mid = self->pages / 2;
-    size_t page = index / self->page_size;
-    bool head = page < mid;
-    size_t steps = (head ? page : (self->pages - page)) - 1;
-    CTL_B* end = head ? self->head : self->tail;
-    for(size_t i = 0; i < steps; i++)
-        end = head ? end->next : end->prev;
-    return &end->value[index % self->page_size];
+    CTL_B* head = self->head;
+    CTL_B* tail = self->tail;
+    index += head->a;
+    size_t bucket_index = index / CTL_DEQ_BUCKET_SIZE;
+    size_t cut = index - CTL_DEQ_BUCKET_SIZE* bucket_index;
+    if(index < self->size / 2)
+    {
+        for(size_t i = 0; i < bucket_index; i++)
+            head = head->next;
+        return &head->value[cut];
+    }
+    else
+    {
+        for(size_t i = bucket_index; i < self->buckets - 1; i++)
+            tail = tail->prev;
+        return &tail->value[cut];
+    }
 }
 
 static inline CTL_T*
@@ -80,16 +89,21 @@ CTL_IMPL(CTL_A, init)(void)
     self.free = CTL_IMPL(CTL_T, free);
     self.copy = CTL_IMPL(CTL_T, copy);
 #endif
-    self.page_size = CTL_DEQ_PAGE_SIZE;
     return self;
 }
 
+static inline void
+CTL_IMPL(CTL_B, dangle)(CTL_B* self)
+{
+    self->prev = self->next = NULL;
+}
+
 static inline CTL_B*
-CTL_IMPL(CTL_B, init)(void)
+CTL_IMPL(CTL_B, init)(size_t cut)
 {
     CTL_B* self = (CTL_B*) malloc(sizeof(CTL_B));
-    self->size = 0;
-    self->prev = self->next = NULL;
+    self->a = self->b = cut;
+    CTL_IMPL(CTL_B, dangle)(self);
     return self;
 }
 
@@ -99,44 +113,45 @@ CTL_IMPL(CTL_A, empty)(CTL_A* self)
     return self->size == 0;
 }
 
-static inline void
-CTL_IMPL(CTL_A, link_disconnect)(CTL_A* self, CTL_B* page)
+static inline CTL_B*
+CTL_IMPL(CTL_A, disconnect)(CTL_A* self, CTL_B* bucket)
 {
-    if(page == self->tail) self->tail = self->tail->prev;
-    if(page == self->head) self->head = self->head->next;
-    if(page->prev) page->prev->next = page->next;
-    if(page->next) page->next->prev = page->prev;
-    page->prev = page->next = NULL;
-    self->pages -= 1;
+    if(bucket == self->tail) self->tail = self->tail->prev;
+    if(bucket == self->head) self->head = self->head->next;
+    if(bucket->prev) bucket->prev->next = bucket->next;
+    if(bucket->next) bucket->next->prev = bucket->prev;
+    CTL_IMPL(CTL_B, dangle)(bucket);
+    self->buckets -= 1;
+    return bucket;
 }
 
 static inline void
-CTL_IMPL(CTL_A, link_connect)(CTL_A* self, CTL_B* position, CTL_B* page, bool before)
+CTL_IMPL(CTL_A, connect)(CTL_A* self, CTL_B* position, CTL_B* bucket, bool before)
 {
     if(CTL_IMPL(CTL_A, empty)(self))
-        self->head = self->tail = page;
+        self->head = self->tail = bucket;
     else
     if(before)
     {
-        page->next = position;
-        page->prev = position->prev;
+        bucket->next = position;
+        bucket->prev = position->prev;
         if(position->prev)
-            position->prev->next = page;
-        position->prev = page;
+            position->prev->next = bucket;
+        position->prev = bucket;
         if(position == self->head)
-            self->head = page;
+            self->head = bucket;
     }
     else
     {
-        page->prev = position;
-        page->next = position->next;
+        bucket->prev = position;
+        bucket->next = position->next;
         if(position->next)
-            position->next->prev = page;
-        position->next = page;
+            position->next->prev = bucket;
+        position->next = bucket;
         if(position == self->tail)
-            self->tail = page;
+            self->tail = bucket;
     }
-    self->pages += 1;
+    self->buckets += 1;
 }
 
 static inline void
@@ -151,29 +166,51 @@ CTL_IMPL(CTL_A, set)(CTL_A* self, size_t index, CTL_T value)
 static inline void
 CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
 {
-    if(self->tail == NULL || self->tail->size == self->page_size)
-    {
-        CTL_B* page = CTL_IMPL(CTL_B, init)();
-        CTL_IMPL(CTL_A, link_connect)(self, self->tail, page, false);
-    }
+    if(CTL_IMPL(CTL_A, empty)(self) || self->tail->b == CTL_DEQ_BUCKET_SIZE)
+        CTL_IMPL(CTL_A, connect)(
+            self,
+            self->tail,
+            CTL_IMPL(CTL_B, init)(0),
+            false);
     CTL_IMPL(CTL_A, set)(self, self->size, value);
-    self->tail->size += 1;
+    self->tail->b += 1;
     self->size += 1;
+}
+
+static inline void
+CTL_IMPL(CTL_A, push_front)(CTL_A* self, CTL_T value)
+{
+    if(CTL_IMPL(CTL_A, empty)(self) || self->head->a == 0)
+        CTL_IMPL(CTL_A, connect)(
+            self,
+            self->head,
+            CTL_IMPL(CTL_B, init)(CTL_DEQ_BUCKET_SIZE),
+            true);
+    self->head->a -= 1;
+    self->size += 1;
+    CTL_IMPL(CTL_A, set)(self, 0, value);
 }
 
 static inline void
 CTL_IMPL(CTL_A, pop_back)(CTL_A* self)
 {
     static CTL_T zero;
-    self->tail->size -= 1;
+    self->tail->b -= 1;
     self->size -= 1;
     CTL_IMPL(CTL_A, set)(self, self->size, zero);
-    if(self->tail->size == 0)
-    {
-        CTL_B* copy = self->tail;
-        CTL_IMPL(CTL_A, link_disconnect)(self, self->tail);
-        free(copy);
-    }
+    if(self->tail->b == self->tail->a)
+        free(CTL_IMPL(CTL_A, disconnect)(self, self->tail));
+}
+
+static inline void
+CTL_IMPL(CTL_A, pop_front)(CTL_A* self)
+{
+    static CTL_T zero;
+    CTL_IMPL(CTL_A, set)(self, 0, zero);
+    self->head->a += 1;
+    self->size -= 1;
+    if(self->head->a == self->head->b)
+        free(CTL_IMPL(CTL_A, disconnect)(self, self->head));
 }
 
 static inline void
@@ -183,8 +220,12 @@ CTL_IMPL(CTL_A, free)(CTL_A* self)
         CTL_IMPL(CTL_A, pop_back)(self);
 }
 
-#undef CTL_DEQ_PAGE_SIZE
-#undef CTL_T
+#undef CTL_DEQ_BUCKET_SIZE
+
+#ifdef CTL_U
 #undef CTL_U
+#endif
+
+#undef CTL_T
 #undef CTL_A
 #undef CTL_B
