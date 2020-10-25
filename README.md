@@ -39,7 +39,7 @@ int main(void)
 }
 ```
 
-The definition `CTL_P` implies this type is Plain Old Data (POD) and no
+The definition `CTL_P` implies the type is Plain Old Data (POD) and no
 copy constructor, default constructor, or destructor is needed.
 Both `CTL_P` and `CTL_T` definitions are consumed (`#undef`) by a
 CTL container include directive.
