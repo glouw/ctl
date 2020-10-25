@@ -1,12 +1,10 @@
 #pragma once
 
-#include <ctl.h>
-
 #include <string.h>
 #include <stdint.h>
 
 #define vec_char str
-#define CTL_POD
+#define CTL_P
 #define CTL_T char
 #include <vec.h>
 #undef vec_char

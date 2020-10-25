@@ -1,7 +1,7 @@
+#include <str.h>
+
 #include "test.h"
 #include "digi.h"
-
-#include <str.h>
 
 #include <string>
 #include <algorithm>

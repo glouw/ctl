@@ -32,8 +32,8 @@ CTL_IMPL(CTL_A, init)(void)
 {
     static CTL_A zero;
     CTL_A self = zero;
-#ifdef CTL_POD
-#undef CTL_POD
+#ifdef CTL_P
+#undef CTL_P
 #else
     self.init_default = CTL_IMPL(CTL_T, init_default);
     self.free = CTL_IMPL(CTL_T, free);

@@ -14,7 +14,7 @@ Define type `CTL_T` before including a CTL container:
 ```C
 #include <stdio.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T int
 #include <vec.h>
 
@@ -39,9 +39,10 @@ int main(void)
 }
 ```
 
-The definition `CTL_POD` implies no copy constructor, default constructor,
-or destructor is needed. Both `CTL_POD` and `CTL_T` definitions are consumed
-(`#undef`) by a CTL container include directive.
+The definition `CTL_P` implies this type is Plain Old Data (POD) and no
+copy constructor, default constructor, or destructor is needed.
+Both `CTL_P` and `CTL_T` definitions are consumed (`#undef`) by a
+CTL container include directive.
 
 To compile, include the `ctl` directory as a system directory:
 
@@ -62,7 +63,7 @@ typedef struct
 }
 point;
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T point
 #include <lst.h>
 
@@ -93,7 +94,7 @@ int main(void)
 `CTL_FOREACH` can be renamed to a more aesthetic `foreach` for users desiring
 less `CTL_` clutter.
 
-Types that acquire resources with `malloc` require that the `CTL_POD` definition be omitted,
+Types that acquire resources with `malloc` require that the `CTL_P` definition be omitted,
 and require function definitions for the type's default constructor, copy constructor,
 and destructor in the form of `CTL_T + init_default`, `CTL_T + copy`, and `CTL_T + free`,
 respectively:
@@ -110,7 +111,7 @@ typedef struct
 }
 point;
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T point
 #include <vec.h>
 
@@ -181,7 +182,7 @@ before including the template container header:
 
 ```C
 typedef int* intp;
-#define CTL_POD
+#define CTL_P
 #define CTL_T intp
 #include <vec.h>
 ```
@@ -192,7 +193,7 @@ Containers can be templated from other containers. For instance, a list of
 vectors holding integers:
 
 ```C
-#define CTL_POD
+#define CTL_P
 #define CTL_T int
 #include <vec.h>
 
@@ -210,11 +211,11 @@ For instance, the following examples result in multiple definition
 compile time errors:
 
 ```C
-#define CTL_POD
+#define CTL_P
 #define CTL_T char
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T char
 #include <vec.h>
 ```
@@ -222,12 +223,12 @@ If the above scenario is encountered and needs a work around,
 a template expansion can be renamed:
 
 ```C
-#define CTL_POD
+#define CTL_P
 #define CTL_T char
 #include <vec.h>
 
 #define vec_char my_char_vec
-#define CTL_POD
+#define CTL_P
 #define CTL_T char
 #include <vec.h>
 #undef vec_char

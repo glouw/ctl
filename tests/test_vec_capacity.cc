@@ -2,27 +2,27 @@
 
 #include <stdint.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T uint8_t
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T uint16_t
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T uint32_t
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T uint64_t
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T float
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T double
 #include <vec.h>
 

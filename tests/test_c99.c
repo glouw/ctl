@@ -1,42 +1,38 @@
-#include "test.h"
-
-#include <stdio.h>
-
 #include <str.h> // MULTIPLE INCLUDES OKAY.
 #include <str.h>
 #include <str.h>
 #include <str.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T int
 #include <lst.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T int
 #include <deq.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T char
 #define CTL_U 16
 #include <deq.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T char
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T int
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T unsigned
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T float
 #include <vec.h>
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T double
 #include <vec.h>
 
@@ -47,7 +43,7 @@ typedef struct
 }
 point;
 
-#define CTL_POD
+#define CTL_P
 #define CTL_T point
 #include <vec.h>
 
@@ -105,6 +101,9 @@ int_match(int* a, int* b)
 {
     return *a == *b;
 }
+
+#include <stdio.h>
+#include "test.h"
 
 int
 main(void)
