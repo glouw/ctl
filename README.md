@@ -200,7 +200,7 @@ vectors holding integers:
 #include <lst.h>
 ```
 
-The constructors, destructors, and copy constructors for vec_int are consumed by lst_vec_int,
+The constructors, destructors, and copy constructors for `vec_int` are consumed by `lst_vec_int`,
 so no further definitions are required.
 
 ### Resolving Namespace Collisions
