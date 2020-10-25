@@ -193,38 +193,15 @@ vectors holding integers:
 
 ```C
 #define CTL_POD
-#define CTL_T TYPE
+#define CTL_T int
 #include <vec.h>
 
-#define CTL_POD
-#define CTL_T CTL_IMPL(vec, TYPE)
+#define CTL_T vec_int
 #include <lst.h>
-
-#undef TYPE
-
-#ifdef CTL_POD
-#undef CTL_POD
-#endif
 ```
 
-Packaging the above into `container.h` yields a templatable data structure
-that can be used for any type:
-
-```C
-#include <str.h>
-#define TYPE str
-#include "container.h"
-
-int main(void)
-{
-    lst_vec_str list = lst_vec_str_init();
-    lst_vec_str_resize(&list, 8);
-    CTL_FOREACH(lst_vec_str, &list, it, {
-        vec_str_push_back(it.ref, str_create("EXAMPLE STRING"));
-    });
-    lst_vec_str_free(&list);
-}
-```
+The constructors, destructors, and copy constructers for vec_int are consumed by lst_vec_int,
+so no further definitions are required.
 
 ### Resolving Namespace Collisions
 
