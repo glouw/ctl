@@ -230,7 +230,7 @@ a template expansion can be renamed:
 #define CTL_POD
 #define CTL_T char
 #include <vec.h>
-#undef my_char_vec
+#undef vec_char
 ```
 
 ## Running Tests
