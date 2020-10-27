@@ -1,7 +1,5 @@
 #include <ctl.h>
 
-#include <stdio.h>
-
 #define CTL_A  CTL_TEMP(CTL_T, deq)
 #define CTL_B  CTL_IMPL(CTL_A, bucket)
 #define CTL_I  CTL_IMPL(CTL_A, it)
