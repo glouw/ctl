@@ -320,7 +320,6 @@ CTL_IMPL(CTL_I, each)(CTL_A* a)
     return CTL_IMPL(CTL_I, by)(a, CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
 }
 
-
 #undef CTL_DEQ_BUCKET_SIZE
 
 #undef CTL_T
