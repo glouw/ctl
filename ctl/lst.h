@@ -242,9 +242,7 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
 {
     static CTL_I zero;
     CTL_I self = zero;
-    if(begin == NULL)
-        self.done = true;
-    else
+    if(begin)
     {
         self.step = CTL_IMPL(CTL_I, step);
         self.begin = begin;
@@ -254,6 +252,8 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
         self.ref = &begin->value;
         self.step_size = step_size;
     }
+    else
+        self.done = true;
     return self;
 }
 

@@ -81,23 +81,25 @@ CTL_IMPL(CTL_A, at)(CTL_A* self, size_t index)
 {
     CTL_B* head = self->head;
     CTL_B* tail = self->tail;
-    if(head == NULL || tail == NULL)
-        return NULL;
-    index += head->a;
-    size_t bucket_index = index / CTL_DEQ_BUCKET_SIZE;
-    size_t cut = index - CTL_DEQ_BUCKET_SIZE * bucket_index;
-    if(index < self->size / 2)
+    if(head && tail)
     {
-        for(size_t i = 0; i < bucket_index; i++)
-            head = head->next;
-        return &head->value[cut];
+        index += head->a;
+        size_t bucket_index = index / CTL_DEQ_BUCKET_SIZE;
+        size_t cut = index - CTL_DEQ_BUCKET_SIZE * bucket_index;
+        if(index < self->size / 2)
+        {
+            for(size_t i = 0; i < bucket_index; i++)
+                head = head->next;
+            return &head->value[cut];
+        }
+        else
+        {
+            for(size_t i = bucket_index; i < self->buckets - 1; i++)
+                tail = tail->prev;
+            return &tail->value[cut];
+        }
     }
-    else
-    {
-        for(size_t i = bucket_index; i < self->buckets - 1; i++)
-            tail = tail->prev;
-        return &tail->value[cut];
-    }
+    return NULL;
 }
 
 static inline CTL_T*
@@ -296,9 +298,7 @@ CTL_IMPL(CTL_I, by)(CTL_A* container, CTL_T* begin, CTL_T* end, size_t step_size
 {
     static CTL_I zero;
     CTL_I self = zero;
-    if(begin == NULL || end == NULL)
-        self.done = true;
-    else
+    if(begin && end)
     {
         self.step = CTL_IMPL(CTL_I, step);
         self.begin = begin;
@@ -311,6 +311,8 @@ CTL_IMPL(CTL_I, by)(CTL_A* container, CTL_T* begin, CTL_T* end, size_t step_size
         self.bucket_next = self.bucket->next;
         self.step_size = step_size;
     }
+    else
+        self.done = true;
     return self;
 }
 
