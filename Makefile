@@ -58,7 +58,7 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
-BINS = tc99_cc tc99_cxx tlst tstr tvec tvecap
+BINS = tc99_cc tc99_cxx tlst tstr tvec tdeq tvecap
 
 TESTS = tests
 
@@ -73,6 +73,9 @@ tc99_cc: ALWAYS
 
 tc99_cxx: ALWAYS
 	$(CXX) $(CFLAGS) $(TESTS)/test_c99.c -o $@
+
+tdeq: ALWAYS
+	$(CXX) $(CFLAGS) $(TESTS)/test_deq.cc -o $@
 
 tlst: ALWAYS
 	$(CXX) $(CFLAGS) $(TESTS)/test_lst.cc -o $@

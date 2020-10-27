@@ -7,44 +7,26 @@
 #include <vector>
 #include <algorithm>
 
-#define CHECK(_a, _b) {                                 \
-    {                                                   \
-        for(auto _d : _b)                               \
-            assert(_d.value != nullptr);                \
-        for(size_t i = 0; i < _a.size; i++)             \
-            assert(vec_digi_at(&_a, i) != NULL);        \
-    }{                                                  \
-        size_t index = 0;                               \
-        for(auto& _d : _b)                              \
-        {                                               \
-            digi* _ref = vec_digi_at(&_a, index);       \
-            assert(*_d.value == *_ref->value);          \
-            index += 1;                                 \
-        }                                               \
-    }{                                                  \
-        std::vector<DIGI>::iterator _iter = _b.begin(); \
-        vec_digi_it _it = vec_digi_it_each(&_a);        \
-        CTL_FOR(_it, {                                  \
-            assert(*_it.ref->value == *_iter->value);   \
-            _iter++;                                    \
-        });                                             \
-    }{                                                  \
-        assert(_a.capacity == _b.capacity());           \
-        assert(_a.size == _b.size());                   \
-        assert(vec_digi_empty(&_a) == _b.empty());      \
-    }{                                                  \
-        if(_a.size > 0)                                 \
-        {                                               \
-            assert(&_a.value[0] == vec_digi_data(&_a)); \
-            assert(&_b[0] == _b.data());                \
-            DIGI& _bf = _b.front();                     \
-            DIGI& _bb = _b.back();                      \
-            digi* _af = vec_digi_front(&_a);            \
-            digi* _ab = vec_digi_back(&_a);             \
-            assert(*_af->value == *_bf.value);          \
-            assert(*_ab->value == *_bb.value);          \
-        }                                               \
-    }                                                   \
+#define CHECK(_x, _y) {                                           \
+    assert(_x.capacity == _y.capacity());                         \
+    assert(_x.size == _y.size());                                 \
+    assert(vec_digi_empty(&_x) == _y.empty());                    \
+    if(_x.size > 0) {                                             \
+        assert(*_y.front().value == *vec_digi_front(&_x)->value); \
+        assert(*_y.back().value == *vec_digi_back(&_x)->value);   \
+    }                                                             \
+    std::vector<DIGI>::iterator _iter = _y.begin();               \
+    CTL_FOREACH(vec_digi, &_x, _it, {                             \
+        assert(*_it.ref->value == *_iter->value);                 \
+        _iter++;                                                  \
+    });                                                           \
+    vec_digi_it _it = vec_digi_it_each(&_x);                      \
+    for(auto& _d : _y) {                                          \
+        assert(*_it.ref->value == *_d.value);                     \
+        _it.step(&_it);                                           \
+    }                                                             \
+    for(size_t i = 0; i < _y.size(); i++)                         \
+        assert(*_y.at(i).value == *vec_digi_at(&_x, i)->value);   \
 }
 
 int

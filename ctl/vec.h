@@ -167,7 +167,8 @@ CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
 {
     if(self->size == self->capacity)
         CTL_IMPL(CTL_A, reserve)(self, self->capacity == 0 ? 1 : 2 * self->capacity);
-    self->value[self->size++] = value;
+    *CTL_IMPL(CTL_A, at)(self, self->size) = value;
+    self->size += 1;
 }
 
 static inline void

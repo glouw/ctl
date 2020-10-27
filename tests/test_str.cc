@@ -9,11 +9,27 @@
 #define MIN_STR_SIZE  (30) // NO SUPPORT FOR SMALL STRINGS.
 #define ALPHA_LETTERS (23)
 
-#define CHECK(a, b) {                              \
-    assert(strcmp(str_c_str(&a), b.c_str()) == 0); \
-    assert(a.capacity == b.capacity());            \
-    assert(a.size == b.size());                    \
-    assert(str_empty(&a) == b.empty());            \
+#define CHECK(_x, _y) {                              \
+    assert(strcmp(str_c_str(&_x), _y.c_str()) == 0); \
+    assert(_x.capacity == _y.capacity());            \
+    assert(_x.size == _y.size());                    \
+    assert(str_empty(&_x) == _y.empty());            \
+    if(_x.size > 0) {                                \
+        assert(_y.front() == *str_front(&_x));       \
+        assert(_y.back() == *str_back(&_x));         \
+    }                                                \
+    std::string::iterator _iter = _y.begin();        \
+    CTL_FOREACH(str, &_x, _it, {                     \
+        assert(*_it.ref == *_iter);                  \
+        _iter++;                                     \
+    });                                              \
+    str_it _it = str_it_each(&_x);                   \
+    for(auto& _d : _y) {                             \
+        assert(*_it.ref == _d);                      \
+        _it.step(&_it);                              \
+    }                                                \
+    for(size_t i = 0; i < _y.size(); i++)            \
+        assert(_y.at(i) == *str_at(&_x, i));         \
 }
 
 static char*

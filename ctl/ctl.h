@@ -20,9 +20,11 @@
     }                             \
 (void) 0
 
-#define CTL_FOREACH(container, variable, iterator, ...)                                   \
+#define CTL_FOREACH(container, variable, iterator, ...) {                                 \
     CTL_IMPL(container, it) iterator = CTL_IMPL(CTL_IMPL(container, it), each)(variable); \
-    CTL_FOR(iterator, __VA_ARGS__)                                                        \
+    CTL_FOR(iterator, __VA_ARGS__);                                                       \
+}                                                                                         \
+(void) 0
 
 #define CTL_MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 

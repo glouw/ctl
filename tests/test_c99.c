@@ -13,7 +13,6 @@
 
 #define CTL_P
 #define CTL_T char
-#define CTL_U 16
 #include <deq.h>
 
 #define CTL_P
@@ -117,8 +116,8 @@ main(void)
         vec_int_free(&a);
     }{
         deq_int a = deq_int_init();
-        for(int i = 0; i < 1020; i++) deq_int_push_back(&a, i);
-        for(int i = 0; i < 1021; i++) deq_int_push_front(&a, -i);
+        for(int i = 0; i < 64; i++) deq_int_push_back(&a, i);
+        for(int i = 0; i < 64; i++) deq_int_push_front(&a, -i);
         deq_int_free(&a);
     }{
         lst_int a = lst_int_init();

@@ -6,19 +6,23 @@
 
 #include <list>
 
-#define CHECK(a, b) {                                           \
-    assert(a.size == b.size());                                 \
-    if(a.size > 0 && b.size() > 0) {                            \
-        assert(lst_digi_empty(&a) == b.empty());                \
-        assert(*lst_digi_front(&a)->value == *b.front().value); \
-        assert(*lst_digi_back(&a)->value == *b.back().value);   \
-        std::list<DIGI>::iterator _iter = b.begin();            \
-        lst_digi_it _it = lst_digi_it_each(&a);                 \
-        CTL_FOR(_it, {                                          \
-            assert(*_it.ref->value == *_iter->value);           \
-            _iter++;                                            \
-        });                                                     \
-    }                                                           \
+#define CHECK(_x, _y) {                                           \
+    assert(_x.size == _y.size());                                 \
+    assert(lst_digi_empty(&_x) == _y.empty());                    \
+    if(_x.size > 0) {                                             \
+        assert(*_y.front().value == *lst_digi_front(&_x)->value); \
+        assert(*_y.back().value == *lst_digi_back(&_x)->value);   \
+    }                                                             \
+    std::list<DIGI>::iterator _iter = _y.begin();                 \
+    CTL_FOREACH(lst_digi, &_x, _it, {                             \
+        assert(*_it.ref->value == *_iter->value);                 \
+        _iter++;                                                  \
+    });                                                           \
+    lst_digi_it _it = lst_digi_it_each(&_x);                      \
+    for(auto& _d : _y) {                                          \
+        assert(*_it.ref->value == *_d.value);                     \
+        _it.step(&_it);                                           \
+    }                                                             \
 }
 
 static bool

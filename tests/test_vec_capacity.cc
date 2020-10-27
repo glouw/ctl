@@ -28,9 +28,9 @@
 
 #include <vector>
 
-#define ASSERT_EQUAL_SIZE(x, y) (assert(x.size() == y.size))
+#define ASSERT_EQUAL_SIZE(_x, _y) (assert(_x.size() == _y.size))
 
-#define ASSERT_EQUAL_CAP(x, y) (assert(x.capacity() == y.capacity))
+#define ASSERT_EQUAL_CAP(_x, _y) (assert(_x.capacity() == _y.capacity))
 
 int
 main(void)
