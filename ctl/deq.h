@@ -33,13 +33,11 @@ typedef struct CTL_I
     void (*step)(struct CTL_I*);
     CTL_T* ref;
     CTL_T* begin;
-    CTL_T* node;
     CTL_T* next;
     CTL_T* end;
     CTL_B* bucket;
     CTL_B* bucket_next;
     CTL_B* bucket_end;
-    size_t step_size;
     bool done;
 }
 CTL_I;
@@ -81,25 +79,21 @@ CTL_IMPL(CTL_A, at)(CTL_A* self, size_t index)
 {
     CTL_B* head = self->head;
     CTL_B* tail = self->tail;
-    if(head && tail)
+    index += head->a;
+    size_t bucket_index = index / CTL_DEQ_BUCKET_SIZE;
+    size_t cut = index - CTL_DEQ_BUCKET_SIZE * bucket_index;
+    if(index < self->size / 2)
     {
-        index += head->a;
-        size_t bucket_index = index / CTL_DEQ_BUCKET_SIZE;
-        size_t cut = index - CTL_DEQ_BUCKET_SIZE * bucket_index;
-        if(index < self->size / 2)
-        {
-            for(size_t i = 0; i < bucket_index; i++)
-                head = head->next;
-            return &head->value[cut];
-        }
-        else
-        {
-            for(size_t i = bucket_index; i < self->buckets - 1; i++)
-                tail = tail->prev;
-            return &tail->value[cut];
-        }
+        for(size_t i = 0; i < bucket_index; i++)
+            head = head->next;
+        return &head->value[cut];
     }
-    return NULL;
+    else
+    {
+        for(size_t i = bucket_index + 1; i < self->buckets; i++)
+            tail = tail->prev;
+        return &tail->value[cut];
+    }
 }
 
 static inline CTL_T*
@@ -277,8 +271,7 @@ CTL_IMPL(CTL_A, free)(CTL_A* self)
 static inline void
 CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
-    // XXX. NEEDS PAST RANGE CHECK.
-    self->ref += self->step_size;
+    self->ref = self->next;
     if(self->ref == self->end)
         self->done = true;
     else
@@ -290,11 +283,12 @@ CTL_IMPL(CTL_I, step)(CTL_I* self)
             self->bucket_next = self->bucket_next->next;
             self->ref = &self->bucket->value[0];
         }
+        self->next = self->ref + 1;
     }
 }
 
 static inline CTL_I
-CTL_IMPL(CTL_I, by)(CTL_A* container, CTL_T* begin, CTL_T* end, size_t step_size)
+CTL_IMPL(CTL_I, range)(CTL_A* container, CTL_T* begin, CTL_T* end)
 {
     static CTL_I zero;
     CTL_I self = zero;
@@ -303,13 +297,11 @@ CTL_IMPL(CTL_I, by)(CTL_A* container, CTL_T* begin, CTL_T* end, size_t step_size
         self.step = CTL_IMPL(CTL_I, step);
         self.begin = begin;
         self.end = end;
-        self.next = begin + step_size;
-        self.node = begin;
         self.ref = begin;
+        self.next = self.ref + 1;
         self.bucket = CTL_IMPL(CTL_A, inside)(container, begin);
         self.bucket_end = CTL_IMPL(CTL_A, r_inside)(container, end);
         self.bucket_next = self.bucket->next;
-        self.step_size = step_size;
     }
     else
         self.done = true;
@@ -319,7 +311,9 @@ CTL_IMPL(CTL_I, by)(CTL_A* container, CTL_T* begin, CTL_T* end, size_t step_size
 static inline CTL_I
 CTL_IMPL(CTL_I, each)(CTL_A* a)
 {
-    return CTL_IMPL(CTL_I, by)(a, CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
+    return CTL_IMPL(CTL_A, empty)(a)
+        ? CTL_IMPL(CTL_I, range)(a, NULL, NULL)
+        : CTL_IMPL(CTL_I, range)(a, CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a));
 }
 
 #undef CTL_DEQ_BUCKET_SIZE

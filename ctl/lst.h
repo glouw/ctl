@@ -31,7 +31,6 @@ typedef struct CTL_I
     CTL_B* node;
     CTL_B* next;
     CTL_B* end;
-    size_t step_size;
     bool done;
 }
 CTL_I;
@@ -224,21 +223,18 @@ CTL_IMPL(CTL_A, copy)(CTL_A* self)
 static inline void
 CTL_IMPL(CTL_I, step)(CTL_I* self)
 {
-    for(size_t i = 0; i < self->step_size; i++)
+    if(self->next == self->end)
+        self->done = true;
+    else
     {
-        if(self->next == self->end)
-            self->done = true;
-        else
-        {
-            self->node = self->next;
-            self->ref = &self->node->value;
-            self->next = self->node->next;
-        }
+        self->node = self->next;
+        self->ref = &self->node->value;
+        self->next = self->node->next;
     }
 }
 
 static inline CTL_I
-CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
+CTL_IMPL(CTL_I, range)(CTL_B* begin, CTL_B* end)
 {
     static CTL_I zero;
     CTL_I self = zero;
@@ -250,7 +246,6 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
         self.next = begin->next;
         self.node = begin;
         self.ref = &begin->value;
-        self.step_size = step_size;
     }
     else
         self.done = true;
@@ -260,7 +255,7 @@ CTL_IMPL(CTL_I, by)(CTL_B* begin, CTL_B* end, size_t step_size)
 static inline CTL_I
 CTL_IMPL(CTL_I, each)(CTL_A* a)
 {
-    return CTL_IMPL(CTL_I, by)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a), 1);
+    return CTL_IMPL(CTL_I, range)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a));
 }
 
 static inline void
