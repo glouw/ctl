@@ -258,6 +258,7 @@ IMPL(I, step)(I* self)
         self->ref = IMPL(A, at)(self->container, self->index);
 }
 
+// POINTER MATH ENSURES RANDOM ACCESS.
 static inline I
 IMPL(I, range)(A* container, T* begin, T* end)
 {
@@ -267,7 +268,6 @@ IMPL(I, range)(A* container, T* begin, T* end)
     {
         self.container = container;
         self.step = IMPL(I, step);
-        // POINTER MATH ENSURES RANDOM ACCESS.
         self.index = begin - IMPL(A, begin)(container);
         self.index_last = container->size - (IMPL(A, end)(container) - end);
         self.begin = IMPL(A, at)(container, self.index);
