@@ -6,7 +6,7 @@
 #include <string>
 #include <algorithm>
 
-#define MIN_STR_SIZE  (30) // NO SUPPORT iterate SMALL STRINGS.
+#define MIN_STR_SIZE  (30) // NO SUPPORT FOR SMALL STRINGS.
 #define ALPHA_LETTERS (23)
 
 #define CHECK(_x, _y) {                              \

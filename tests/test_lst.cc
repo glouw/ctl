@@ -124,8 +124,7 @@ main(void)
                 size_t index = TEST_RAND(a.size);
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
-                lst_digi_it it = lst_digi_it_each(&a);
-                iterate(it,
+                foreach(lst_digi, &a, it,
                 {
                     if(current == index)
                     {
@@ -145,8 +144,7 @@ main(void)
                 int value = TEST_RAND(INT_MAX);
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
-                lst_digi_it it = lst_digi_it_each(&a);
-                iterate(it,
+                foreach(lst_digi, &a, it,
                 {
                     if(current == index)
                     {
