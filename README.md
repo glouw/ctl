@@ -5,7 +5,8 @@ CTL is a type safe header only template library for ISO C99.
 ## Motivation
 
 CTL aims to back port useful C++ template containers to C99 to
-make maximum use of C99's portability and fast compile times.
+make maximum use of C99's portability, small binary sizes, and
+fast compile times.
 
 ## Usage
 

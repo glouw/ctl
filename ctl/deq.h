@@ -1,11 +1,10 @@
 #include <ctl.h>
 
-#include <stdio.h>
-
 #define A TEMP(T, deq)
 #define B IMPL(A, bucket)
+#define I IMPL(A, it)
 
-#define DEQ_BUCKET_SIZE (8)
+#define DEQ_BUCKET_SIZE (16)
 
 typedef struct B
 {
@@ -27,6 +26,19 @@ typedef struct
     size_t size;
 }
 A;
+
+typedef struct I
+{
+    void (*step)(struct I*);
+    A* container;
+    T* ref;
+    T* begin;
+    T* end;
+    size_t index;
+    size_t index_last;
+    bool done;
+}
+I;
 
 static inline bool
 IMPL(A, empty)(A* self)
@@ -74,10 +86,32 @@ IMPL(A, at)(A* self, size_t index)
 {
     B* first = *IMPL(A, first)(self);
     size_t actual = index + first->a;
-    size_t look = self->mark_a + actual / DEQ_BUCKET_SIZE;
-    B* page = self->pages[look];
-    size_t cut = actual % DEQ_BUCKET_SIZE;
-    return &page->value[cut];
+    B* page = self->pages[self->mark_a + actual / DEQ_BUCKET_SIZE];
+    return &page->value[actual % DEQ_BUCKET_SIZE];
+}
+
+static inline T*
+IMPL(A, front)(A* self)
+{
+    return IMPL(A, at)(self, 0);
+}
+
+static inline T*
+IMPL(A, back)(A* self)
+{
+    return IMPL(A, at)(self, self->size - 1);
+}
+
+static inline T*
+IMPL(A, begin)(A* self)
+{
+    return IMPL(A, front)(self);
+}
+
+static inline T*
+IMPL(A, end)(A* self)
+{
+    return IMPL(A, back)(self) + 1;
 }
 
 static inline void
@@ -194,6 +228,17 @@ IMPL(A, pop_front)(A* self)
 }
 
 static inline void
+IMPL(A, resize)(A* self, size_t size)
+{
+    static T zero;
+    if(size != self->size)
+        while(size != self->size)
+            (size < self->size)
+                ? IMPL(A, pop_back)(self)
+                : IMPL(A, push_back)(self, self->init_default ? self->init_default() : zero);
+}
+
+static inline void
 IMPL(A, free)(A* self)
 {
     while(!IMPL(A, empty)(self))
@@ -201,6 +246,44 @@ IMPL(A, free)(A* self)
     free(self->pages);
     self->pages = NULL;
     self->mark_a = self->mark_b = self->capacity = 0;
+}
+
+static inline void
+IMPL(I, step)(I* self)
+{
+    self->index += 1;
+    if(self->index == self->index_last)
+        self->done = true;
+    else
+        self->ref = IMPL(A, at)(self->container, self->index);
+}
+
+static inline I
+IMPL(I, range)(A* container, T* begin, T* end)
+{
+    static I zero;
+    I self = zero;
+    if(begin && end)
+    {
+        self.container = container;
+        self.step = IMPL(I, step);
+        self.index = begin - IMPL(A, begin)(container);
+        self.index_last = container->size - (IMPL(A, end)(container) - end);
+        self.begin = IMPL(A, at)(container, self.index);
+        self.end = IMPL(A, at)(container, self.index_last - 1) + 1;
+        self.ref = self.begin;
+    }
+    else
+        self.done = true;
+    return self;
+}
+
+static inline I
+IMPL(I, each)(A* a)
+{
+    return IMPL(A, empty)(a)
+        ? IMPL(I, range)(a, NULL, NULL)
+        : IMPL(I, range)(a, IMPL(A, begin)(a), IMPL(A, end)(a));
 }
 
 #undef DEQ_BUCKET_SIZE

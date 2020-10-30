@@ -3,6 +3,12 @@
 #include <str.h>
 #include <str.h>
 
+static bool
+int_match(int* a, int* b)
+{
+    return *a == *b;
+}
+
 #define P
 #define T int
 #include <lst.h>
@@ -89,12 +95,6 @@ person_copy(person* self)
 #define T person
 #include <vec.h>
 
-static bool
-int_match(int* a, int* b)
-{
-    return *a == *b;
-}
-
 #include <stdio.h>
 #include "test.h"
 
@@ -109,14 +109,10 @@ main(void)
         vec_int_push_back(&a, 4);
         vec_int_free(&a);
     }{
-        const size_t size = 32;
+        const size_t size = 16;
         deq_int a = deq_int_init();
         for(size_t i = 0; i < size; i++) deq_int_push_back(&a, i);
         for(size_t i = 0; i < size; i++) deq_int_push_front(&a, i);
-        deq_int_pop_front(&a);
-        deq_int_pop_back(&a);
-        for(size_t i = 0; i < a.size; i++)
-            deq_int_at(&a, i);
         deq_int_free(&a);
     }{
         lst_int a = lst_int_init();
