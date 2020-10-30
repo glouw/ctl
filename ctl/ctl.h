@@ -29,6 +29,6 @@
 
 #define MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 
-#define LEN(a) (sizeof(a) / sizeof(*a))
+#define LEN(a) (sizeof(a) / sizeof(*(a)))
 
 #endif
