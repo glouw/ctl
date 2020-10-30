@@ -308,8 +308,7 @@ IMPL(I, each)(A* a)
 static inline void
 IMPL(A, remove_if)(A* self, bool (*match)(T*))
 {
-    I it = IMPL(I, each)(self);
-    iterate(it, {
+    foreach(A, self, it, {
         if(match(it.ref))
         {
             IMPL(A, erase)(self, it.ref);

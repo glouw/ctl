@@ -263,8 +263,7 @@ IMPL(A, assign)(A* self, size_t size, T value)
 {
     IMPL(A, resize)(self, size);
     size_t index = 0;
-    I it = IMPL(I, each)(self);
-    iterate(it, {
+    foreach(A, self, it, {
         if(self->free)
             self->free(it.ref);
         *it.ref = (index == 0) ? value : self->copy ? self->copy(&value) : value;
@@ -275,8 +274,7 @@ IMPL(A, assign)(A* self, size_t size, T value)
 static inline void
 IMPL(A, reverse)(A* self)
 {
-    I it = IMPL(I, each)(self);
-    iterate(it, {
+    foreach(A, self, it, {
         B* next = it.node->next;
         B* prev = it.node->prev;
         it.node->prev = next;
@@ -291,8 +289,7 @@ IMPL(A, reverse)(A* self)
 static inline void
 IMPL(A, remove_if)(A* self, bool (*match)(T*))
 {
-    I it = IMPL(I, each)(self);
-    iterate(it, {
+    foreach(A, self, it, {
         if(match(it.ref))
             IMPL(A, erase)(self, it.node);
     });
@@ -305,8 +302,7 @@ IMPL(A, splice)(A* self, B* position, A* other)
         IMPL(A, swap)(self, other);
     else
     {
-        I it = IMPL(I, each)(other);
-        iterate(it, {
+        foreach(A, other, it, {
             IMPL(A, transfer)(self, other, position, it.node, true);
         });
     }
@@ -377,10 +373,9 @@ IMPL(A, sort)(A* self, int compare(T*, T*))
 static inline void
 IMPL(A, unique)(A* self, bool match(T*, T*))
 {
-    I a = IMPL(I, each)(self);
-    iterate(a, {
-        if(a.next && match(a.ref, &a.next->value))
-            IMPL(A, erase)(self, a.node);
+    foreach(A, self, it, {
+        if(it.next && match(it.ref, &it.next->value))
+            IMPL(A, erase)(self, it.node);
     });
 }
 
