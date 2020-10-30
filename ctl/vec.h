@@ -18,7 +18,6 @@ typedef struct I
 {
     void (*step)(struct I*);
     T* ref;
-    T* node;
     T* begin;
     T* end;
     T* next;
@@ -275,7 +274,7 @@ IMPL(I, step)(I* self)
         self->done = true;
     else
     {
-        self->ref = self->node = self->next;
+        self->ref = self->next;
         self->next += 1;
     }
 }
@@ -291,7 +290,6 @@ IMPL(I, range)(T* begin, T* end)
         self.begin = begin;
         self.end = end;
         self.next = begin + 1;
-        self.node = begin;
         self.ref = begin;
     }
     else
@@ -314,9 +312,9 @@ IMPL(A, remove_if)(A* self, bool (*match)(T*))
     iterate(it, {
         if(match(it.ref))
         {
-            IMPL(A, erase)(self, it.node);
+            IMPL(A, erase)(self, it.ref);
             it.end = IMPL(A, end)(self);
-            it.next = it.node;
+            it.next = it.ref;
         }
     });
 }
