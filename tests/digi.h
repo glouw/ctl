@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DIGI__H__
+#define __DIGI__H__
 
 // THESE DIGI STRUCTS BEHAVE IDENTICALLY AND ARE USED AS THE BASIS
 // iterate TESTING COPY / FREE / CONSTRUCT iterate STL AND CTL CONTAINERS.
@@ -103,3 +104,5 @@ DIGI_is_odd(DIGI& d)
 {
     return *d.value % 2;
 }
+
+#endif

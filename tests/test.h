@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __TEST__H__
+#define __TEST__H__
 
 #include <stdio.h>
 #include <stdint.h>
@@ -20,3 +21,5 @@
 #define TEST_PASS(f) printf("%s: PASSED\n", f)
 
 #define TEST_RAND(max) (((max) == 0) ? 0 : (rand() % (max)))
+
+#endif

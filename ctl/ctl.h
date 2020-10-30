@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __CTL_H__
+#define __CTL_H__
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -29,3 +30,5 @@
 #define MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 
 #define LEN(a) (sizeof(a) / sizeof(*a))
+
+#endif
