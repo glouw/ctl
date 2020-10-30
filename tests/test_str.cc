@@ -6,7 +6,7 @@
 #include <string>
 #include <algorithm>
 
-#define MIN_STR_SIZE  (30) // NO SUPPORT FOR SMALL STRINGS.
+#define MIN_STR_SIZE  (30) // NO SUPPORT iterate SMALL STRINGS.
 #define ALPHA_LETTERS (23)
 
 #define CHECK(_x, _y) {                              \
@@ -19,7 +19,7 @@
         assert(_y.back() == *str_back(&_x));         \
     }                                                \
     std::string::iterator _iter = _y.begin();        \
-    CTL_FOREACH(str, &_x, _it, {                     \
+    foreach(str, &_x, _it, {                         \
         assert(*_it.ref == *_iter);                  \
         _iter++;                                     \
     });                                              \

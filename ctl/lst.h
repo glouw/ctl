@@ -1,97 +1,97 @@
 #include <ctl.h>
 
-#define CTL_A  CTL_TEMP(CTL_T, lst)
-#define CTL_B  CTL_IMPL(CTL_A, node)
-#define CTL_I  CTL_IMPL(CTL_A, it)
+#define A TEMP(T, lst)
+#define B IMPL(A, node)
+#define I IMPL(A, it)
 
-typedef struct CTL_B
+typedef struct B
 {
-    struct CTL_B* prev;
-    struct CTL_B* next;
-    CTL_T value;
+    struct B* prev;
+    struct B* next;
+    T value;
 }
-CTL_B;
+B;
 
 typedef struct
 {
-    CTL_T (*init_default)(void);
-    void (*free)(CTL_T*);
-    CTL_T (*copy)(CTL_T*);
-    CTL_B* head;
-    CTL_B* tail;
+    T (*init_default)(void);
+    void (*free)(T*);
+    T (*copy)(T*);
+    B* head;
+    B* tail;
     size_t size;
 }
-CTL_A;
+A;
 
-typedef struct CTL_I
+typedef struct I
 {
-    void (*step)(struct CTL_I*);
-    CTL_T* ref;
-    CTL_B* begin;
-    CTL_B* node;
-    CTL_B* next;
-    CTL_B* end;
+    void (*step)(struct I*);
+    T* ref;
+    B* begin;
+    B* node;
+    B* next;
+    B* end;
     bool done;
 }
-CTL_I;
+I;
 
-static inline CTL_A
-CTL_IMPL(CTL_A, init)(void)
+static inline A
+IMPL(A, init)(void)
 {
-    static CTL_A zero;
-    CTL_A self = zero;
-#ifdef CTL_P
-#undef CTL_P
+    static A zero;
+    A self = zero;
+#ifdef P
+#undef P
 #else
-    self.init_default = CTL_IMPL(CTL_T, init_default);
-    self.free = CTL_IMPL(CTL_T, free);
-    self.copy = CTL_IMPL(CTL_T, copy);
+    self.init_default = IMPL(T, init_default);
+    self.free = IMPL(T, free);
+    self.copy = IMPL(T, copy);
 #endif
     return self;
 }
 
-static inline CTL_B*
-CTL_IMPL(CTL_B, init)(CTL_T value)
+static inline B*
+IMPL(B, init)(T value)
 {
-    CTL_B* self = (CTL_B*) malloc(sizeof(CTL_B));
+    B* self = (B*) malloc(sizeof(B));
     self->prev = self->next = NULL;
     self->value = value;
     return self;
 }
 
 static inline bool
-CTL_IMPL(CTL_A, empty)(CTL_A* self)
+IMPL(A, empty)(A* self)
 {
     return self->size == 0;
 }
 
-static inline CTL_T*
-CTL_IMPL(CTL_A, front)(CTL_A* self)
+static inline T*
+IMPL(A, front)(A* self)
 {
     return &self->head->value;
 }
 
-static inline CTL_T*
-CTL_IMPL(CTL_A, back)(CTL_A* self)
+static inline T*
+IMPL(A, back)(A* self)
 {
     return &self->tail->value;
 }
 
-static inline CTL_B*
-CTL_IMPL(CTL_A, begin)(CTL_A* self)
+static inline B*
+IMPL(A, begin)(A* self)
 {
     return self->head;
 }
 
-static inline CTL_B*
-CTL_IMPL(CTL_A, end)(CTL_A* self)
+static inline B*
+IMPL(A, end)(A* self)
 {
     (void) self;
     return NULL;
 }
 
 static inline void
-CTL_IMPL(CTL_A, disconnect)(CTL_A* self, CTL_B* node)
+IMPL(A, disconnect)(A* self, B* node)
 {
     if(node == self->tail) self->tail = self->tail->prev;
     if(node == self->head) self->head = self->head->next;
@@ -102,9 +102,9 @@ CTL_IMPL(CTL_A, disconnect)(CTL_A* self, CTL_B* node)
 }
 
 static inline void
-CTL_IMPL(CTL_A, connect)(CTL_A* self, CTL_B* position, CTL_B* node, bool before)
+IMPL(A, connect)(A* self, B* position, B* node, bool before)
 {
-    if(CTL_IMPL(CTL_A, empty)(self))
+    if(IMPL(A, empty)(self))
         self->head = self->tail = node;
     else
     if(before)
@@ -131,97 +131,97 @@ CTL_IMPL(CTL_A, connect)(CTL_A* self, CTL_B* position, CTL_B* node, bool before)
 }
 
 static inline void
-CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
+IMPL(A, push_back)(A* self, T value)
 {
-    CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    CTL_IMPL(CTL_A, connect)(self, self->tail, node, false);
+    B* node = IMPL(B, init)(value);
+    IMPL(A, connect)(self, self->tail, node, false);
 }
 
 static inline void
-CTL_IMPL(CTL_A, push_front)(CTL_A* self, CTL_T value)
+IMPL(A, push_front)(A* self, T value)
 {
-    CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    CTL_IMPL(CTL_A, connect)(self, self->head, node, true);
+    B* node = IMPL(B, init)(value);
+    IMPL(A, connect)(self, self->head, node, true);
 }
 
 static inline void
-CTL_IMPL(CTL_A, transfer)(CTL_A* self, CTL_A* other, CTL_B* position, CTL_B* node, bool before)
+IMPL(A, transfer)(A* self, A* other, B* position, B* node, bool before)
 {
-    CTL_IMPL(CTL_A, disconnect)(other, node);
-    CTL_IMPL(CTL_A, connect)(self, position, node, before);
+    IMPL(A, disconnect)(other, node);
+    IMPL(A, connect)(self, position, node, before);
 }
 
 static inline void
-CTL_IMPL(CTL_A, erase)(CTL_A* self, CTL_B* node)
+IMPL(A, erase)(A* self, B* node)
 {
-    CTL_IMPL(CTL_A, disconnect)(self, node);
+    IMPL(A, disconnect)(self, node);
     if(self->free)
         self->free(&node->value);
     free(node);
 }
 
 static inline void
-CTL_IMPL(CTL_A, pop_back)(CTL_A* self)
+IMPL(A, pop_back)(A* self)
 {
-    CTL_IMPL(CTL_A, erase)(self, self->tail);
+    IMPL(A, erase)(self, self->tail);
 }
 
 static inline void
-CTL_IMPL(CTL_A, pop_front)(CTL_A* self)
+IMPL(A, pop_front)(A* self)
 {
-    CTL_IMPL(CTL_A, erase)(self, self->head);
+    IMPL(A, erase)(self, self->head);
 }
 
 static inline void
-CTL_IMPL(CTL_A, insert)(CTL_A* self, CTL_B* position, CTL_T value)
+IMPL(A, insert)(A* self, B* position, T value)
 {
-    CTL_B* node = CTL_IMPL(CTL_B, init)(value);
-    CTL_IMPL(CTL_A, connect)(self, position, node, true);
+    B* node = IMPL(B, init)(value);
+    IMPL(A, connect)(self, position, node, true);
 }
 
 static inline void
-CTL_IMPL(CTL_A, free)(CTL_A* self)
+IMPL(A, free)(A* self)
 {
-    while(!CTL_IMPL(CTL_A, empty)(self))
-        CTL_IMPL(CTL_A, pop_back)(self);
+    while(!IMPL(A, empty)(self))
+        IMPL(A, pop_back)(self);
 }
 
 static inline void
-CTL_IMPL(CTL_A, clear)(CTL_A* self)
+IMPL(A, clear)(A* self)
 {
-    CTL_IMPL(CTL_A, free)(self);
+    IMPL(A, free)(self);
 }
 
 static inline void
-CTL_IMPL(CTL_A, resize)(CTL_A* self, size_t size)
+IMPL(A, resize)(A* self, size_t size)
 {
-    static CTL_T zero;
+    static T zero;
     if(size != self->size)
         while(size != self->size)
             (size < self->size)
-                ? CTL_IMPL(CTL_A, pop_back)(self)
-                : CTL_IMPL(CTL_A, push_back)(self, self->init_default ? self->init_default() : zero);
+                ? IMPL(A, pop_back)(self)
+                : IMPL(A, push_back)(self, self->init_default ? self->init_default() : zero);
 }
 
 static inline void
-CTL_IMPL(CTL_A, swap)(CTL_A* self, CTL_A* other)
+IMPL(A, swap)(A* self, A* other)
 {
-    CTL_A temp = *self;
+    A temp = *self;
     *self = *other;
     *other = temp;
 }
 
-static inline CTL_A
-CTL_IMPL(CTL_A, copy)(CTL_A* self)
+static inline A
+IMPL(A, copy)(A* self)
 {
-    CTL_A other = CTL_IMPL(CTL_A, init)();
-    for(CTL_B* node = self->head; node; node = node->next)
-        CTL_IMPL(CTL_A, push_back)(&other, self->copy ? self->copy(&node->value) : node->value);
+    A other = IMPL(A, init)();
+    for(B* node = self->head; node; node = node->next)
+        IMPL(A, push_back)(&other, self->copy ? self->copy(&node->value) : node->value);
     return other;
 }
 
 static inline void
-CTL_IMPL(CTL_I, step)(CTL_I* self)
+IMPL(I, step)(I* self)
 {
     if(self->next == self->end)
         self->done = true;
@@ -233,14 +233,14 @@ CTL_IMPL(CTL_I, step)(CTL_I* self)
     }
 }
 
-static inline CTL_I
-CTL_IMPL(CTL_I, range)(CTL_B* begin, CTL_B* end)
+static inline I
+IMPL(I, range)(B* begin, B* end)
 {
-    static CTL_I zero;
-    CTL_I self = zero;
+    static I zero;
+    I self = zero;
     if(begin)
     {
-        self.step = CTL_IMPL(CTL_I, step);
+        self.step = IMPL(I, step);
         self.begin = begin;
         self.end = end;
         self.next = begin->next;
@@ -252,19 +252,19 @@ CTL_IMPL(CTL_I, range)(CTL_B* begin, CTL_B* end)
     return self;
 }
 
-static inline CTL_I
-CTL_IMPL(CTL_I, each)(CTL_A* a)
+static inline I
+IMPL(I, each)(A* a)
 {
-    return CTL_IMPL(CTL_I, range)(CTL_IMPL(CTL_A, begin)(a), CTL_IMPL(CTL_A, end)(a));
+    return IMPL(I, range)(IMPL(A, begin)(a), IMPL(A, end)(a));
 }
 
 static inline void
-CTL_IMPL(CTL_A, assign)(CTL_A* self, size_t size, CTL_T value)
+IMPL(A, assign)(A* self, size_t size, T value)
 {
-    CTL_IMPL(CTL_A, resize)(self, size);
+    IMPL(A, resize)(self, size);
     size_t index = 0;
-    CTL_I it = CTL_IMPL(CTL_I, each)(self);
-    CTL_FOR(it, {
+    I it = IMPL(I, each)(self);
+    iterate(it, {
         if(self->free)
             self->free(it.ref);
         *it.ref = (index == 0) ? value : self->copy ? self->copy(&value) : value;
@@ -273,67 +273,67 @@ CTL_IMPL(CTL_A, assign)(CTL_A* self, size_t size, CTL_T value)
 }
 
 static inline void
-CTL_IMPL(CTL_A, reverse)(CTL_A* self)
+IMPL(A, reverse)(A* self)
 {
-    CTL_I it = CTL_IMPL(CTL_I, each)(self);
-    CTL_FOR(it, {
-        CTL_B* next = it.node->next;
-        CTL_B* prev = it.node->prev;
+    I it = IMPL(I, each)(self);
+    iterate(it, {
+        B* next = it.node->next;
+        B* prev = it.node->prev;
         it.node->prev = next;
         it.node->next = prev;
     });
-    CTL_B* tail = self->tail;
-    CTL_B* head = self->head;
+    B* tail = self->tail;
+    B* head = self->head;
     self->tail = head;
     self->head = tail;
 }
 
 static inline void
-CTL_IMPL(CTL_A, remove_if)(CTL_A* self, bool (*match)(CTL_T*))
+IMPL(A, remove_if)(A* self, bool (*match)(T*))
 {
-    CTL_I it = CTL_IMPL(CTL_I, each)(self);
-    CTL_FOR(it, {
+    I it = IMPL(I, each)(self);
+    iterate(it, {
         if(match(it.ref))
-            CTL_IMPL(CTL_A, erase)(self, it.node);
+            IMPL(A, erase)(self, it.node);
     });
 }
 
 static inline void
-CTL_IMPL(CTL_A, splice)(CTL_A* self, CTL_B* position, CTL_A* other)
+IMPL(A, splice)(A* self, B* position, A* other)
 {
     if(self->size == 0 && position == NULL)
-        CTL_IMPL(CTL_A, swap)(self, other);
+        IMPL(A, swap)(self, other);
     else
     {
-        CTL_I it = CTL_IMPL(CTL_I, each)(other);
-        CTL_FOR(it, {
-            CTL_IMPL(CTL_A, transfer)(self, other, position, it.node, true);
+        I it = IMPL(I, each)(other);
+        iterate(it, {
+            IMPL(A, transfer)(self, other, position, it.node, true);
         });
     }
 }
 
 static inline void
-CTL_IMPL(CTL_A, merge)(CTL_A* self, CTL_A* other, int compare(CTL_T*, CTL_T*))
+IMPL(A, merge)(A* self, A* other, int compare(T*, T*))
 {
-    if(CTL_IMPL(CTL_A, empty)(self))
-        CTL_IMPL(CTL_A, swap)(self, other);
+    if(IMPL(A, empty)(self))
+        IMPL(A, swap)(self, other);
     else
     {
-        for(CTL_B* node = self->head; node; node = node->next)
-            while(!CTL_IMPL(CTL_A, empty)(other) && compare(&node->value, &other->head->value))
-                CTL_IMPL(CTL_A, transfer)(self, other, node, other->head, true);
-        while(!CTL_IMPL(CTL_A, empty)(other)) // REMAINDER.
-            CTL_IMPL(CTL_A, transfer)(self, other, self->tail, other->head, false);
+        for(B* node = self->head; node; node = node->next)
+            while(!IMPL(A, empty)(other) && compare(&node->value, &other->head->value))
+                IMPL(A, transfer)(self, other, node, other->head, true);
+        while(!IMPL(A, empty)(other)) // REMAINDER.
+            IMPL(A, transfer)(self, other, self->tail, other->head, false);
     }
 }
 
 static inline bool
-CTL_IMPL(CTL_A, equal)(CTL_A* self, CTL_A* other, bool match(CTL_T*, CTL_T*))
+IMPL(A, equal)(A* self, A* other, bool match(T*, T*))
 {
     if(self->size != other->size)
         return false;
-    CTL_I a = CTL_IMPL(CTL_I, each)(self);
-    CTL_I b = CTL_IMPL(CTL_I, each)(other);
+    I a = IMPL(I, each)(self);
+    I b = IMPL(I, each)(other);
     while(!a.done && !b.done)
     {
         if(!match(a.ref, b.ref))
@@ -345,46 +345,46 @@ CTL_IMPL(CTL_A, equal)(CTL_A* self, CTL_A* other, bool match(CTL_T*, CTL_T*))
 }
 
 static inline void
-CTL_IMPL(CTL_A, sort)(CTL_A* self, int compare(CTL_T*, CTL_T*))
+IMPL(A, sort)(A* self, int compare(T*, T*))
 {
     if(self->size > 1)
     {
-        CTL_A carry = CTL_IMPL(CTL_A, init)();
-        CTL_A temp[64];
-        for(size_t i = 0; i < CTL_LEN(temp); i++)
-            temp[i] = CTL_IMPL(CTL_A, init)();
-        CTL_A* fill = temp;
-        CTL_A* counter = NULL;
+        A carry = IMPL(A, init)();
+        A temp[64];
+        for(size_t i = 0; i < LEN(temp); i++)
+            temp[i] = IMPL(A, init)();
+        A* fill = temp;
+        A* counter = NULL;
         do
         {
-            CTL_IMPL(CTL_A, transfer)(&carry, self, carry.head, self->head, true);
-            for(counter = temp; counter != fill && !CTL_IMPL(CTL_A, empty)(counter); counter++)
+            IMPL(A, transfer)(&carry, self, carry.head, self->head, true);
+            for(counter = temp; counter != fill && !IMPL(A, empty)(counter); counter++)
             {
-                CTL_IMPL(CTL_A, merge)(counter, &carry, compare);
-                CTL_IMPL(CTL_A, swap)(&carry, counter);
+                IMPL(A, merge)(counter, &carry, compare);
+                IMPL(A, swap)(&carry, counter);
             }
-            CTL_IMPL(CTL_A, swap)(&carry, counter);
+            IMPL(A, swap)(&carry, counter);
             if(counter == fill)
                 fill++;
         }
-        while(!CTL_IMPL(CTL_A, empty)(self));
+        while(!IMPL(A, empty)(self));
         for(counter = temp + 1; counter != fill; counter++)
-            CTL_IMPL(CTL_A, merge)(counter, counter - 1, compare);
-        CTL_IMPL(CTL_A, swap)(self, fill - 1);
+            IMPL(A, merge)(counter, counter - 1, compare);
+        IMPL(A, swap)(self, fill - 1);
     }
 }
 
 static inline void
-CTL_IMPL(CTL_A, unique)(CTL_A* self, bool match(CTL_T*, CTL_T*))
+IMPL(A, unique)(A* self, bool match(T*, T*))
 {
-    CTL_I a = CTL_IMPL(CTL_I, each)(self);
-    CTL_FOR(a, {
+    I a = IMPL(I, each)(self);
+    iterate(a, {
         if(a.next && match(a.ref, &a.next->value))
-            CTL_IMPL(CTL_A, erase)(self, a.node);
+            IMPL(A, erase)(self, a.node);
     });
 }
 
-#undef CTL_T
-#undef CTL_A
-#undef CTL_B
-#undef CTL_I
+#undef T
+#undef A
+#undef B
+#undef I

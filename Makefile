@@ -58,8 +58,8 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
-#BINS = tc99_cc tc99_cxx tlst tstr tvec tvecap
-BINS = tc99_cc
+BINS = tc99_cc tc99_cxx tlst tstr tvec tvecap
+#BINS = tc99_cc
 
 TESTS = tests
 
@@ -98,12 +98,12 @@ str:
 	$(call expand,$@)
 
 lst:
-	$(call expand,$@,-DCTL_T=int)
+	$(call expand,$@,-DT=int)
 
 vec:
-	$(call expand,$@,-DCTL_T=int)
+	$(call expand,$@,-DT=int)
 
 deq:
-	$(call expand,$@,-DCTL_T=int)
+	$(call expand,$@,-DT=int)
 
 ALWAYS:

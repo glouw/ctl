@@ -3,32 +3,32 @@
 #include <str.h>
 #include <str.h>
 
-#define CTL_P
-#define CTL_T int
+#define P
+#define T int
 #include <lst.h>
 
-#define CTL_P
-#define CTL_T int
+#define P
+#define T int
 #include <deq.h>
 
-#define CTL_P
-#define CTL_T char
+#define P
+#define T char
 #include <vec.h>
 
-#define CTL_P
-#define CTL_T int
+#define P
+#define T int
 #include <vec.h>
 
-#define CTL_P
-#define CTL_T unsigned
+#define P
+#define T unsigned
 #include <vec.h>
 
-#define CTL_P
-#define CTL_T float
+#define P
+#define T float
 #include <vec.h>
 
-#define CTL_P
-#define CTL_T double
+#define P
+#define T double
 #include <vec.h>
 
 typedef struct
@@ -38,14 +38,12 @@ typedef struct
 }
 point;
 
-#define CTL_P
-#define CTL_T point
+#define P
+#define T point
 #include <vec.h>
 
-#define CTL_T str
+#define T str
 #include <vec.h>
-
-#define foreach CTL_FOREACH
 
 typedef struct
 {
@@ -88,7 +86,7 @@ person_copy(person* self)
     return copy;
 }
 
-#define CTL_T person
+#define T person
 #include <vec.h>
 
 static bool
@@ -112,17 +110,14 @@ main(void)
         vec_int_free(&a);
     }{
         const size_t size = 32;
-        {
-            deq_int a = deq_int_init();
-            for(size_t i = 0; i < size; i++) deq_int_push_back(&a, i);
-            for(size_t i = 0; i < size; i++) deq_int_push_front(&a, i);
-            deq_int_pop_front(&a);
-            deq_int_pop_back(&a);
-            for(size_t i = 0; i < a.size; i++)
-                deq_int_at(&a, i);
-            deq_int_free(&a);
-        }
-        exit(1);
+        deq_int a = deq_int_init();
+        for(size_t i = 0; i < size; i++) deq_int_push_back(&a, i);
+        for(size_t i = 0; i < size; i++) deq_int_push_front(&a, i);
+        deq_int_pop_front(&a);
+        deq_int_pop_back(&a);
+        for(size_t i = 0; i < a.size; i++)
+            deq_int_at(&a, i);
+        deq_int_free(&a);
     }{
         lst_int a = lst_int_init();
         lst_int_push_back(&a, 1);

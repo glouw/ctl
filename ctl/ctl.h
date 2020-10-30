@@ -4,15 +4,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define CTL_CAT(a, b) a##b
+#define CAT(a, b) a##b
 
-#define CTL_PASTE(a, b) CTL_CAT(a, b)
+#define PASTE(a, b) CAT(a, b)
 
-#define CTL_TEMP(type, name) CTL_PASTE(CTL_PASTE(name, _), type)
+#define TEMP(type, name) PASTE(PASTE(name, _), type)
 
-#define CTL_IMPL(container, name) CTL_PASTE(container, CTL_PASTE(_, name))
+#define IMPL(container, name) PASTE(container, PASTE(_, name))
 
-#define CTL_FOR(iterator, ...)    \
+#define iterate(iterator, ...)    \
     while(!iterator.done)         \
     {                             \
         __VA_ARGS__               \
@@ -20,12 +20,12 @@
     }                             \
 (void) 0
 
-#define CTL_FOREACH(container, variable, iterator, ...) {                                 \
-    CTL_IMPL(container, it) iterator = CTL_IMPL(CTL_IMPL(container, it), each)(variable); \
-    CTL_FOR(iterator, __VA_ARGS__);                                                       \
-}                                                                                         \
+#define foreach(container, variable, iterator, ...) {                         \
+    IMPL(container, it) iterator = IMPL(IMPL(container, it), each)(variable); \
+    iterate(iterator, __VA_ARGS__);                                           \
+}                                                                             \
 (void) 0
 
-#define CTL_MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
+#define MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 
-#define CTL_LEN(a) (sizeof(a) / sizeof(*a))
+#define LEN(a) (sizeof(a) / sizeof(*a))

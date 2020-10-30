@@ -1,7 +1,7 @@
 #include "test.h"
 #include "digi.h"
 
-#define CTL_T digi
+#define T digi
 #include <lst.h>
 
 #include <list>
@@ -14,7 +14,7 @@
         assert(*_y.back().value == *lst_digi_back(&_x)->value);   \
     }                                                             \
     std::list<DIGI>::iterator _iter = _y.begin();                 \
-    CTL_FOREACH(lst_digi, &_x, _it, {                             \
+    foreach(lst_digi, &_x, _it, {                                 \
         assert(*_it.ref->value == *_iter->value);                 \
         _iter++;                                                  \
     });                                                           \
@@ -125,7 +125,7 @@ main(void)
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
                 lst_digi_it it = lst_digi_it_each(&a);
-                CTL_FOR(it,
+                iterate(it,
                 {
                     if(current == index)
                     {
@@ -146,7 +146,7 @@ main(void)
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
                 lst_digi_it it = lst_digi_it_each(&a);
-                CTL_FOR(it,
+                iterate(it,
                 {
                     if(current == index)
                     {
@@ -229,7 +229,7 @@ main(void)
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
                 lst_digi_it it = lst_digi_it_each(&a);
-                CTL_FOR(it,
+                iterate(it,
                 {
                     if(current == index)
                         break;

@@ -1,7 +1,7 @@
 #include "test.h"
 #include "digi.h"
 
-#define CTL_T digi
+#define T digi
 #include <vec.h>
 
 #include <vector>
@@ -16,7 +16,7 @@
         assert(*_y.back().value == *vec_digi_back(&_x)->value);   \
     }                                                             \
     std::vector<DIGI>::iterator _iter = _y.begin();               \
-    CTL_FOREACH(vec_digi, &_x, _it, {                             \
+    foreach(vec_digi, &_x, _it, {                                 \
         assert(*_it.ref->value == *_iter->value);                 \
         _iter++;                                                  \
     });                                                           \

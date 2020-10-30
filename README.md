@@ -9,13 +9,13 @@ make maximum use of C99's portability and fast compile times.
 
 ## Usage
 
-Define type `CTL_T` before including a CTL container:
+Define type `T` before including a CTL container:
 
 ```C
 #include <stdio.h>
 
-#define CTL_P
-#define CTL_T int
+#define P
+#define T int
 #include <vec.h>
 
 int compare(int* a, int* b)
@@ -32,16 +32,16 @@ int main(void)
     vec_int_push_back(&a, 4);
     vec_int_push_back(&a, 3);
     vec_int_sort(&a, compare);
-    CTL_FOREACH(vec_int, &a, it, {
+    foreach(vec_int, &a, it,
         printf("%d\n", *it.ref);
-    });
+    );
     vec_int_free(&a);
 }
 ```
 
-The definition `CTL_P` implies the type is Plain Old Data (POD) and no
+The definition `P` implies the type is Plain Old Data (POD) and no
 copy constructor, default constructor, or destructor is needed.
-Both `CTL_P` and `CTL_T` definitions are consumed (`#undef`) by a
+Both `P` and `T` definitions are consumed (`#undef`) by a
 CTL container include directive.
 
 To compile, include the `ctl` directory as a system directory:
@@ -51,8 +51,6 @@ To compile, include the `ctl` directory as a system directory:
 Containers and types are hot swappable:
 
 ```C
-#define foreach CTL_FOREACH // Aesthetic.
-
 #include <stdio.h>
 #include <math.h>
 
@@ -63,8 +61,8 @@ typedef struct
 }
 point;
 
-#define CTL_P
-#define CTL_T point
+#define P
+#define T point
 #include <lst.h>
 
 double mag(point* p)
@@ -85,18 +83,15 @@ int main(void)
     lst_point_push_back(&a, (point) { 3.3, 4.4 });
     lst_point_push_back(&a, (point) { 7.7, 8.8 });
     lst_point_sort(&a, compare);
-    foreach(lst_point, &a, it, {
+    foreach(lst_point, &a, it,
         printf("%f %f\n", it.ref->x, it.ref->y);
-    });
+    );
     lst_point_free(&a);
 }
 ```
-`CTL_FOREACH` can be renamed to a more aesthetic `foreach` for users desiring
-less `CTL_` clutter.
-
-Types that acquire resources with `malloc` require that the `CTL_P` definition be omitted,
+Types that acquire resources with `malloc` require that the `P` definition be omitted,
 and require function definitions for the type's default constructor, copy constructor,
-and destructor in the form of `CTL_T + init_default`, `CTL_T + copy`, and `CTL_T + free`,
+and destructor in the form of `T + init_default`, `T + copy`, and `T + free`,
 respectively:
 
 ```C
@@ -111,8 +106,8 @@ typedef struct
 }
 point;
 
-#define CTL_P
-#define CTL_T point
+#define P
+#define T point
 #include <vec.h>
 
 typedef struct
@@ -156,7 +151,7 @@ person_copy(person* self)
     return copy;
 }
 
-#define CTL_T person
+#define T person
 #include <vec.h>
 
 int main(void)
@@ -166,9 +161,9 @@ int main(void)
     vec_person_push_back(&a, person_init(256, "Moonlit", "Sunrise"));
     vec_person_push_back(&a, person_init(512, "Daytime", "Eclipse"));
     vec_person_resize(&a, 8); // Default constructor called for indices 3, 4, 5, 6, 7.
-    CTL_FOREACH(vec_person, &a, it, {
+    foreach(vec_person, &a, it,
         printf("%lu %lu %s\n", it.ref->path.size, it.ref->path.capacity, it.ref->name.value);
-    });
+    );
     vec_person b = vec_person_copy(&a); // Copy constructor called for each index.
     vec_person_free(&a); // Default destructor called for each index.
     vec_person_free(&b); // Likewise, but on the copy.
@@ -182,8 +177,8 @@ before including the template container header:
 
 ```C
 typedef int* intp;
-#define CTL_P
-#define CTL_T intp
+#define P
+#define T intp
 #include <vec.h>
 ```
 
@@ -193,11 +188,11 @@ Containers can be templated from other containers. For instance, a list of
 vectors holding integers:
 
 ```C
-#define CTL_P
-#define CTL_T int
+#define P
+#define T int
 #include <vec.h>
 
-#define CTL_T vec_int
+#define T vec_int
 #include <lst.h>
 ```
 
@@ -211,25 +206,25 @@ For instance, the following examples result in multiple definition
 compile time errors:
 
 ```C
-#define CTL_P
-#define CTL_T char
+#define P
+#define T char
 #include <vec.h>
 
-#define CTL_P
-#define CTL_T char
+#define P
+#define T char
 #include <vec.h>
 ```
 If the above scenario is encountered and needs a work around,
 a template expansion can be renamed:
 
 ```C
-#define CTL_P
-#define CTL_T char
+#define P
+#define T char
 #include <vec.h>
 
 #define vec_char my_char_vec
-#define CTL_P
-#define CTL_T char
+#define P
+#define T char
 #include <vec.h>
 #undef vec_char
 ```

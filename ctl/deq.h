@@ -2,100 +2,98 @@
 
 #include <stdio.h>
 
-#define CTL_A  CTL_TEMP(CTL_T, deq)
-#define CTL_B  CTL_IMPL(CTL_A, bucket)
+#define A TEMP(T, deq)
+#define B IMPL(A, bucket)
 
-#define CTL_DEQ_BUCKET_SIZE (8)
+#define DEQ_BUCKET_SIZE (8)
 
-typedef struct CTL_B
+typedef struct B
 {
-    CTL_T value[CTL_DEQ_BUCKET_SIZE];
+    T value[DEQ_BUCKET_SIZE];
     int16_t a;
     int16_t b;
 }
-CTL_B;
+B;
 
 typedef struct
 {
-    CTL_T (*init_default)(void);
-    void (*free)(CTL_T*);
-    CTL_T (*copy)(CTL_T*);
-    CTL_B** pages;
+    T (*init_default)(void);
+    void (*free)(T*);
+    T (*copy)(T*);
+    B** pages;
     size_t mark_a;
     size_t mark_b;
     size_t capacity;
     size_t size;
 }
-CTL_A;
+A;
 
 static inline bool
-CTL_IMPL(CTL_A, empty)(CTL_A* self)
+IMPL(A, empty)(A* self)
 {
     return self->size == 0;
 }
 
-static inline CTL_A
-CTL_IMPL(CTL_A, init)(void)
+static inline A
+IMPL(A, init)(void)
 {
-    static CTL_A zero;
-    CTL_A self = zero;
-#ifdef CTL_P
-#undef CTL_P
+    static A zero;
+    A self = zero;
+#ifdef P
+#undef P
 #else
-    self.init_default = CTL_IMPL(CTL_T, init_default);
-    self.free = CTL_IMPL(CTL_T, free);
-    self.copy = CTL_IMPL(CTL_T, copy);
+    self.init_default = IMPL(T, init_default);
+    self.free = IMPL(T, free);
+    self.copy = IMPL(T, copy);
 #endif
     return self;
 }
 
-static inline CTL_B*
-CTL_IMPL(CTL_B, init)(size_t cut)
+static inline B*
+IMPL(B, init)(size_t cut)
 {
-    CTL_B* self = (CTL_B*) malloc(sizeof(CTL_B));
+    B* self = (B*) malloc(sizeof(B));
     self->a = self->b = cut;
     return self;
 }
 
-static inline CTL_B**
-CTL_IMPL(CTL_A, first)(CTL_A* self)
+static inline B**
+IMPL(A, first)(A* self)
 {
     return &self->pages[self->mark_a];
 }
 
-static inline CTL_B**
-CTL_IMPL(CTL_A, last)(CTL_A* self)
+static inline B**
+IMPL(A, last)(A* self)
 {
     return &self->pages[self->mark_b - 1];
 }
 
-static inline CTL_T*
-CTL_IMPL(CTL_A, at)(CTL_A* self, size_t index)
+static inline T*
+IMPL(A, at)(A* self, size_t index)
 {
-    CTL_B* first = *CTL_IMPL(CTL_A, first)(self);
+    B* first = *IMPL(A, first)(self);
     size_t actual = index + first->a;
-    size_t look = self->mark_a + actual / CTL_DEQ_BUCKET_SIZE;
-    CTL_B* page = self->pages[look];
-    size_t cut = actual % CTL_DEQ_BUCKET_SIZE;
-    CTL_T* ref = &page->value[cut];
-    printf("%lu %lu %lu\n", look, cut, *ref);
-    return ref;
+    size_t look = self->mark_a + actual / DEQ_BUCKET_SIZE;
+    B* page = self->pages[look];
+    size_t cut = actual % DEQ_BUCKET_SIZE;
+    return &page->value[cut];
 }
 
 static inline void
-CTL_IMPL(CTL_A, set)(CTL_A* self, size_t index, CTL_T value)
+IMPL(A, set)(A* self, size_t index, T value)
 {
-    CTL_T* ref = CTL_IMPL(CTL_A, at)(self, index);
+    T* ref = IMPL(A, at)(self, index);
     if(self->free)
         self->free(ref);
     *ref = value;
 }
 
 static inline void
-CTL_IMPL(CTL_A, reserve)(CTL_A* self, size_t capacity, size_t shift_from)
+IMPL(A, reserve)(A* self, size_t capacity, size_t shift_from)
 {
     self->capacity = capacity;
-    self->pages = (CTL_B**) realloc(self->pages, capacity * sizeof(CTL_B*));
+    self->pages = (B**) realloc(self->pages, capacity * sizeof(B*));
     size_t shift = (self->capacity - shift_from) / 2;
     size_t i = self->mark_b;
     while(i != 0)
@@ -108,66 +106,66 @@ CTL_IMPL(CTL_A, reserve)(CTL_A* self, size_t capacity, size_t shift_from)
 }
 
 static inline void
-CTL_IMPL(CTL_A, push_front)(CTL_A* self, CTL_T value)
+IMPL(A, push_front)(A* self, T value)
 {
     if(self->capacity == 0)
     {
-        CTL_IMPL(CTL_A, reserve)(self, 1, 0);
+        IMPL(A, reserve)(self, 1, 0);
         self->mark_b = 1;
-        *CTL_IMPL(CTL_A, last)(self) = CTL_IMPL(CTL_B, init)(CTL_DEQ_BUCKET_SIZE);
+        *IMPL(A, last)(self) = IMPL(B, init)(DEQ_BUCKET_SIZE);
     }
     else
     {
-        CTL_B* page = *CTL_IMPL(CTL_A, first)(self);
+        B* page = *IMPL(A, first)(self);
         if(page->a == 0)
         {
             if(self->mark_a == 0)
-                CTL_IMPL(CTL_A, reserve)(self, 2 * self->capacity, self->mark_a);
+                IMPL(A, reserve)(self, 2 * self->capacity, self->mark_a);
             self->mark_a -= 1;
-            *CTL_IMPL(CTL_A, first)(self) = CTL_IMPL(CTL_B, init)(CTL_DEQ_BUCKET_SIZE);
+            *IMPL(A, first)(self) = IMPL(B, init)(DEQ_BUCKET_SIZE);
         }
     }
-    CTL_B* page = *CTL_IMPL(CTL_A, first)(self);
+    B* page = *IMPL(A, first)(self);
     page->a -= 1;
     self->size += 1;
     page->value[page->a] = value;
 }
 
 static inline void
-CTL_IMPL(CTL_A, push_back)(CTL_A* self, CTL_T value)
+IMPL(A, push_back)(A* self, T value)
 {
     if(self->capacity == 0)
     {
-        CTL_IMPL(CTL_A, reserve)(self, 1, 0);
+        IMPL(A, reserve)(self, 1, 0);
         self->mark_b = 1;
-        *CTL_IMPL(CTL_A, last)(self) = CTL_IMPL(CTL_B, init)(0);
+        *IMPL(A, last)(self) = IMPL(B, init)(0);
     }
     else
     {
-        CTL_B* page = *CTL_IMPL(CTL_A, last)(self);
-        if(page->b == CTL_DEQ_BUCKET_SIZE)
+        B* page = *IMPL(A, last)(self);
+        if(page->b == DEQ_BUCKET_SIZE)
         {
             if(self->mark_b == self->capacity)
-                CTL_IMPL(CTL_A, reserve)(self, 2 * self->capacity, self->mark_b);
+                IMPL(A, reserve)(self, 2 * self->capacity, self->mark_b);
             self->mark_b += 1;
-            *CTL_IMPL(CTL_A, last)(self) = CTL_IMPL(CTL_B, init)(0);
+            *IMPL(A, last)(self) = IMPL(B, init)(0);
         }
     }
-    CTL_B* page = *CTL_IMPL(CTL_A, last)(self);
+    B* page = *IMPL(A, last)(self);
     page->value[page->b] = value;
     page->b += 1;
     self->size += 1;
 }
 
 static inline void
-CTL_IMPL(CTL_A, pop_back)(CTL_A* self)
+IMPL(A, pop_back)(A* self)
 {
-    CTL_B* page = *CTL_IMPL(CTL_A, last)(self);
+    B* page = *IMPL(A, last)(self);
     page->b -= 1;
     self->size -= 1;
     if(self->free)
     {
-        CTL_T* ref = &page->value[page->b];
+        T* ref = &page->value[page->b];
         self->free(ref);
     }
     if(page->b == page->a)
@@ -178,12 +176,12 @@ CTL_IMPL(CTL_A, pop_back)(CTL_A* self)
 }
 
 static inline void
-CTL_IMPL(CTL_A, pop_front)(CTL_A* self)
+IMPL(A, pop_front)(A* self)
 {
-    CTL_B* page = *CTL_IMPL(CTL_A, first)(self);
+    B* page = *IMPL(A, first)(self);
     if(self->free)
     {
-        CTL_T* ref = &page->value[page->a];
+        T* ref = &page->value[page->a];
         self->free(ref);
     }
     page->a += 1;
@@ -196,17 +194,17 @@ CTL_IMPL(CTL_A, pop_front)(CTL_A* self)
 }
 
 static inline void
-CTL_IMPL(CTL_A, free)(CTL_A* self)
+IMPL(A, free)(A* self)
 {
-    while(!CTL_IMPL(CTL_A, empty)(self))
-        CTL_IMPL(CTL_A, pop_back)(self);
+    while(!IMPL(A, empty)(self))
+        IMPL(A, pop_back)(self);
     free(self->pages);
     self->pages = NULL;
     self->mark_a = self->mark_b = self->capacity = 0;
 }
 
-#undef CTL_DEQ_BUCKET_SIZE
+#undef DEQ_BUCKET_SIZE
 
-#undef CTL_T
-#undef CTL_A
-#undef CTL_B
+#undef T
+#undef A
+#undef B

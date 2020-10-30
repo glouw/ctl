@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 #define vec_char str
-#define CTL_P
-#define CTL_T char
+#define P
+#define T char
 #include <vec.h>
 #undef vec_char
 

@@ -1,7 +1,7 @@
 #include "test.h"
 #include "digi.h"
 
-#define CTL_T digi
+#define T digi
 #include <deq.h>
 
 #include <deque>
@@ -15,7 +15,7 @@
         assert(*_y.back().value == *deq_digi_back(&_x)->value);   \
     }                                                             \
     std::deque<DIGI>::iterator _iter = _y.begin();                \
-    CTL_FOREACH(deq_digi, &_x, _it, {                             \
+    foreach(deq_digi, &_x, _it, {                                 \
         assert(*_it.ref->value == *_iter->value);                 \
         _iter++;                                                  \
     });                                                           \
