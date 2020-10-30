@@ -97,12 +97,12 @@ str:
 	$(call expand,$@)
 
 lst:
-	$(call expand,$@,-DT=int)
+	$(call expand,$@,-DT=int -DP)
 
 vec:
-	$(call expand,$@,-DT=int)
+	$(call expand,$@,-DT=int -DP)
 
 deq:
-	$(call expand,$@,-DT=int)
+	$(call expand,$@,-DT=int -DP)
 
 ALWAYS:
