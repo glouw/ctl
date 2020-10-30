@@ -58,7 +58,8 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
-BINS = tc99_cc tc99_cxx tlst tstr tvec tdeq tvecap
+#BINS = tc99_cc tc99_cxx tlst tstr tvec tvecap
+BINS = tc99_cc
 
 TESTS = tests
 
