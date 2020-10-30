@@ -249,3 +249,12 @@ pass the `LONG=1` flag to make:
 To run overnight and catch subtle regressions:
 
     while true; do make LONG=1 || break; done
+
+## Keywords
+
+CTL reserves the exclusive right to use the following keywords (macros):
+
+    iterate, foreach, CAT, PASTE, TEMP, IMPL, MUST_ALIGN_16, LEN, A, B, I, T, P
+
+Subtle regressions may occur if CTL is included into a project already making use
+of these keywords.
