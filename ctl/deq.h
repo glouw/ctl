@@ -84,10 +84,15 @@ IMPL(A, last)(A* self)
 static inline T*
 IMPL(A, at)(A* self, size_t index)
 {
-    B* first = *IMPL(A, first)(self);
-    size_t actual = index + first->a;
-    B* page = self->pages[self->mark_a + actual / DEQ_BUCKET_SIZE];
-    return &page->value[actual % DEQ_BUCKET_SIZE];
+    if(self->size == 0)
+        return NULL;
+    else
+    {
+        B* first = *IMPL(A, first)(self);
+        size_t actual = index + first->a;
+        B* page = self->pages[self->mark_a + actual / DEQ_BUCKET_SIZE];
+        return &page->value[actual % DEQ_BUCKET_SIZE];
+    }
 }
 
 static inline T*
@@ -227,6 +232,58 @@ IMPL(A, pop_front)(A* self)
     }
 }
 
+// SHIFTS FROM THE LESSER SIDE.
+// DESTRUCTOR IS DISABLED TILL END OF FUNCTION DUE TO HEAD & TAIL SHIFT COPY.
+static inline void
+IMPL(A, erase)(A* self, T* position)
+{
+    static T zero;
+    size_t index = position - IMPL(A, begin)(self);
+    IMPL(A, set)(self, index, zero);
+    void (*saved)(T*) = self->free;
+    self->free = NULL;
+    if(index < self->size / 2)
+    {
+        for(size_t i = index; i > 0; i--)
+            *IMPL(A, at)(self, i) = *IMPL(A, at)(self, i - 1);
+        IMPL(A, pop_front)(self);
+    }
+    else
+    {
+        for(size_t i = index; i < self->size - 1; i++)
+            *IMPL(A, at)(self, i) = *IMPL(A, at)(self, i + 1);
+        IMPL(A, pop_back)(self);
+    }
+    self->free = saved;
+}
+
+static inline void
+IMPL(A, insert)(A* self, T* position, T value)
+{
+    if(self->size > 0)
+    {
+        size_t index = position - IMPL(A, begin)(self);
+        void (*saved)(T*) = self->free;
+        self->free = NULL;
+        if(index < self->size / 2)
+        {
+            IMPL(A, push_front)(self, *IMPL(A, at)(self, 0));
+            for(size_t i = 0; i < index; i++)
+                *IMPL(A, at)(self, i) = *IMPL(A, at)(self, i + 1);
+        }
+        else
+        {
+            IMPL(A, push_back)(self, *IMPL(A, at)(self, self->size - 1));
+            for(size_t i = self->size - 1; i > index; i--)
+                *IMPL(A, at)(self, i) = *IMPL(A, at)(self, i - 1);
+        }
+        *IMPL(A, at)(self, index) = value;
+        self->free = saved;
+    }
+    else
+        IMPL(A, push_back)(self, value);
+}
+
 static inline void
 IMPL(A, resize)(A* self, size_t size)
 {
@@ -239,13 +296,35 @@ IMPL(A, resize)(A* self, size_t size)
 }
 
 static inline void
-IMPL(A, free)(A* self)
+IMPL(A, assign)(A* self, size_t size, T value)
+{
+    IMPL(A, resize)(self, size);
+    for(size_t i = 0; i < size; i++)
+        IMPL(A, set)(self, i, i == 0 ? value : self->copy ? self->copy(&value) : value);
+}
+
+static inline void
+IMPL(A, clear)(A* self)
 {
     while(!IMPL(A, empty)(self))
         IMPL(A, pop_back)(self);
+}
+
+static inline void
+IMPL(A, free)(A* self)
+{
+    static A zero;
+    IMPL(A, clear)(self);
     free(self->pages);
-    self->pages = NULL;
-    self->mark_a = self->mark_b = self->capacity = 0;
+    *self = zero;
+}
+
+static inline void
+IMPL(A, swap)(A* self, A* other)
+{
+    A temp = *self;
+    *self = *other;
+    *other = temp;
 }
 
 static inline void

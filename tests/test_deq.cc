@@ -68,6 +68,8 @@ main(void)
                 TEST_POP_BACK,
                 TEST_PUSH_FRONT,
                 TEST_POP_FRONT,
+                TEST_INSERT,
+                TEST_ERASE,
                 TEST_TOTAL,
             };
             int which = TEST_RAND(TEST_TOTAL);
@@ -107,6 +109,30 @@ main(void)
                         deq_digi_pop_front(&a);
                         CHECK(a, b);
                     }
+                    break;
+                }
+                case TEST_INSERT:
+                {
+                    size_t amount = TEST_RAND(512);
+                    for(size_t count = 0; count < amount; count++)
+                    {
+                        const int value = TEST_RAND(INT_MAX);
+                        const size_t index = TEST_RAND(a.size);
+                        b.insert(b.begin() + index, DIGI{value});
+                        deq_digi_insert(&a, deq_digi_begin(&a) + index, digi_init(value));
+                    }
+                    CHECK(a, b);
+                    break;
+                }
+                case TEST_ERASE:
+                {
+                    if(a.size > 0)
+                    {
+                        const size_t index = TEST_RAND(a.size);
+                        b.erase(b.begin() + index);
+                        deq_digi_erase(&a, deq_digi_begin(&a) + index);
+                    }
+                    CHECK(a, b);
                     break;
                 }
             }

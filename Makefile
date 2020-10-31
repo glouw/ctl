@@ -59,6 +59,7 @@ define expand
 endef
 
 BINS = tc99_cc tc99_cxx tdeq tlst tstr tvec tvecap
+#BINS = tc99_cc
 
 TESTS = tests
 
