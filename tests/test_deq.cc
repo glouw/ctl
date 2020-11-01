@@ -145,14 +145,11 @@ main(void)
                     CHECK(a, b);
                     break;
                 }
-                case TEST_SHRINK_TO_FIT:
-                {
-                    /* BAD */
-                    break;
-                }
                 case TEST_SORT:
                 {
-                    /* BAD */
+                    deq_digi_sort(&a, digi_compare);
+                    std::sort(b.begin(), b.end());
+                    CHECK(a, b);
                     break;
                 }
                 case TEST_COPY:
@@ -202,7 +199,9 @@ main(void)
                 }
                 case TEST_REMOVE_IF:
                 {
-                    /* BAD */
+                    deq_digi_remove_if(&a, digi_is_odd);
+                    b.erase(std::remove_if(b.begin(), b.end(), DIGI_is_odd), b.end());
+                    CHECK(a, b);
                     break;
                 }
             }

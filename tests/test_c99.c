@@ -95,6 +95,12 @@ int_match(int* a, int* b)
     return *a == *b;
 }
 
+static int
+int_compare(int* a, int* b)
+{
+    return *a < *b;
+}
+
 #include <stdio.h>
 #include "test.h"
 
@@ -114,6 +120,7 @@ main(void)
         for(size_t i = 0; i < size; i++) deq_int_push_back(&a, i);
         for(size_t i = 0; i < size; i++) deq_int_push_front(&a, i);
         deq_int_insert(&a, deq_int_begin(&a) + 1, 99);
+        deq_int_sort(&a, int_compare);
         deq_int_free(&a);
     }{
         lst_int a = lst_int_init();

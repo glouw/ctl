@@ -373,10 +373,10 @@ IMPL(A, sort)(A* self, int compare(T*, T*))
 static inline void
 IMPL(A, unique)(A* self, bool match(T*, T*))
 {
-    foreach(A, self, it, {
+    foreach(A, self, it,
         if(it.next && match(it.ref, &it.next->value))
             IMPL(A, erase)(self, it.node);
-    });
+    );
 }
 
 #undef T

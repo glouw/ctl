@@ -32,9 +32,8 @@ typedef struct I
     void (*step)(struct I*);
     A* container;
     T* ref;
-    T* begin;
-    T* end;
     size_t index;
+    size_t index_next;
     size_t index_last;
     bool done;
 }
@@ -327,15 +326,6 @@ IMPL(A, swap)(A* self, A* other)
     *other = temp;
 }
 
-static inline void
-IMPL(A, shrink_to_fit)(A* self)
-{
-    self->mark_a -= self->mark_a;
-    self->mark_b -= self->mark_a;
-    self->capacity = self->mark_b - self->mark_a;
-    self->pages = (B**) realloc(self->pages, self->capacity * sizeof(B*));
-}
-
 static inline A
 IMPL(A, copy)(A* self)
 {
@@ -348,14 +338,45 @@ IMPL(A, copy)(A* self)
     return other;
 }
 
+// KNR2 (PAGE 87)
+
+static inline void
+IMPL(A, ranged_sort)(A* self, int a, int b, int compare(T*, T*))
+{
+#define SWAP(self, a, b) { T temp = *IMPL(A, at)(self, a); *IMPL(A, at)(self, a) = *IMPL(A, at)(self, b); *IMPL(A, at)(self, b) = temp; }
+    if(a >= b)
+        return;
+    SWAP(self, a, (a + b) / 2);
+    int z = a;
+    for(int i = a + 1; i <= b; i++)
+        if(compare(IMPL(A, at)(self, a), IMPL(A, at)(self, i)))
+        {
+            z += 1;
+            SWAP(self, z, i);
+        }
+    SWAP(self, a, z);
+    IMPL(A, ranged_sort)(self, a, z - 1, compare);
+    IMPL(A, ranged_sort)(self, z + 1, b, compare);
+#undef SWAP
+}
+
+static inline void
+IMPL(A, sort)(A* self, int compare(T*, T*))
+{
+    IMPL(A, ranged_sort)(self, 0, self->size - 1, compare);
+}
+
 static inline void
 IMPL(I, step)(I* self)
 {
-    self->index += 1;
+    self->index = self->index_next;
     if(self->index == self->index_last)
         self->done = true;
     else
+    {
         self->ref = IMPL(A, at)(self->container, self->index);
+        self->index_next += 1;
+    }
 }
 
 // POINTER MATH ENSURES RANDOM ACCESS.
@@ -369,10 +390,9 @@ IMPL(I, range)(A* container, T* begin, T* end)
         self.container = container;
         self.step = IMPL(I, step);
         self.index = begin - IMPL(A, begin)(container);
+        self.index_next = self.index + 1;
         self.index_last = container->size - (IMPL(A, end)(container) - end);
-        self.begin = IMPL(A, at)(container, self.index);
-        self.end = IMPL(A, at)(container, self.index_last - 1) + 1;
-        self.ref = self.begin;
+        self.ref = IMPL(A, at)(container, self.index);
     }
     else
         self.done = true;
@@ -390,14 +410,14 @@ IMPL(I, each)(A* a)
 static inline void
 IMPL(A, remove_if)(A* self, bool (*match)(T*))
 {
-    foreach(A, self, it, {
+    foreach(A, self, it,
         if(match(it.ref))
         {
-            IMPL(A, erase)(self, it.ref);
-            it.end = IMPL(A, end)(self);
-            it.index -= 1;
+            IMPL(A, erase)(self, IMPL(A, begin)(self) + it.index);
+            it.index_next = it.index;
+            it.index_last -= 1;
         }
-    });
+    );
 }
 
 #undef DEQ_BUCKET_SIZE

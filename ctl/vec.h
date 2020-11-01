@@ -243,7 +243,7 @@ IMPL(A, erase)(A* self, T* position)
 }
 
 static inline void
-IMPL(A, sort)(A* self, int (*compare)(T*, T*))
+IMPL(A, sort)(A* self, int compare(T*, T*))
 {
     if(self->size > 0)
         qsort(self->value, self->size, sizeof(T), (__compar_fn_t) compare); // ASSUME POINTER FUNCTION CAST IS SAFE.
@@ -308,14 +308,14 @@ IMPL(I, each)(A* a)
 static inline void
 IMPL(A, remove_if)(A* self, bool (*match)(T*))
 {
-    foreach(A, self, it, {
+    foreach(A, self, it,
         if(match(it.ref))
         {
             IMPL(A, erase)(self, it.ref);
             it.end = IMPL(A, end)(self);
             it.next = it.ref;
         }
-    });
+    );
 }
 
 #undef T
