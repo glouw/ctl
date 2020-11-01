@@ -9,6 +9,10 @@
 
 #define P
 #define T int
+#include <que.h>
+
+#define P
+#define T int
 #include <lst.h>
 
 #define P

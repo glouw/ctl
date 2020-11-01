@@ -5,8 +5,7 @@ CTL is a type safe header only template library for ISO C99.
 ## Motivation
 
 CTL aims to back port useful C++ template containers to C99 to
-make maximum use of C99's portability, small binary sizes, and
-fast compile times.
+make maximum use of C99's fast compile time.
 
 ## Usage
 
@@ -252,9 +251,6 @@ To run overnight and catch subtle regressions:
 
 ## Keywords
 
-CTL reserves the exclusive right to use the following keywords (macros):
+CTL reserves the following global namespace macros:
 
     iterate, foreach, CAT, PASTE, TEMP, IMPL, MUST_ALIGN_16, LEN, A, B, I, T, P
-
-Subtle regressions may occur if CTL is included into a project already making use
-of these keywords.
