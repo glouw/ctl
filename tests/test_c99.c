@@ -5,6 +5,10 @@
 
 #define P
 #define T int
+#include <stk.h>
+
+#define P
+#define T int
 #include <lst.h>
 
 #define P

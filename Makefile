@@ -106,4 +106,7 @@ vec:
 deq:
 	$(call expand,$@,-DT=int -DP)
 
+stk:
+	$(call expand,$@,-DT=int -DP)
+
 ALWAYS:
