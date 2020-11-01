@@ -129,7 +129,7 @@ IMPL(A, set)(A* self, size_t index, T value)
 }
 
 static inline void
-IMPL(A, reserve)(A* self, size_t capacity, size_t shift_from)
+IMPL(A, alloc)(A* self, size_t capacity, size_t shift_from)
 {
     self->capacity = capacity;
     self->pages = (B**) realloc(self->pages, capacity * sizeof(B*));
@@ -149,7 +149,7 @@ IMPL(A, push_front)(A* self, T value)
 {
     if(self->capacity == 0)
     {
-        IMPL(A, reserve)(self, 1, 0);
+        IMPL(A, alloc)(self, 1, 0);
         self->mark_b = 1;
         *IMPL(A, last)(self) = IMPL(B, init)(DEQ_BUCKET_SIZE);
     }
@@ -159,7 +159,7 @@ IMPL(A, push_front)(A* self, T value)
         if(page->a == 0)
         {
             if(self->mark_a == 0)
-                IMPL(A, reserve)(self, 2 * self->capacity, self->mark_a);
+                IMPL(A, alloc)(self, 2 * self->capacity, self->mark_a);
             self->mark_a -= 1;
             *IMPL(A, first)(self) = IMPL(B, init)(DEQ_BUCKET_SIZE);
         }
@@ -175,7 +175,7 @@ IMPL(A, push_back)(A* self, T value)
 {
     if(self->capacity == 0)
     {
-        IMPL(A, reserve)(self, 1, 0);
+        IMPL(A, alloc)(self, 1, 0);
         self->mark_b = 1;
         *IMPL(A, last)(self) = IMPL(B, init)(0);
     }
@@ -185,7 +185,7 @@ IMPL(A, push_back)(A* self, T value)
         if(page->b == DEQ_BUCKET_SIZE)
         {
             if(self->mark_b == self->capacity)
-                IMPL(A, reserve)(self, 2 * self->capacity, self->mark_b);
+                IMPL(A, alloc)(self, 2 * self->capacity, self->mark_b);
             self->mark_b += 1;
             *IMPL(A, last)(self) = IMPL(B, init)(0);
         }
@@ -328,6 +328,27 @@ IMPL(A, swap)(A* self, A* other)
 }
 
 static inline void
+IMPL(A, shrink_to_fit)(A* self)
+{
+    self->mark_a -= self->mark_a;
+    self->mark_b -= self->mark_a;
+    self->capacity = self->mark_b - self->mark_a;
+    self->pages = (B**) realloc(self->pages, self->capacity * sizeof(B*));
+}
+
+static inline A
+IMPL(A, copy)(A* self)
+{
+    A other = IMPL(A, init)();
+    while(other.size < self->size)
+    {
+        T* value = IMPL(A, at)(self, other.size);
+        IMPL(A, push_back)(&other, other.copy ? other.copy(value) : *value);
+    }
+    return other;
+}
+
+static inline void
 IMPL(I, step)(I* self)
 {
     self->index += 1;
@@ -364,6 +385,19 @@ IMPL(I, each)(A* a)
     return IMPL(A, empty)(a)
         ? IMPL(I, range)(a, NULL, NULL)
         : IMPL(I, range)(a, IMPL(A, begin)(a), IMPL(A, end)(a));
+}
+
+static inline void
+IMPL(A, remove_if)(A* self, bool (*match)(T*))
+{
+    foreach(A, self, it, {
+        if(match(it.ref))
+        {
+            IMPL(A, erase)(self, it.ref);
+            it.end = IMPL(A, end)(self);
+            it.index -= 1;
+        }
+    });
 }
 
 #undef DEQ_BUCKET_SIZE

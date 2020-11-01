@@ -68,8 +68,16 @@ main(void)
                 TEST_POP_BACK,
                 TEST_PUSH_FRONT,
                 TEST_POP_FRONT,
-                TEST_INSERT,
+                TEST_CLEAR,
                 TEST_ERASE,
+                TEST_RESIZE,
+                TEST_SHRINK_TO_FIT,
+                TEST_SORT,
+                TEST_COPY,
+                TEST_SWAP,
+                TEST_INSERT,
+                TEST_ASSIGN,
+                TEST_REMOVE_IF,
                 TEST_TOTAL,
             };
             int which = TEST_RAND(TEST_TOTAL);
@@ -111,6 +119,64 @@ main(void)
                     }
                     break;
                 }
+                case TEST_CLEAR:
+                {
+                    b.clear();
+                    deq_digi_clear(&a);
+                    CHECK(a, b);
+                    break;
+                }
+                case TEST_ERASE:
+                {
+                    if(a.size > 0)
+                    {
+                        const size_t index = TEST_RAND(a.size);
+                        b.erase(b.begin() + index);
+                        deq_digi_erase(&a, deq_digi_begin(&a) + index);
+                    }
+                    CHECK(a, b);
+                    break;
+                }
+                case TEST_RESIZE:
+                {
+                    const size_t resize = 3 * TEST_RAND(a.size) + 1;
+                    b.resize(resize);
+                    deq_digi_resize(&a, resize);
+                    CHECK(a, b);
+                    break;
+                }
+                case TEST_SHRINK_TO_FIT:
+                {
+                    /* BAD */
+                    break;
+                }
+                case TEST_SORT:
+                {
+                    /* BAD */
+                    break;
+                }
+                case TEST_COPY:
+                {
+                    deq_digi aa = deq_digi_copy(&a);
+                    std::deque<DIGI> bb = b;
+                    CHECK(aa, bb);
+                    deq_digi_free(&aa);
+                    CHECK(a, b);
+                    break;
+                }
+                case TEST_SWAP:
+                {
+                    deq_digi aa = deq_digi_copy(&a);
+                    deq_digi aaa;
+                    std::deque<DIGI> bb = b;
+                    std::deque<DIGI> bbb;
+                    deq_digi_swap(&aaa, &aa);
+                    std::swap(bb, bbb);
+                    CHECK(aaa, bbb);
+                    deq_digi_free(&aaa);
+                    CHECK(a, b);
+                    break;
+                }
                 case TEST_INSERT:
                 {
                     size_t amount = TEST_RAND(512);
@@ -124,15 +190,19 @@ main(void)
                     CHECK(a, b);
                     break;
                 }
-                case TEST_ERASE:
+                case TEST_ASSIGN:
                 {
-                    if(a.size > 0)
-                    {
-                        const size_t index = TEST_RAND(a.size);
-                        b.erase(b.begin() + index);
-                        deq_digi_erase(&a, deq_digi_begin(&a) + index);
-                    }
+                    const int value = TEST_RAND(INT_MAX);
+                    size_t assign_size = TEST_RAND(a.size) + 1;
+                    digi d = digi_init(value);
+                    deq_digi_assign(&a, assign_size, d);
+                    b.assign(assign_size, DIGI{value});
                     CHECK(a, b);
+                    break;
+                }
+                case TEST_REMOVE_IF:
+                {
+                    /* BAD */
                     break;
                 }
             }

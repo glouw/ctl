@@ -114,9 +114,6 @@ main(void)
         for(size_t i = 0; i < size; i++) deq_int_push_back(&a, i);
         for(size_t i = 0; i < size; i++) deq_int_push_front(&a, i);
         deq_int_insert(&a, deq_int_begin(&a) + 1, 99);
-        foreach(deq_int, &a, it,
-            printf("%d\n", *it.ref);
-        );
         deq_int_free(&a);
     }{
         lst_int a = lst_int_init();
