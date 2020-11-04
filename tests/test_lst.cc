@@ -1,5 +1,5 @@
 #include "test.h"
-#include "digi.h"
+#include "digi.hh"
 
 #define T digi
 #include <lst.h>
@@ -25,7 +25,7 @@
     }                                                             \
 }
 
-static bool
+static int
 digi_match(digi* a, digi* b)
 {
     return *a->value == *b->value;

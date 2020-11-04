@@ -9,11 +9,11 @@
 #include <assert.h>
 
 #ifdef LONG
-#define TEST_MAX_SIZE  (4096)
-#define TEST_MAX_LOOPS (8096)
+#    define TEST_MAX_SIZE  (4096)
+#    define TEST_MAX_LOOPS (8096)
 #else
-#define TEST_MAX_SIZE  (1024)
-#define TEST_MAX_LOOPS (2048)
+#    define TEST_MAX_SIZE  (1024)
+#    define TEST_MAX_LOOPS (2048)
 #endif
 
 #define TEST_SIGN(a) ((a < 0) ? (-1) : (a > 0) ? (1) : (0))

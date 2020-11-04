@@ -1,3 +1,8 @@
+#include "test.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <str.h> // MULTIPLE INCLUDES OKAY.
 #include <str.h>
 #include <str.h>
@@ -6,6 +11,10 @@
 #define P
 #define T int
 #include <stk.h>
+
+#define P
+#define T int
+#include <pqu.h>
 
 #define P
 #define T int
@@ -97,7 +106,7 @@ person_copy(person* self)
 #define T person
 #include <vec.h>
 
-static bool
+static int
 int_match(int* a, int* b)
 {
     return *a == *b;
@@ -108,9 +117,6 @@ int_compare(int* a, int* b)
 {
     return *a < *b;
 }
-
-#include <stdio.h>
-#include "test.h"
 
 int
 main(void)

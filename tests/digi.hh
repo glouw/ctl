@@ -4,6 +4,12 @@
 // THESE DIGI STRUCTS BEHAVE IDENTICALLY AND ARE USED AS THE BASIS
 // FOR TESTING COPY / FREE / CONSTRUCT FOR STL AND CTL CONTAINERS.
 
+#ifdef COMPARE_A
+#    define COMPARE_DIRECTION >
+#else
+#    define COMPARE_DIRECTION <
+#endif
+
 typedef struct
 {
     int* value;
@@ -35,7 +41,7 @@ digi_free(digi* self)
 static inline int
 digi_compare(digi* a, digi* b)
 {
-    return *b->value < *a->value;
+    return *b->value COMPARE_DIRECTION *a->value;
 }
 
 static inline digi
@@ -49,7 +55,6 @@ digi_copy(digi* self)
 struct DIGI
 {
     int* value;
-
     DIGI(int _value): value { new int {_value} }
     {
     }
@@ -85,7 +90,7 @@ struct DIGI
     }
     bool operator<(const DIGI& a) const
     {
-        return *value < *a.value;
+        return *value COMPARE_DIRECTION *a.value;
     }
     bool operator==(const DIGI& a) const
     {
@@ -93,7 +98,7 @@ struct DIGI
     }
 };
 
-static inline bool
+static inline int
 digi_is_odd(digi* d)
 {
     return *d->value % 2;
@@ -104,5 +109,7 @@ DIGI_is_odd(DIGI& d)
 {
     return *d.value % 2;
 }
+
+#undef COMPARE_DIRECTION
 
 #endif

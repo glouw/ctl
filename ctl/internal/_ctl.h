@@ -1,10 +1,6 @@
 #ifndef __CTL_H__
 #define __CTL_H__
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stddef.h>
-
 #define CAT(a, b) a##b
 
 #define PASTE(a, b) CAT(a, b)
@@ -26,8 +22,6 @@
     iterate(iterator, __VA_ARGS__);                                           \
 }                                                                             \
 (void) 0
-
-#define MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 
 #define LEN(a) (sizeof(a) / sizeof(*(a)))
 

@@ -1,5 +1,5 @@
 #include "test.h"
-#include "digi.h"
+#include "digi.hh"
 
 #define T digi
 #include <vec.h>

@@ -4,6 +4,7 @@ CXX = g++ -std=c++17
 LONG = 0
 SANITIZE = 1
 SRAND = 1
+COMPARE_A = 0
 
 O0 = 0
 O1 = 0
@@ -54,12 +55,15 @@ ifeq (1, $(SRAND))
 CFLAGS += -DSRAND
 endif
 
+ifeq (1, $(COMPARE_A))
+CFLAGS += -DCOMPARE_A
+endif
+
 define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
-BINS = tc99_cc tc99_cxx tdeq tlst tstr tvec tvecap
-#BINS = tc99_cc
+BINS = tc99_cc tc99_cxx tdeq tstk tque tpqu tlst tstr tvec tvecap
 
 TESTS = tests
 
@@ -77,6 +81,15 @@ tc99_cxx: ALWAYS
 
 tdeq: ALWAYS
 	$(CXX) $(CFLAGS) $(TESTS)/test_deq.cc -o $@
+
+tstk: ALWAYS
+	$(CXX) $(CFLAGS) $(TESTS)/test_stk.cc -o $@
+
+tque: ALWAYS
+	$(CXX) $(CFLAGS) $(TESTS)/test_que.cc -o $@
+
+tpqu: ALWAYS
+	$(CXX) $(CFLAGS) $(TESTS)/test_pqu.cc -o $@
 
 tlst: ALWAYS
 	$(CXX) $(CFLAGS) $(TESTS)/test_lst.cc -o $@
@@ -107,6 +120,12 @@ deq:
 	$(call expand,$@,-DT=int -DP)
 
 stk:
+	$(call expand,$@,-DT=int -DP)
+
+que:
+	$(call expand,$@,-DT=int -DP)
+
+pqu:
 	$(call expand,$@,-DT=int -DP)
 
 ALWAYS:

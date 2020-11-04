@@ -251,6 +251,6 @@ To run overnight and catch subtle regressions:
 
 ## Keywords
 
-CTL reserves the following global namespace macros:
+CTL reserves the following:
 
-    iterate, foreach, CAT, PASTE, TEMP, IMPL, MUST_ALIGN_16, LEN, A, B, I, T, P
+    iterate, foreach, CAT, PASTE, TEMP, IMPL, LEN, A, B, I, T, P
