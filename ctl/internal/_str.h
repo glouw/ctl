@@ -1,13 +1,8 @@
-#ifndef __STR_H__
-#define __STR_H__
-
 #define vec_char str
 #define P
 #define T char
 #include "_vec.h"
 #undef vec_char
-
-#include <string.h>
 
 static inline str
 str_create(const char* c_str)
@@ -156,5 +151,3 @@ str_compare(str* self, const char* s)
 {
     return strcmp(str_c_str(self), s);
 }
-
-#endif
