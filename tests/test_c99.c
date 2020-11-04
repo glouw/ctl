@@ -1,8 +1,5 @@
 #include "test.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <str.h> // MULTIPLE INCLUDES OKAY.
 #include <str.h>
 #include <str.h>
