@@ -78,6 +78,7 @@ main(void)
                 TEST_INSERT,
                 TEST_ASSIGN,
                 TEST_REMOVE_IF,
+                TEST_EQUAL,
                 TEST_TOTAL,
             };
             int which = TEST_RAND(TEST_TOTAL);
@@ -198,6 +199,16 @@ main(void)
                 {
                     vec_digi_remove_if(&a, digi_is_odd);
                     b.erase(std::remove_if(b.begin(), b.end(), DIGI_is_odd), b.end());
+                    CHECK(a, b);
+                    break;
+                }
+                case TEST_EQUAL:
+                {
+                    vec_digi aa = vec_digi_copy(&a);
+                    std::vector<DIGI> bb = b;
+                    assert(vec_digi_equal(&a, &aa, digi_match));
+                    assert(b == bb);
+                    vec_digi_free(&aa);
                     CHECK(a, b);
                     break;
                 }

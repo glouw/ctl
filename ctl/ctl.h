@@ -1,6 +1,8 @@
 #ifndef __CTL_H__
 #define __CTL_H__
 
+#include <stdlib.h>
+
 #define CAT(a, b) a##b
 
 #define PASTE(a, b) CAT(a, b)

@@ -78,6 +78,7 @@ main(void)
                 TEST_INSERT,
                 TEST_ASSIGN,
                 TEST_REMOVE_IF,
+                TEST_EQUAL,
                 TEST_TOTAL,
             };
             int which = TEST_RAND(TEST_TOTAL);
@@ -201,6 +202,16 @@ main(void)
                 {
                     deq_digi_remove_if(&a, digi_is_odd);
                     b.erase(std::remove_if(b.begin(), b.end(), DIGI_is_odd), b.end());
+                    CHECK(a, b);
+                    break;
+                }
+                case TEST_EQUAL:
+                {
+                    deq_digi aa = deq_digi_copy(&a);
+                    std::deque<DIGI> bb = b;
+                    assert(deq_digi_equal(&a, &aa, digi_match));
+                    assert(b == bb);
+                    deq_digi_free(&aa);
                     CHECK(a, b);
                     break;
                 }

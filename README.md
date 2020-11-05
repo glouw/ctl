@@ -19,18 +19,13 @@ Define type `T` before including a CTL container:
 #define T int
 #include <vec.h>
 
-int compare(int* a, int* b)
-{
-    return *b < *a;
-}
+int compare(int* a, int* b) { return *b < *a; }
 
 int main(void)
 {
     vec_int a = vec_int_init();
-    vec_int_push_back(&a, 2);
-    vec_int_push_back(&a, 1);
     vec_int_push_back(&a, 9);
-    vec_int_push_back(&a, 4);
+    vec_int_push_back(&a, 1);
     vec_int_push_back(&a, 3);
     vec_int_sort(&a, compare);
     foreach(vec_int, &a, it,
@@ -67,22 +62,15 @@ point;
 #define T point
 #include <lst.h>
 
-double mag(point* p)
-{
-    return sqrt(p->x * p->x + p->y * p->y);
-}
+double mag(point* p) { return sqrt(p->x * p->x + p->y * p->y); }
 
-int compare(point* a, point* b)
-{
-    return mag(b) < mag(a);
-}
+int compare(point* a, point* b) { return mag(b) < mag(a); }
 
 int main(void)
 {
     lst_point a = lst_point_init();
     lst_point_push_back(&a, (point) { 5.5, 6.6 });
     lst_point_push_back(&a, (point) { 1.1, 2.2 });
-    lst_point_push_back(&a, (point) { 3.3, 4.4 });
     lst_point_push_back(&a, (point) { 7.7, 8.8 });
     lst_point_sort(&a, compare);
     foreach(lst_point, &a, it,
@@ -123,9 +111,7 @@ person;
 person
 person_init(size_t path_capacity, const char* first, const char* last)
 {
-    person self;
-    self.path = vec_point_init();
-    self.name = str_create(first);
+    person self = { vec_point_init(), str_create(first) };
     str_append(&self.name, " ");
     str_append(&self.name, last);
     vec_point_reserve(&self.path, path_capacity);
@@ -148,10 +134,7 @@ person_free(person* self)
 person
 person_copy(person* self)
 {
-    person copy;
-    copy.path = vec_point_copy(&self->path);
-    copy.name = str_copy(&self->name);
-    return copy;
+    return (Person) { vec_point_copy(&self->path), str_copy(&self->name) };
 }
 
 #define T person

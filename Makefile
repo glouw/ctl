@@ -63,9 +63,9 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
-BINS = tc99_cc tc99_cxx tdeq tstk tque tpqu tlst tstr tvec tvecap
+BINS = tc99_cc tc99_cxx tdeq tstk tque tpqu tlst tstr tvec tvecap tccomp
 
-TESTS = tests
+TEST_DIR = tests
 
 test: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
@@ -74,34 +74,37 @@ test: $(BINS)
 	@$(CXX) --version
 
 tc99_cc: ALWAYS
-	$(CC) $(CFLAGS) $(TESTS)/test_c99.c -o $@
+	$(CC) $(CFLAGS) $(TEST_DIR)/test_c99.c -o $@
 
 tc99_cxx: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_c99.c -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_c99.c -o $@
 
 tdeq: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_deq.cc -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_deq.cc -o $@
 
 tstk: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_stk.cc -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_stk.cc -o $@
 
 tque: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_que.cc -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_que.cc -o $@
 
 tpqu: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_pqu.cc -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_pqu.cc -o $@
 
 tlst: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_lst.cc -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_lst.cc -o $@
 
 tstr: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_str.cc -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_str.cc -o $@
 
 tvec: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_vec.cc -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_vec.cc -o $@
 
 tvecap: ALWAYS
-	$(CXX) $(CFLAGS) $(TESTS)/test_vec_capacity.cc -o $@
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_vec_capacity.cc -o $@
+
+tccomp: ALWAYS
+	$(CXX) $(CFLAGS) $(TEST_DIR)/test_container_composing.cc -o $@
 
 clean:
 	@rm -f $(BINS)

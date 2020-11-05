@@ -25,12 +25,6 @@
     }                                                             \
 }
 
-static int
-digi_match(digi* a, digi* b)
-{
-    return *a->value == *b->value;
-}
-
 static void
 setup_lists(lst_digi* a, std::list<DIGI>& b, size_t size, int* max_value)
 {

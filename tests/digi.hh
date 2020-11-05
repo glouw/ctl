@@ -110,6 +110,12 @@ DIGI_is_odd(DIGI& d)
     return *d.value % 2;
 }
 
+static inline int
+digi_match(digi* a, digi* b)
+{
+    return *a->value == *b->value;
+}
+
 #undef COMPARE_DIRECTION
 
 #endif
