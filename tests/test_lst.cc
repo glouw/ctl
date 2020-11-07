@@ -182,7 +182,7 @@ main(void)
             case TEST_SWAP:
             {
                 lst_digi aa = lst_digi_copy(&a);
-                lst_digi aaa;
+                lst_digi aaa = lst_digi_init();
                 std::list<DIGI> bb = b;
                 std::list<DIGI> bbb;
                 lst_digi_swap(&aaa, &aa);

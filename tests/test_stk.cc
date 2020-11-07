@@ -69,7 +69,7 @@ main(void)
             case TEST_SWAP:
             {
                 stk_digi aa = stk_digi_copy(&a);
-                stk_digi aaa;
+                stk_digi aaa = stk_digi_init();
                 std::stack<DIGI> bb = b;
                 std::stack<DIGI> bbb;
                 stk_digi_swap(&aaa, &aa);

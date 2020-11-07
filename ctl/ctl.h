@@ -2,6 +2,7 @@
 #define __CTL_H__
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #define CAT(a, b) a##b
 
@@ -25,6 +26,6 @@
 }                                                                             \
 (void) 0
 
-#define LEN(a) (sizeof(a) / sizeof(*(a)))
+#define len(a) (sizeof(a) / sizeof(*(a)))
 
 #endif

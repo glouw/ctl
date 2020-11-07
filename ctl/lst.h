@@ -35,6 +35,12 @@ typedef struct I
 }
 I;
 
+static inline T
+IMPL(A, __implicit_copy)(T* self)
+{
+    return *self;
+}
+
 static inline A
 IMPL(A, init)(void)
 {
@@ -42,6 +48,7 @@ IMPL(A, init)(void)
     A self = zero;
 #ifdef P
 #undef P
+    self.copy = IMPL(A, __implicit_copy);
 #else
     self.init_default = IMPL(T, init_default);
     self.free = IMPL(T, free);
@@ -222,7 +229,7 @@ IMPL(A, copy)(A* self)
 {
     A other = IMPL(A, init)();
     for(B* node = self->head; node; node = node->next)
-        IMPL(A, push_back)(&other, self->copy ? self->copy(&node->value) : node->value);
+        IMPL(A, push_back)(&other, self->copy(&node->value));
     return other;
 }
 
@@ -272,7 +279,7 @@ IMPL(A, assign)(A* self, size_t size, T value)
     foreach(A, self, it, {
         if(self->free)
             self->free(it.ref);
-        *it.ref = (index == 0) ? value : self->copy ? self->copy(&value) : value;
+        *it.ref = (index == 0) ? value : self->copy(&value);
         index += 1;
     });
 }
@@ -353,7 +360,7 @@ IMPL(A, sort)(A* self, int compare(T*, T*))
     {
         A carry = IMPL(A, init)();
         A temp[64];
-        for(size_t i = 0; i < LEN(temp); i++)
+        for(size_t i = 0; i < len(temp); i++)
             temp[i] = IMPL(A, init)();
         A* fill = temp;
         A* counter = NULL;

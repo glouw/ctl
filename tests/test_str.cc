@@ -330,7 +330,7 @@ main(void)
                 case TEST_SWAP:
                 {
                     str aa = str_copy(&a);
-                    str aaa;
+                    str aaa = str_init();
                     std::string cb = b;
                     std::string bbb;
                     str_swap(&aaa, &aa);

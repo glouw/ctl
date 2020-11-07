@@ -66,7 +66,7 @@ main(void)
             case TEST_SWAP:
             {
                 pqu_digi aa = pqu_digi_copy(&a);
-                pqu_digi aaa;
+                pqu_digi aaa = pqu_digi_init();
                 std::priority_queue<DIGI> bb = b;
                 std::priority_queue<DIGI> bbb;
                 pqu_digi_swap(&aaa, &aa);

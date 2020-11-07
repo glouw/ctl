@@ -2,7 +2,7 @@ CC = gcc -std=c99
 CXX = g++ -std=c++17
 
 LONG = 0
-SANITIZE = 1
+SANITIZE = 0
 SRAND = 1
 COMPARE_A = 0
 
@@ -63,48 +63,48 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
-BINS = tc99_cc tc99_cxx tdeq tstk tque tpqu tlst tstr tvec tvecap tccomp
+BINS = tc99_cc tc99_cxx tdeq tstk tque tpqu tlst tstr tvec tvecap tccomp astar
 
-TEST_DIR = tests
-
-test: $(BINS)
+all: $(BINS) examples
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
-	@rm -f $(BINS)
 	@$(CC) --version
 	@$(CXX) --version
 
 tc99_cc: ALWAYS
-	$(CC) $(CFLAGS) $(TEST_DIR)/test_c99.c -o $@
+	$(CC) $(CFLAGS) tests/test_c99.c -o $@
 
 tc99_cxx: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_c99.c -o $@
+	$(CXX) $(CFLAGS) tests/test_c99.c -o $@
 
 tdeq: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_deq.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_deq.cc -o $@
 
 tstk: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_stk.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_stk.cc -o $@
 
 tque: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_que.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_que.cc -o $@
 
 tpqu: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_pqu.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_pqu.cc -o $@
 
 tlst: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_lst.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_lst.cc -o $@
 
 tstr: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_str.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_str.cc -o $@
 
 tvec: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_vec.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_vec.cc -o $@
 
 tvecap: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_vec_capacity.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_vec_capacity.cc -o $@
 
 tccomp: ALWAYS
-	$(CXX) $(CFLAGS) $(TEST_DIR)/test_container_composing.cc -o $@
+	$(CXX) $(CFLAGS) tests/test_container_composing.cc -o $@
+
+astar: ALWAYS
+	$(CC) $(CFLAGS) examples/astar.c -o $@
 
 clean:
 	@rm -f $(BINS)

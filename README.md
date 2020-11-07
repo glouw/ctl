@@ -239,4 +239,4 @@ To run overnight and catch subtle regressions:
 
 CTL reserves the following:
 
-    iterate, foreach, CAT, PASTE, TEMP, IMPL, LEN, A, B, I, T, P
+    iterate, foreach, len, CAT, PASTE, TEMP, IMPL, A, B, I, T, P

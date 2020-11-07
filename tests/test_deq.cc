@@ -165,7 +165,7 @@ main(void)
                 case TEST_SWAP:
                 {
                     deq_digi aa = deq_digi_copy(&a);
-                    deq_digi aaa;
+                    deq_digi aaa = deq_digi_init();
                     std::deque<DIGI> bb = b;
                     std::deque<DIGI> bbb;
                     deq_digi_swap(&aaa, &aa);

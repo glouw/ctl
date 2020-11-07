@@ -47,6 +47,12 @@ IMPL(A, empty)(A* self)
     return self->size == 0;
 }
 
+static inline T
+IMPL(A, __implicit_copy)(T* self)
+{
+    return *self;
+}
+
 static inline A
 IMPL(A, init)(void)
 {
@@ -54,6 +60,7 @@ IMPL(A, init)(void)
     A self = zero;
 #ifdef P
 #undef P
+    self.copy = IMPL(A, __implicit_copy);
 #else
     self.init_default = IMPL(T, init_default);
     self.free = IMPL(T, free);
@@ -305,7 +312,7 @@ IMPL(A, assign)(A* self, size_t size, T value)
 {
     IMPL(A, resize)(self, size);
     for(size_t i = 0; i < size; i++)
-        IMPL(A, set)(self, i, i == 0 ? value : self->copy ? self->copy(&value) : value);
+        IMPL(A, set)(self, i, i == 0 ? value : self->copy(&value));
 }
 
 static inline void

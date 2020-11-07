@@ -185,7 +185,7 @@ main(void)
                 case TEST_SWAP:
                 {
                     vec_digi aa = vec_digi_copy(&a);
-                    vec_digi aaa;
+                    vec_digi aaa = vec_digi_init();
                     std::vector<DIGI> bb = b;
                     std::vector<DIGI> bbb;
                     vec_digi_swap(&aaa, &aa);

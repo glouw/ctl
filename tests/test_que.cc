@@ -67,7 +67,7 @@ main(void)
             case TEST_SWAP:
             {
                 que_digi aa = que_digi_copy(&a);
-                que_digi aaa;
+                que_digi aaa = que_digi_init();
                 std::queue<DIGI> bb = b;
                 std::queue<DIGI> bbb;
                 que_digi_swap(&aaa, &aa);
