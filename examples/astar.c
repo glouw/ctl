@@ -68,8 +68,7 @@ astar(str* maze, int width)
     vec_point from = vec_point_init();
     vec_int costs = vec_int_init();
     vec_point_resize(&from, maze->size);
-    vec_int_resize(&costs, maze->size);
-    foreach(vec_int, &costs, it, *it.ref = NONE;);
+    vec_int_assign(&costs, maze->size, NONE);
     costs.value[point_index(&start, width)] = 0;
     while(!pqu_point_empty(&front))
     {
