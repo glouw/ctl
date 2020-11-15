@@ -24,6 +24,7 @@
 
 #define vec pqu
 #define HOLD
+#define COMPARE
 #include <vec.h>
 #undef vec
 
@@ -31,24 +32,32 @@
 
 #define SWAP(x, y) { T temp = *x; *x = *y; *y = temp; }
 
+static inline A
+IMPL(A, create)(int compare(T*, T*))
+{
+    A self = IMPL(A, init)();
+    self.compare = compare;
+    return self;
+}
+
 static inline void
-IMPL(A, up)(A* self, size_t n, int (*compare)(T*, T*))
+IMPL(A, up)(A* self, size_t n)
 {
     if(n > 0)
     {
         size_t p = (n - 1) / 2;
         T* x = &self->value[n];
         T* y = &self->value[p];
-        if(compare(x, y))
+        if(self->compare(x, y))
         {
             SWAP(x, y);
-            IMPL(A, up)(self, p, compare);
+            IMPL(A, up)(self, p);
         }
     }
 }
 
 static inline void
-IMPL(A, down)(A* self, size_t n, int (*compare)(T*, T*))
+IMPL(A, down)(A* self, size_t n)
 {
     size_t min = 2;
     if(self->size < min)
@@ -58,7 +67,7 @@ IMPL(A, down)(A* self, size_t n, int (*compare)(T*, T*))
     {
         T* a = &self->value[0];
         T* b = &self->value[1];
-        if(!compare(a, b))
+        if(!self->compare(a, b))
             SWAP(a, b);
     }
     else
@@ -67,31 +76,31 @@ IMPL(A, down)(A* self, size_t n, int (*compare)(T*, T*))
         size_t r = 2 * n + 2;
         if(r < self->size)
         {
-            size_t index = compare(&self->value[r], &self->value[l]) ? r : l;
+            size_t index = self->compare(&self->value[r], &self->value[l]) ? r : l;
             T* x = &self->value[index];
             T* y = &self->value[n];
-            if(compare(x, y))
+            if(self->compare(x, y))
             {
                 SWAP(x, y);
-                IMPL(A, down)(self, index, compare);
+                IMPL(A, down)(self, index);
             }
         }
     }
 }
 
 static inline void
-IMPL(A, push)(A* self, T value, int (*compare)(T*, T*))
+IMPL(A, push)(A* self, T value)
 {
     IMPL(A, push_back)(self, value);
-    IMPL(A, up)(self, self->size - 1, compare);
+    IMPL(A, up)(self, self->size - 1);
 }
 
 static inline void
-IMPL(A, pop)(A* self, int (*compare)(T*, T*))
+IMPL(A, pop)(A* self)
 {
     SWAP(IMPL(A, front)(self), IMPL(A, back)(self));
     IMPL(A, pop_back)(self);
-    IMPL(A, down)(self, 0, compare);
+    IMPL(A, down)(self, 0);
 }
 
 #undef front

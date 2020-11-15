@@ -63,8 +63,8 @@ astar(str* maze, int width)
 {
     point start = point_from(maze, "@", width);
     point goal = point_from(maze, "!", width);
-    pqu_point front = pqu_point_init();
-    pqu_point_push(&front, start, point_compare);
+    pqu_point front = pqu_point_create(point_compare);
+    pqu_point_push(&front, start);
     vec_point from = vec_point_init();
     vec_int costs = vec_int_init();
     vec_point_resize(&from, maze->size);
@@ -73,7 +73,7 @@ astar(str* maze, int width)
     while(!pqu_point_empty(&front))
     {
         point current = front.copy(pqu_point_top(&front));
-        pqu_point_pop(&front, point_compare);
+        pqu_point_pop(&front);
         if(point_equal(&current, &goal))
             break;
         point deltas[] = {
@@ -93,7 +93,7 @@ astar(str* maze, int width)
                 {
                     costs.value[point_index(&next, width)] = new_cost;
                     next.priorty = new_cost + abs(goal.x - next.x) + abs(goal.y - next.y);
-                    pqu_point_push(&front, next, point_compare);
+                    pqu_point_push(&front, next);
                     from.value[point_index(&next, width)] = current;
                 }
             }

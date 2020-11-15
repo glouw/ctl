@@ -10,6 +10,9 @@ typedef struct
     T* value;
     T (*init_default)(void);
     void (*free)(T*);
+#ifdef COMPARE
+    int (*compare)(T*, T*);
+#endif
     T (*copy)(T*);
     size_t size;
     size_t capacity;
@@ -261,14 +264,18 @@ IMPL(A, erase)(A* self, T* position)
 static inline void
 IMPL(A, sort)(A* self, int compare(T*, T*))
 {
+    typedef int (*generic)(const void*, const void*);
     if(self->size > 0)
-        qsort(self->value, self->size, sizeof(T), (__compar_fn_t) compare);
+        qsort(self->value, self->size, sizeof(T), (generic) compare);
 }
 
 static inline A
 IMPL(A, copy)(A* self)
 {
     A other = IMPL(A, init)();
+#ifdef COMPARE
+    other.compare = self->compare;
+#endif
     IMPL(A, reserve)(&other, self->size);
     while(other.size < self->size)
         IMPL(A, push_back)(&other, other.copy ? other.copy(&self->value[other.size]) : self->value[other.size]);
@@ -350,6 +357,10 @@ IMPL(A, equal)(A* self, A* other, int equal(T*, T*))
     }
     return 1;
 }
+
+#ifdef COMPARE
+#undef COMPARE
+#endif
 
 #undef A
 #undef I

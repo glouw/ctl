@@ -77,7 +77,7 @@ main(void)
         int which = TEST_RAND(TEST_TOTAL);
         switch(which)
         {
-            case TEST_PUSH_FRONT: // POINTER XOR ENSURE VALUE LOCATION DOES NOT CHANGE.
+            case TEST_PUSH_FRONT:
             {
                 int value = TEST_RAND(INT_MAX);
                 lst_digi_push_front(&a, digi_init(value));
