@@ -275,12 +275,12 @@ static inline void
 IMPL(A, assign)(A* self, size_t size, T value)
 {
     IMPL(A, resize)(self, size);
-    size_t index = 0;
+    size_t i = 0;
     foreach(A, self, it, {
         if(self->free)
             self->free(it.ref);
-        *it.ref = (index == 0) ? value : self->copy(&value);
-        index += 1;
+        *it.ref = (i == 0) ? value : self->copy(&value);
+        i += 1;
     });
 }
 

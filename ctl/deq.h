@@ -312,7 +312,7 @@ IMPL(A, assign)(A* self, size_t size, T value)
 {
     IMPL(A, resize)(self, size);
     for(size_t i = 0; i < size; i++)
-        IMPL(A, set)(self, i, i == 0 ? value : self->copy(&value));
+        IMPL(A, set)(self, i, (i == 0) ? value : self->copy(&value));
 }
 
 static inline void
@@ -346,7 +346,7 @@ IMPL(A, copy)(A* self)
     while(other.size < self->size)
     {
         T* value = IMPL(A, at)(self, other.size);
-        IMPL(A, push_back)(&other, other.copy ? other.copy(value) : *value);
+        IMPL(A, push_back)(&other, other.copy(value));
     }
     return other;
 }
