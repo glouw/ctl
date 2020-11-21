@@ -132,7 +132,7 @@ IMPL(B, uncle)(B* self)
 static inline B*
 IMPL(B, init)(T key, U value, int color)
 {
-    B* self = (B*) malloc(sizeof(*self));
+    B* self = (B*) malloc(sizeof(B));
     self->first = key;
     self->second = value;
     self->color = color;
