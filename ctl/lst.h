@@ -1,3 +1,7 @@
+#ifndef T
+#error "Template type T undefined for <lst>"
+#endif
+
 #include <ctl.h>
 
 #define A TEMP(T, lst)
@@ -193,16 +197,17 @@ IMPL(A, insert)(A* self, B* position, T value)
 }
 
 static inline void
-IMPL(A, free)(A* self)
+IMPL(A, clear)(A* self)
 {
     while(!IMPL(A, empty)(self))
         IMPL(A, pop_back)(self);
 }
 
 static inline void
-IMPL(A, clear)(A* self)
+IMPL(A, free)(A* self)
 {
-    IMPL(A, free)(self);
+    IMPL(A, clear)(self);
+    *self = IMPL(A, init)();
 }
 
 static inline void

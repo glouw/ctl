@@ -1,3 +1,7 @@
+#ifndef T
+#error "Template type T undefined for <deq>"
+#endif
+
 #include <ctl.h>
 
 #define A TEMP(T, deq)
@@ -325,10 +329,9 @@ IMPL(A, clear)(A* self)
 static inline void
 IMPL(A, free)(A* self)
 {
-    static A zero;
     IMPL(A, clear)(self);
     free(self->pages);
-    *self = zero;
+    *self = IMPL(A, init)();
 }
 
 static inline void

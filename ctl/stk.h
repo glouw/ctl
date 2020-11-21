@@ -1,3 +1,7 @@
+#ifndef T
+#error "Template type T undefined for <stk>"
+#endif
+
 #define push_back   push
 #define pop_back    pop
 #define back        top

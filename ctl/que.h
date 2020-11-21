@@ -1,3 +1,7 @@
+#ifndef T
+#error "Template type T undefined for <que>"
+#endif
+
 #define push_back   push
 #define pop_front   pop
 #define at          __AT

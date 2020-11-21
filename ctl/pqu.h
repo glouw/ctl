@@ -1,3 +1,7 @@
+#ifndef T
+#error "Template type T undefined for <pqu>"
+#endif
+
 #define front         top
 #define at            __AT
 #define back          __BACK
