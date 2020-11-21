@@ -13,7 +13,6 @@ Define type `T` before including a CTL container:
 
 ```C
 #include <stdio.h>
-#include <stdlib.h>
 
 #define P
 #define T int
@@ -48,7 +47,6 @@ Containers and types are hot swappable:
 
 ```C
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 
 typedef struct
@@ -87,7 +85,6 @@ respectively:
 ```C
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <str.h>
 
 typedef struct
