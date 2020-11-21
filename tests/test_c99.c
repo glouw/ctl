@@ -143,10 +143,6 @@ main(void)
         map_charp_int_insert(&a, "Is", 92);
         map_charp_int_insert(&a, "A", 93);
         map_charp_int_insert(&a, "Friend", 94);
-        printf("%d\n", map_charp_int_find(&a, "Sam")->second);
-        printf("%d\n", map_charp_int_find(&a, "Is")->second);
-        printf("%d\n", map_charp_int_find(&a, "A")->second);
-        printf("%d\n", map_charp_int_find(&a, "Friend")->second);
         map_charp_int_free(&a);
     }{
         const size_t size = 16;

@@ -52,7 +52,7 @@ IMPL(A, empty)(A* self)
 }
 
 static inline T
-IMPL(A, __implicit_copy)(T* self)
+IMPL(A, implicit_copy)(T* self)
 {
     return *self;
 }
@@ -64,7 +64,7 @@ IMPL(A, init)(void)
     A self = zero;
 #ifdef P
 #undef P
-    self.copy = IMPL(A, __implicit_copy);
+    self.copy = IMPL(A, implicit_copy);
 #else
     self.init_default = IMPL(T, init_default);
     self.free = IMPL(T, free);

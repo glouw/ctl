@@ -33,14 +33,20 @@ typedef struct
 }
 A;
 
+static inline int
+IMPL(A, empty)(A* self)
+{
+    return self->size == 0;
+}
+
 static inline T
-IMPL(A, __implicit_copy_first)(T* self)
+IMPL(A, implicit_copy_first)(T* self)
 {
     return *self;
 }
 
 static inline U
-IMPL(A, __implicit_copy_second)(U* self)
+IMPL(A, implicit_copy_second)(U* self)
 {
     return *self;
 }
@@ -52,8 +58,8 @@ IMPL(A, init)(void)
     A self = zero;
 #ifdef P
 #undef P
-    self.copy_first = IMPL(A, __implicit_copy_first);
-    self.copy_second = IMPL(A, __implicit_copy_second);
+    self.copy_first = IMPL(A, implicit_copy_first);
+    self.copy_second = IMPL(A, implicit_copy_second);
 #else
     self.free = IMPL(T, free);
     self.copy_first = IMPL(T, copy_first);
@@ -168,74 +174,78 @@ IMPL(B, replace)(A* self, B* a, B* b)
         b->p = a->p;
 }
 
-static inline void
-IMPL(B, property_1)(B* self)
-{
-    assert(IMPL(B, is_red)(self) || IMPL(B, is_blk)(self));
-    if(self)
-    {
-        IMPL(B, property_1)(self->l);
-        IMPL(B, property_1)(self->r);
-    }
-}
+#ifdef USE_INTERNAL_VERIFY
 
-static inline void
-IMPL(B, property_2)(B* self)
-{
-    assert(IMPL(B, is_blk)(self));
-}
+    static inline void
+    IMPL(B, verify_property_1)(B* self)
+    {
+        assert(IMPL(B, is_red)(self) || IMPL(B, is_blk)(self));
+        if(self)
+        {
+            IMPL(B, verify_property_1)(self->l);
+            IMPL(B, verify_property_1)(self->r);
+        }
+    }
 
-static inline void
-IMPL(B, property_4)(B* self)
-{
-    if(IMPL(B, is_red)(self))
+    static inline void
+    IMPL(B, verify_property_2)(B* self)
     {
-        assert(IMPL(B, is_blk)(self->l));
-        assert(IMPL(B, is_blk)(self->r));
-        assert(IMPL(B, is_blk)(self->p));
+        assert(IMPL(B, is_blk)(self));
     }
-    if(self)
-    {
-        IMPL(B, property_4)(self->l);
-        IMPL(B, property_4)(self->r);
-    }
-}
 
-static inline void
-IMPL(B, count_blk)(B* self, int nodes, int* in_path)
-{
-    if(IMPL(B, is_blk)(self))
-        nodes += 1;
-    if(self)
+    static inline void
+    IMPL(B, verify_property_4)(B* self)
     {
-        IMPL(B, count_blk)(self->l, nodes, in_path);
-        IMPL(B, count_blk)(self->r, nodes, in_path);
+        if(IMPL(B, is_red)(self))
+        {
+            assert(IMPL(B, is_blk)(self->l));
+            assert(IMPL(B, is_blk)(self->r));
+            assert(IMPL(B, is_blk)(self->p));
+        }
+        if(self)
+        {
+            IMPL(B, verify_property_4)(self->l);
+            IMPL(B, verify_property_4)(self->r);
+        }
     }
-    else
+
+    static inline void
+    IMPL(B, count_blk)(B* self, int nodes, int* in_path)
     {
-        if(*in_path == -1)
-            *in_path = nodes;
+        if(IMPL(B, is_blk)(self))
+            nodes += 1;
+        if(self)
+        {
+            IMPL(B, count_blk)(self->l, nodes, in_path);
+            IMPL(B, count_blk)(self->r, nodes, in_path);
+        }
         else
-            assert(nodes == *in_path);
+        {
+            if(*in_path == -1)
+                *in_path = nodes;
+            else
+                assert(nodes == *in_path);
+        }
     }
-}
 
-static inline void
-IMPL(B, property_5)(B* self)
-{
-    int in_path = -1;
-    IMPL(B, count_blk)(self, 0, &in_path);
-}
+    static inline void
+    IMPL(B, verify_property_5)(B* self)
+    {
+        int in_path = -1;
+        IMPL(B, count_blk)(self, 0, &in_path);
+    }
 
-static inline void
-IMPL(A, verify)(A* self)
-{
-    IMPL(B, property_1)(self->root); // EACH NODE IS EITHER RED OR BLACK.
-    IMPL(B, property_2)(self->root); // THE ROOT NODE IS BLACK.
-    IMPL(B, property_4)(self->root); // EVERY RED NODE HAS TWO BLACK NDOES.
-    IMPL(B, property_5)(self->root); // ALL PATHS FROM A NODE HAVE THE SAME NUMBER OF BLACK NODES.
-    /* PROPERTY 3: LEAVES ARE COLORED BLACK; IMPLICITLY GUAREENTEED VIA NODE_COLOR. */
-}
+    static inline void
+    IMPL(A, verify)(A* self)
+    {
+        IMPL(B, verify_property_1)(self->root); // EACH NODE IS EITHER RED OR BLACK.
+        IMPL(B, verify_property_2)(self->root); // THE ROOT NODE IS BLACK.
+        IMPL(B, verify_property_4)(self->root); // EVERY RED NODE HAS TWO BLACK NDOES.
+        IMPL(B, verify_property_5)(self->root); // ALL PATHS FROM A NODE HAVE THE SAME NUMBER OF BLACK NODES.
+        /* PROPERTY 3: LEAVES ARE COLORED BLACK; IMPLICITLY GUAREENTEED VIA NODE_COLOR. */
+    }
+
+#endif
 
 static inline void
 IMPL(A, rotate_l)(A* self, B* node)
@@ -511,7 +521,7 @@ IMPL(A, erase_6)(A* self, B* node)
 static inline void
 IMPL(A, clear)(A* self)
 {
-    while(self->size)
+    while(!IMPL(A, empty)(self))
         IMPL(A, erase)(self, self->root->first);
 }
 
