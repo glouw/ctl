@@ -11,6 +11,11 @@
 
 #define P
 #define T int
+#define U int
+#include <map.h>
+
+#define P
+#define T int
 #include <pqu.h>
 
 #define P
