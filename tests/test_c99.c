@@ -9,8 +9,9 @@
 #define T int
 #include <stk.h>
 
+typedef const char* charp;
 #define P
-#define T int
+#define T charp
 #define U int
 #include <map.h>
 
@@ -120,6 +121,12 @@ int_compare(int* a, int* b)
     return *a < *b;
 }
 
+static int
+charp_compare(charp* a, charp* b)
+{
+    return strcmp(*a, *b);
+}
+
 int
 main(void)
 {
@@ -130,6 +137,17 @@ main(void)
         vec_int_push_back(&a, 3);
         vec_int_push_back(&a, 4);
         vec_int_free(&a);
+    }{
+        map_charp_int a = map_charp_int_create(charp_compare);
+        map_charp_int_insert(&a, "Sam", 91);
+        map_charp_int_insert(&a, "Is", 92);
+        map_charp_int_insert(&a, "A", 93);
+        map_charp_int_insert(&a, "Friend", 94);
+        printf("%d\n", map_charp_int_find(&a, "Sam")->second);
+        printf("%d\n", map_charp_int_find(&a, "Is")->second);
+        printf("%d\n", map_charp_int_find(&a, "A")->second);
+        printf("%d\n", map_charp_int_find(&a, "Friend")->second);
+        map_charp_int_free(&a);
     }{
         const size_t size = 16;
         deq_int a = deq_int_init();
@@ -159,9 +177,9 @@ main(void)
         vec_str_free(&b);
     }{
         vec_person c = vec_person_init();
-        vec_person_push_back(&c, person_init(128, "GUSTAV", "LOUW"));
-        vec_person_push_back(&c, person_init(256, "SUSAN", "YU"));
-        vec_person_push_back(&c, person_init(512, "JACO", "LOUW"));
+        vec_person_push_back(&c, person_init(128, "FIRST", "JONES"));
+        vec_person_push_back(&c, person_init(256, "LAST", "ALEXA"));
+        vec_person_push_back(&c, person_init(512, "NAME", "ANOTHER"));
         vec_person d = vec_person_copy(&c);
         vec_person_free(&c);
         vec_person_free(&d);

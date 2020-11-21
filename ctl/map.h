@@ -8,23 +8,16 @@
 
 #include <ctl.h>
 
-#define A TEMP(T, TEMP(U, map))
+#define A TEMP(U, TEMP(T, map))
 #define B IMPL(A, node)
-#define C IMPL(A, pair)
-
-typedef struct
-{
-    T first;
-    U value;
-}
-C;
 
 typedef struct B
 {
     struct B* l;
     struct B* r;
     struct B* p;
-    C pair;
+    T first;
+    U second;
     int color; // RED 0, BLK 1
 }
 B;
@@ -33,9 +26,55 @@ typedef struct
 {
     B* root;
     int (*compare)(T*, T*);
+    void (*free)(T*, U*);
+    T (*copy_first)(T*);
+    U (*copy_second)(U*);
     size_t size;
 }
 A;
+
+static inline T
+IMPL(A, __implicit_copy_first)(T* self)
+{
+    return *self;
+}
+
+static inline U
+IMPL(A, __implicit_copy_second)(U* self)
+{
+    return *self;
+}
+
+static inline A
+IMPL(A, init)(void)
+{
+    static A zero;
+    A self = zero;
+#ifdef P
+#undef P
+    self.copy_first = IMPL(A, __implicit_copy_first);
+    self.copy_second = IMPL(A, __implicit_copy_second);
+#else
+    self.free = IMPL(T, free);
+    self.copy_first = IMPL(T, copy_first);
+    self.copy_second = IMPL(T, copy_second);
+#endif
+    return self;
+}
+
+static inline A
+IMPL(A, create)(int compare(T*, T*))
+{
+    A self = IMPL(A, init)();
+    self.compare = compare;
+    return self;
+}
+
+static inline A
+IMPL(A, init_default)(void)
+{
+    return IMPL(A, init)();
+}
 
 static inline int
 IMPL(B, color)(B* self)
@@ -85,22 +124,23 @@ IMPL(B, uncle)(B* self)
 }
 
 static inline B*
-IMPL(B, init)(int key, int color)
+IMPL(B, init)(T key, U value, int color)
 {
     B* self = (B*) malloc(sizeof(*self));
-    self->pair.first = key;
+    self->first = key;
+    self->second = value;
     self->color = color;
     self->l = self->r = self->p = NULL;
     return self;
 }
 
 static inline B*
-IMPL(B, find)(A* self, int key)
+IMPL(A, find)(A* self, T key)
 {
     B* node = self->root;
     while(node)
     {
-        int diff = self->compare(&key, &node->pair.first);
+        int diff = self->compare(&key, &node->first);
         if(diff == 0)
             return node;
         else
@@ -198,27 +238,6 @@ IMPL(A, verify)(A* self)
 }
 
 static inline void
-IMPL(A, insert_1)(A*, B*),
-IMPL(A, insert_2)(A*, B*),
-IMPL(A, insert_3)(A*, B*),
-IMPL(A, insert_4)(A*, B*),
-IMPL(A, insert_5)(A*, B*),
-IMPL(A, erase_1)(A*, B*),
-IMPL(A, erase_2)(A*, B*),
-IMPL(A, erase_3)(A*, B*),
-IMPL(A, erase_4)(A*, B*),
-IMPL(A, erase_5)(A*, B*),
-IMPL(A, erase_6)(A*, B*);
-
-static inline A
-IMPL(A, init)(void)
-{
-    static A zero;
-    A self = zero;
-    return self;
-}
-
-static inline void
 IMPL(A, rotate_l)(A* self, B* node)
 {
     B* r = node->r;
@@ -243,15 +262,22 @@ IMPL(A, rotate_r)(A* self, B* node)
 }
 
 static inline void
-IMPL(A, insert)(A* self, int key)
+IMPL(A, insert_1)(A*, B*),
+IMPL(A, insert_2)(A*, B*),
+IMPL(A, insert_3)(A*, B*),
+IMPL(A, insert_4)(A*, B*),
+IMPL(A, insert_5)(A*, B*);
+
+static inline void
+IMPL(A, insert)(A* self, T key, U value)
 {
-    B* insert = IMPL(B, init)(key, 0);
+    B* insert = IMPL(B, init)(key, value, 0);
     if(self->root)
     {
         B* node = self->root;
         while(1)
         {
-            int diff = self->compare(&key, &node->pair.first);
+            int diff = self->compare(&key, &node->first);
             if(diff == 0)
             {
                 free(insert);
@@ -285,7 +311,9 @@ IMPL(A, insert)(A* self, int key)
         self->root = insert;
     IMPL(A, insert_1)(self, insert);
     self->size += 1;
+#ifdef USE_INTERNAL_VERIFY
     IMPL(A, verify)(self);
+#endif
 }
 
 static inline void
@@ -349,15 +377,23 @@ IMPL(A, insert_5)(A* self, B* node)
 }
 
 static inline void
-IMPL(A, erase)(A* self, int key)
+IMPL(A, erase_1)(A*, B*),
+IMPL(A, erase_2)(A*, B*),
+IMPL(A, erase_3)(A*, B*),
+IMPL(A, erase_4)(A*, B*),
+IMPL(A, erase_5)(A*, B*),
+IMPL(A, erase_6)(A*, B*);
+
+static inline void
+IMPL(A, erase)(A* self, T key)
 {
-    B* node = IMPL(B, find)(self, key);
+    B* node = IMPL(A, find)(self, key);
     if(node)
     {
         if(node->l && node->r)
         {
             B* pred = IMPL(B, maximum)(node->l);
-            node->pair.first = pred->pair.first;
+            node->first = pred->first;
             node = pred;
         }
         B* child = node->r ? node->r : node->l;
@@ -369,9 +405,13 @@ IMPL(A, erase)(A* self, int key)
         IMPL(B, replace)(self, node, child);
         if(node->p == NULL && child)
             child->color = 1;
-        free(self);
+        if(self->free)
+            self->free(&node->first, &node->second);
+        free(node);
         self->size -= 1;
+#ifdef USE_INTERNAL_VERIFY
         IMPL(A, verify)(self);
+#endif
     }
 }
 
@@ -472,7 +512,7 @@ static inline void
 IMPL(A, clear)(A* self)
 {
     while(self->size)
-        IMPL(A, erase)(self, self->root->pair.first);
+        IMPL(A, erase)(self, self->root->first);
 }
 
 static inline void
@@ -486,3 +526,7 @@ IMPL(A, free)(A* self)
 #undef A
 #undef B
 #undef C
+
+#ifdef USE_INTERNAL_VERIFY
+#undef USE_INTERNAL_VERIFY
+#endif
