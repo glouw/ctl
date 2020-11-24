@@ -6,10 +6,17 @@
 #error "Template type U undefined for <map>"
 #endif
 
+// For implementation details:
+//   https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
+
 #include <ctl.h>
 
-#define A TEMP(U, TEMP(T, map))
-#define B IMPL(A, node)
+#define A JOIN(map, JOIN(T, U))
+#define B JOIN(A, node)
+#define C JOIN(A, inode)
+#define I JOIN(A, it)
+
+#define SWAP(TYPE, a, b) do { TYPE temp = *(a); *(a) = *(b); *(b) = temp; } while(0)
 
 typedef struct B
 {
@@ -22,86 +29,143 @@ typedef struct B
 }
 B;
 
+typedef struct C
+{
+    struct B* node;
+    struct C* next;
+}
+C;
+
 typedef struct
 {
     B* root;
     int (*compare)(T*, T*);
     void (*free)(T*, U*);
-    T (*copy_first)(T*);
-    U (*copy_second)(U*);
+    void (*copy)(T*, T*, U*, U*);
     size_t size;
 }
 A;
 
+typedef struct I
+{
+    void (*step)(struct I*);
+    B* begin;
+    B* end;
+    B* node;
+    B* next;
+    C* stack;
+    int done;
+}
+I;
+
+static inline void
+JOIN(C, push)(C** self, B* node)
+{
+    C* inode = (C*) malloc(sizeof(C));
+    inode->next = *self;
+    inode->node = node;
+    *self = inode;
+}
+
+static inline void
+JOIN(C, pop)(C** self)
+{
+    C* next = (*self)->next;
+    free(*self);
+    *self = next;
+}
+
+static inline B*
+JOIN(A, begin)(A* self)
+{
+    return self->root;
+}
+
+static inline B*
+JOIN(A, end)(A* self)
+{
+    (void) self;
+    return NULL;
+}
+
 static inline int
-IMPL(A, empty)(A* self)
+JOIN(A, empty)(A* self)
 {
     return self->size == 0;
 }
 
-static inline T
-IMPL(A, implicit_copy_first)(T* self)
+static inline void
+JOIN(A, implicit_copy)(T* a, T* b, U* c, U* d)
 {
-    return *self;
-}
-
-static inline U
-IMPL(A, implicit_copy_second)(U* self)
-{
-    return *self;
+    *a = *b;
+    *c = *d;
 }
 
 static inline A
-IMPL(A, init)(void)
+JOIN(A, init)(void)
 {
     static A zero;
     A self = zero;
 #ifdef P
 #undef P
-    self.copy_first = IMPL(A, implicit_copy_first);
-    self.copy_second = IMPL(A, implicit_copy_second);
+    self.copy = JOIN(A, implicit_copy);
 #else
-    self.free = IMPL(T, free);
-    self.copy_first = IMPL(T, copy_first);
-    self.copy_second = IMPL(T, copy_second);
+    self.free = JOIN(T, JOIN(U, free));
+    self.copy = JOIN(T, JOIN(U, copy));
 #endif
     return self;
 }
 
 static inline A
-IMPL(A, create)(int compare(T*, T*))
+JOIN(A, create)(int compare(T*, T*))
 {
-    A self = IMPL(A, init)();
+    A self = JOIN(A, init)();
     self.compare = compare;
     return self;
 }
 
 static inline A
-IMPL(A, init_default)(void)
+JOIN(A, init_default)(void)
 {
-    return IMPL(A, init)();
+    return JOIN(A, init)();
+}
+
+static inline void
+JOIN(A, free_node)(A* self, B* node)
+{
+    if(self->free)
+        self->free(&node->first, &node->second);
+    free(node);
 }
 
 static inline int
-IMPL(B, color)(B* self)
+JOIN(B, color)(B* self)
 {
     return self ? self->color : 1;
 }
 
 static inline int
-IMPL(B, is_blk)(B* self)
+JOIN(B, is_blk)(B* self)
 {
-    return IMPL(B, color)(self) == 1;
+    return JOIN(B, color)(self) == 1;
 }
 
 static inline int
-IMPL(B, is_red)(B* self)
+JOIN(B, is_red)(B* self)
 {
-    return IMPL(B, color)(self) == 0;
+    return JOIN(B, color)(self) == 0;
 }
 
 static inline B*
-IMPL(B, maximum)(B* self)
+JOIN(B, lower_bound)(B* self) // XXX. CORRECT?
+{
+    while(self->l)
+        self = self->l;
+    return self;
+}
+
+static inline B*
+JOIN(B, upper_bound)(B* self) // XXX. CORRECT?
 {
     while(self->r)
         self = self->r;
@@ -109,13 +173,13 @@ IMPL(B, maximum)(B* self)
 }
 
 static inline B*
-IMPL(B, grandfather)(B* self)
+JOIN(B, grandfather)(B* self)
 {
     return self->p->p;
 }
 
 static inline B*
-IMPL(B, sibling)(B* self)
+JOIN(B, sibling)(B* self)
 {
     if(self == self->p->l)
         return self->p->r;
@@ -124,13 +188,13 @@ IMPL(B, sibling)(B* self)
 }
 
 static inline B*
-IMPL(B, uncle)(B* self)
+JOIN(B, uncle)(B* self)
 {
-    return IMPL(B, sibling)(self->p);
+    return JOIN(B, sibling)(self->p);
 }
 
 static inline B*
-IMPL(B, init)(T key, U value, int color)
+JOIN(B, init)(T key, U value, int color)
 {
     B* self = (B*) malloc(sizeof(B));
     self->first = key;
@@ -141,7 +205,7 @@ IMPL(B, init)(T key, U value, int color)
 }
 
 static inline B*
-IMPL(A, find)(A* self, T key)
+JOIN(A, find)(A* self, T key)
 {
     B* node = self->root;
     while(node)
@@ -158,8 +222,24 @@ IMPL(A, find)(A* self, T key)
     return node;
 }
 
+static inline U*
+JOIN(A, at)(A* self, T key)
+{
+    return &JOIN(A, find)(self, key)->second;
+}
+
 static inline void
-IMPL(B, replace)(A* self, B* a, B* b)
+JOIN(A, set)(A* self, T key, U value)
+{
+    B* node = JOIN(A, find)(self, key);
+    if(self->free)
+        self->free(&node->first, &node->second);
+    node->first = key;
+    node->second = value;
+}
+
+static inline void
+JOIN(B, replace)(A* self, B* a, B* b)
 {
     if(a->p)
     {
@@ -176,82 +256,84 @@ IMPL(B, replace)(A* self, B* a, B* b)
 
 #ifdef USE_INTERNAL_VERIFY
 
-    static inline void
-    IMPL(B, verify_property_1)(B* self)
-    {
-        assert(IMPL(B, is_red)(self) || IMPL(B, is_blk)(self));
-        if(self)
-        {
-            IMPL(B, verify_property_1)(self->l);
-            IMPL(B, verify_property_1)(self->r);
-        }
-    }
+#include <assert.h>
 
-    static inline void
-    IMPL(B, verify_property_2)(B* self)
+static inline void
+JOIN(B, verify_property_1)(B* self)
+{
+    assert(JOIN(B, is_red)(self) || JOIN(B, is_blk)(self));
+    if(self)
     {
-        assert(IMPL(B, is_blk)(self));
+        JOIN(B, verify_property_1)(self->l);
+        JOIN(B, verify_property_1)(self->r);
     }
+}
 
-    static inline void
-    IMPL(B, verify_property_4)(B* self)
+static inline void
+JOIN(B, verify_property_2)(B* self)
+{
+    assert(JOIN(B, is_blk)(self));
+}
+
+static inline void
+JOIN(B, verify_property_4)(B* self)
+{
+    if(JOIN(B, is_red)(self))
     {
-        if(IMPL(B, is_red)(self))
-        {
-            assert(IMPL(B, is_blk)(self->l));
-            assert(IMPL(B, is_blk)(self->r));
-            assert(IMPL(B, is_blk)(self->p));
-        }
-        if(self)
-        {
-            IMPL(B, verify_property_4)(self->l);
-            IMPL(B, verify_property_4)(self->r);
-        }
+        assert(JOIN(B, is_blk)(self->l));
+        assert(JOIN(B, is_blk)(self->r));
+        assert(JOIN(B, is_blk)(self->p));
     }
-
-    static inline void
-    IMPL(B, count_blk)(B* self, int nodes, int* in_path)
+    if(self)
     {
-        if(IMPL(B, is_blk)(self))
-            nodes += 1;
-        if(self)
-        {
-            IMPL(B, count_blk)(self->l, nodes, in_path);
-            IMPL(B, count_blk)(self->r, nodes, in_path);
-        }
+        JOIN(B, verify_property_4)(self->l);
+        JOIN(B, verify_property_4)(self->r);
+    }
+}
+
+static inline void
+JOIN(B, count_blk)(B* self, int nodes, int* in_path)
+{
+    if(JOIN(B, is_blk)(self))
+        nodes += 1;
+    if(self)
+    {
+        JOIN(B, count_blk)(self->l, nodes, in_path);
+        JOIN(B, count_blk)(self->r, nodes, in_path);
+    }
+    else
+    {
+        if(*in_path == -1)
+            *in_path = nodes;
         else
-        {
-            if(*in_path == -1)
-                *in_path = nodes;
-            else
-                assert(nodes == *in_path);
-        }
+            assert(nodes == *in_path);
     }
+}
 
-    static inline void
-    IMPL(B, verify_property_5)(B* self)
-    {
-        int in_path = -1;
-        IMPL(B, count_blk)(self, 0, &in_path);
-    }
+static inline void
+JOIN(B, verify_property_5)(B* self)
+{
+    int in_path = -1;
+    JOIN(B, count_blk)(self, 0, &in_path);
+}
 
-    static inline void
-    IMPL(A, verify)(A* self)
-    {
-        IMPL(B, verify_property_1)(self->root); // EACH NODE IS EITHER RED OR BLACK.
-        IMPL(B, verify_property_2)(self->root); // THE ROOT NODE IS BLACK.
-        IMPL(B, verify_property_4)(self->root); // EVERY RED NODE HAS TWO BLACK NDOES.
-        IMPL(B, verify_property_5)(self->root); // ALL PATHS FROM A NODE HAVE THE SAME NUMBER OF BLACK NODES.
-        /* PROPERTY 3: LEAVES ARE COLORED BLACK; IMPLICITLY GUAREENTEED VIA NODE_COLOR. */
-    }
+static inline void
+JOIN(A, verify)(A* self)
+{
+    JOIN(B, verify_property_1)(self->root); // PROPERTY 1: EACH NODE IS EITHER RED OR BLACK.
+    JOIN(B, verify_property_2)(self->root); // PROPERTY 2: THE ROOT NODE IS BLACK.
+    /* JOINICIT */                          // PROPERTY 3: LEAVES ARE COLORED BLACK
+    JOIN(B, verify_property_4)(self->root); // PROPERTY 4: EVERY RED NODE HAS TWO BLACK NDOES.
+    JOIN(B, verify_property_5)(self->root); // PROPERTY 5: ALL PATHS FROM A NODE HAVE THE SAME NUMBER OF BLACK NODES.
+}
 
 #endif
 
 static inline void
-IMPL(A, rotate_l)(A* self, B* node)
+JOIN(A, rotate_l)(A* self, B* node)
 {
     B* r = node->r;
-    IMPL(B, replace)(self, node, r);
+    JOIN(B, replace)(self, node, r);
     node->r = r->l;
     if(r->l)
         r->l->p = node;
@@ -260,10 +342,10 @@ IMPL(A, rotate_l)(A* self, B* node)
 }
 
 static inline void
-IMPL(A, rotate_r)(A* self, B* node)
+JOIN(A, rotate_r)(A* self, B* node)
 {
     B* l = node->l;
-    IMPL(B, replace)(self, node, l);
+    JOIN(B, replace)(self, node, l);
     node->l = l->r;
     if(l->r)
         l->r->p = node;
@@ -272,16 +354,16 @@ IMPL(A, rotate_r)(A* self, B* node)
 }
 
 static inline void
-IMPL(A, insert_1)(A*, B*),
-IMPL(A, insert_2)(A*, B*),
-IMPL(A, insert_3)(A*, B*),
-IMPL(A, insert_4)(A*, B*),
-IMPL(A, insert_5)(A*, B*);
+JOIN(A, insert_1)(A*, B*),
+JOIN(A, insert_2)(A*, B*),
+JOIN(A, insert_3)(A*, B*),
+JOIN(A, insert_4)(A*, B*),
+JOIN(A, insert_5)(A*, B*);
 
 static inline void
-IMPL(A, insert)(A* self, T key, U value)
+JOIN(A, insert)(A* self, T key, U value)
 {
-    B* insert = IMPL(B, init)(key, value, 0);
+    B* insert = JOIN(B, init)(key, value, 0);
     if(self->root)
     {
         B* node = self->root;
@@ -290,7 +372,7 @@ IMPL(A, insert)(A* self, T key, U value)
             int diff = self->compare(&key, &node->first);
             if(diff == 0)
             {
-                free(insert);
+                JOIN(A, free_node)(self, insert);
                 return;
             }
             else
@@ -319,100 +401,101 @@ IMPL(A, insert)(A* self, T key, U value)
     }
     else
         self->root = insert;
-    IMPL(A, insert_1)(self, insert);
+    JOIN(A, insert_1)(self, insert);
     self->size += 1;
 #ifdef USE_INTERNAL_VERIFY
-    IMPL(A, verify)(self);
+    JOIN(A, verify)(self);
 #endif
 }
 
 static inline void
-IMPL(A, insert_1)(A* self, B* node)
+JOIN(A, insert_1)(A* self, B* node)
 {
     if(node->p)
-        IMPL(A, insert_2)(self, node);
+        JOIN(A, insert_2)(self, node);
     else
         node->color = 1;
 }
 
 static inline void
-IMPL(A, insert_2)(A* self, B* node)
+JOIN(A, insert_2)(A* self, B* node)
 {
-    if(IMPL(B, is_blk)(node->p))
+    if(JOIN(B, is_blk)(node->p))
         return;
     else
-       IMPL(A, insert_3)(self, node);
+       JOIN(A, insert_3)(self, node);
 }
 
 static inline void
-IMPL(A, insert_3)(A* self, B* node)
+JOIN(A, insert_3)(A* self, B* node)
 {
-    if(IMPL(B, is_red)(IMPL(B, uncle)(node)))
+    if(JOIN(B, is_red)(JOIN(B, uncle)(node)))
     {
         node->p->color = 1;
-        IMPL(B, uncle)(node)->color = 1;
-        IMPL(B, grandfather)(node)->color = 0;
-        IMPL(A, insert_1)(self, IMPL(B, grandfather)(node));
+        JOIN(B, uncle)(node)->color = 1;
+        JOIN(B, grandfather)(node)->color = 0;
+        JOIN(A, insert_1)(self, JOIN(B, grandfather)(node));
     }
     else
-        IMPL(A, insert_4)(self, node);
+        JOIN(A, insert_4)(self, node);
 }
 
 static inline void
-IMPL(A, insert_4)(A* self, B* node)
+JOIN(A, insert_4)(A* self, B* node)
 {
-    if(node == node->p->r && node->p == IMPL(B, grandfather)(node)->l)
+    if(node == node->p->r && node->p == JOIN(B, grandfather)(node)->l)
     {
-        IMPL(A, rotate_l)(self, node->p);
+        JOIN(A, rotate_l)(self, node->p);
         node = node->l;
     }
     else
-    if(node == node->p->l && node->p == IMPL(B, grandfather)(node)->r)
+    if(node == node->p->l && node->p == JOIN(B, grandfather)(node)->r)
     {
-        IMPL(A, rotate_r)(self, node->p);
+        JOIN(A, rotate_r)(self, node->p);
         node = node->r;
     }
-    IMPL(A, insert_5)(self, node);
+    JOIN(A, insert_5)(self, node);
 }
 
 static inline void
-IMPL(A, insert_5)(A* self, B* node)
+JOIN(A, insert_5)(A* self, B* node)
 {
     node->p->color = 1;
-    IMPL(B, grandfather)(node)->color = 0;
-    if(node == node->p->l && node->p == IMPL(B, grandfather)(node)->l)
-        IMPL(A, rotate_r)(self, IMPL(B, grandfather)(node));
+    JOIN(B, grandfather)(node)->color = 0;
+    if(node == node->p->l && node->p == JOIN(B, grandfather)(node)->l)
+        JOIN(A, rotate_r)(self, JOIN(B, grandfather)(node));
     else
-        IMPL(A, rotate_l)(self, IMPL(B, grandfather)(node));
+        JOIN(A, rotate_l)(self, JOIN(B, grandfather)(node));
 }
 
 static inline void
-IMPL(A, erase_1)(A*, B*),
-IMPL(A, erase_2)(A*, B*),
-IMPL(A, erase_3)(A*, B*),
-IMPL(A, erase_4)(A*, B*),
-IMPL(A, erase_5)(A*, B*),
-IMPL(A, erase_6)(A*, B*);
+JOIN(A, erase_1)(A*, B*),
+JOIN(A, erase_2)(A*, B*),
+JOIN(A, erase_3)(A*, B*),
+JOIN(A, erase_4)(A*, B*),
+JOIN(A, erase_5)(A*, B*),
+JOIN(A, erase_6)(A*, B*);
 
 static inline void
-IMPL(A, erase)(A* self, T key)
+JOIN(A, erase)(A* self, T key)
 {
-    B* node = IMPL(A, find)(self, key);
+    B* node = JOIN(A, find)(self, key);
     if(node)
     {
         if(node->l && node->r)
         {
-            B* pred = IMPL(B, maximum)(node->l);
-            node->first = pred->first;
+            B* pred = JOIN(B, upper_bound)(node->l);
+            SWAP(T, &node->first, &pred->first);
+            SWAP(U, &node->second, &pred->second);
             node = pred;
         }
         B* child = node->r ? node->r : node->l;
-        if(IMPL(B, is_blk)(node))
+        if(JOIN(B, is_blk)(node))
         {
-            node->color = IMPL(B, color)(child);
-            IMPL(A, erase_1)(self, node);
+            node->color = JOIN(B, color)(child);
+            JOIN(A, erase_1)(self, node);
         }
-        IMPL(B, replace)(self, node, child);
+        JOIN(B, replace)(self, node, child);
         if(node->p == NULL && child)
             child->color = 1;
         if(self->free)
@@ -420,123 +503,180 @@ IMPL(A, erase)(A* self, T key)
         free(node);
         self->size -= 1;
 #ifdef USE_INTERNAL_VERIFY
-        IMPL(A, verify)(self);
+        JOIN(A, verify)(self);
 #endif
     }
 }
 
 static inline void
-IMPL(A, erase_1)(A* self, B* node)
+JOIN(A, erase_1)(A* self, B* node)
 {
     if(node->p)
-        IMPL(A, erase_2)(self, node);
+        JOIN(A, erase_2)(self, node);
 }
 
 static inline void
-IMPL(A, erase_2)(A* self, B* node)
+JOIN(A, erase_2)(A* self, B* node)
 {
-    if(IMPL(B, is_red)(IMPL(B, sibling)(node)))
+    if(JOIN(B, is_red)(JOIN(B, sibling)(node)))
     {
         node->p->color = 0;
-        IMPL(B, sibling)(node)->color = 1;
+        JOIN(B, sibling)(node)->color = 1;
         if(node == node->p->l)
-            IMPL(A, rotate_l)(self, node->p);
+            JOIN(A, rotate_l)(self, node->p);
         else
-            IMPL(A, rotate_r)(self, node->p);
+            JOIN(A, rotate_r)(self, node->p);
     }
-    IMPL(A, erase_3)(self, node);
+    JOIN(A, erase_3)(self, node);
 }
 
 static inline void
-IMPL(A, erase_3)(A* self, B* node)
+JOIN(A, erase_3)(A* self, B* node)
 {
-    if(IMPL(B, is_blk)(node->p)
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node))
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node)->l)
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node)->r))
+    if(JOIN(B, is_blk)(node->p)
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node))
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node)->l)
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node)->r))
     {
-        IMPL(B, sibling)(node)->color = 0;
-        IMPL(A, erase_1)(self, node->p);
+        JOIN(B, sibling)(node)->color = 0;
+        JOIN(A, erase_1)(self, node->p);
     }
     else
-        IMPL(A, erase_4)(self, node);
+        JOIN(A, erase_4)(self, node);
 }
 
 static inline void
-IMPL(A, erase_4)(A* self, B* node)
+JOIN(A, erase_4)(A* self, B* node)
 {
-    if(IMPL(B, is_red)(node->p)
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node))
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node)->l)
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node)->r))
+    if(JOIN(B, is_red)(node->p)
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node))
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node)->l)
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node)->r))
     {
-        IMPL(B, sibling)(node)->color = 0;
+        JOIN(B, sibling)(node)->color = 0;
         node->p->color = 1;
     }
     else
-        IMPL(A, erase_5)(self, node);
+        JOIN(A, erase_5)(self, node);
 }
 
 static inline void
-IMPL(A, erase_5)(A* self, B* node)
+JOIN(A, erase_5)(A* self, B* node)
 {
     if(node == node->p->l
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node))
-    && IMPL(B, is_red)(IMPL(B, sibling)(node)->l)
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node)->r))
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node))
+    && JOIN(B, is_red)(JOIN(B, sibling)(node)->l)
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node)->r))
     {
-        IMPL(B, sibling)(node)->color = 0;
-        IMPL(B, sibling)(node)->l->color = 1;
-        IMPL(A, rotate_r)(self, IMPL(B, sibling)(node));
+        JOIN(B, sibling)(node)->color = 0;
+        JOIN(B, sibling)(node)->l->color = 1;
+        JOIN(A, rotate_r)(self, JOIN(B, sibling)(node));
     }
     else
     if(node == node->p->r
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node))
-    && IMPL(B, is_red)(IMPL(B, sibling)(node)->r)
-    && IMPL(B, is_blk)(IMPL(B, sibling)(node)->l))
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node))
+    && JOIN(B, is_red)(JOIN(B, sibling)(node)->r)
+    && JOIN(B, is_blk)(JOIN(B, sibling)(node)->l))
     {
-        IMPL(B, sibling)(node)->color = 0;
-        IMPL(B, sibling)(node)->r->color = 1;
-        IMPL(A, rotate_l)(self, IMPL(B, sibling)(node));
+        JOIN(B, sibling)(node)->color = 0;
+        JOIN(B, sibling)(node)->r->color = 1;
+        JOIN(A, rotate_l)(self, JOIN(B, sibling)(node));
     }
-    IMPL(A, erase_6)(self, node);
+    JOIN(A, erase_6)(self, node);
 }
 
 static inline void
-IMPL(A, erase_6)(A* self, B* node)
+JOIN(A, erase_6)(A* self, B* node)
 {
-    IMPL(B, sibling)(node)->color = IMPL(B, color)(node->p);
+    JOIN(B, sibling)(node)->color = JOIN(B, color)(node->p);
     node->p->color = 1;
     if(node == node->p->l)
     {
-        IMPL(B, sibling)(node)->r->color = 1;
-        IMPL(A, rotate_l)(self, node->p);
+        JOIN(B, sibling)(node)->r->color = 1;
+        JOIN(A, rotate_l)(self, node->p);
     }
     else
     {
-        IMPL(B, sibling)(node)->l->color = 1;
-        IMPL(A, rotate_r)(self, node->p);
+        JOIN(B, sibling)(node)->l->color = 1;
+        JOIN(A, rotate_r)(self, node->p);
     }
 }
 static inline void
-IMPL(A, clear)(A* self)
+JOIN(A, clear)(A* self)
 {
-    while(!IMPL(A, empty)(self))
-        IMPL(A, erase)(self, self->root->first);
+    while(!JOIN(A, empty)(self))
+        JOIN(A, erase)(self, self->root->first);
 }
 
 static inline void
-IMPL(A, free)(A* self)
+JOIN(A, free)(A* self)
 {
-    IMPL(A, clear)(self);
-    *self = IMPL(A, init)();
+    JOIN(A, clear)(self);
+    *self = JOIN(A, init)();
+}
+
+static inline void
+JOIN(A, swap)(A* self, A* other)
+{
+    A temp = *self;
+    *self = *other;
+    *other = temp;
+}
+
+static inline void
+JOIN(I, step)(I* self)
+{
+    if(self->next == self->end && self->stack == NULL)
+        self->done = 1;
+    else
+    {
+        self->node = self->next;
+        while(self->node)
+        {
+            JOIN(C, push)(&self->stack, self->node);
+            self->node = self->node->l;
+        }
+        self->node = self->stack->node;
+        JOIN(C, pop)(&self->stack);
+        self->next = self->node->r;
+    }
+}
+
+static inline I
+JOIN(I, range)(B* begin, B* end)
+{
+    static I zero;
+    I self = zero;
+    if(begin)
+    {
+        self.step = JOIN(I, step);
+        self.begin = begin;
+        self.node = begin;
+        self.next = begin;
+        self.end = end;
+        JOIN(I, step)(&self);
+    }
+    else
+        self.done = 1;
+    return self;
+}
+
+static inline I
+JOIN(I, each)(A* a)
+{
+    return JOIN(I, range)(JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 #undef T
+#undef U
 #undef A
 #undef B
 #undef C
+#undef D
+#undef I
 
 #ifdef USE_INTERNAL_VERIFY
 #undef USE_INTERNAL_VERIFY
 #endif
+
+#undef SWAP

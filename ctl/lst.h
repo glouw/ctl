@@ -4,9 +4,9 @@
 
 #include <ctl.h>
 
-#define A TEMP(T, lst)
-#define B IMPL(A, node)
-#define I IMPL(A, it)
+#define A JOIN(lst, T)
+#define B JOIN(A, node)
+#define I JOIN(A, it)
 
 typedef struct B
 {
@@ -40,35 +40,35 @@ typedef struct I
 I;
 
 static inline T
-IMPL(A, implicit_copy)(T* self)
+JOIN(A, implicit_copy)(T* self)
 {
     return *self;
 }
 
 static inline A
-IMPL(A, init)(void)
+JOIN(A, init)(void)
 {
     static A zero;
     A self = zero;
 #ifdef P
 #undef P
-    self.copy = IMPL(A, implicit_copy);
+    self.copy = JOIN(A, implicit_copy);
 #else
-    self.init_default = IMPL(T, init_default);
-    self.free = IMPL(T, free);
-    self.copy = IMPL(T, copy);
+    self.init_default = JOIN(T, init_default);
+    self.free = JOIN(T, free);
+    self.copy = JOIN(T, copy);
 #endif
     return self;
 }
 
 static inline A
-IMPL(A, init_default)(void)
+JOIN(A, init_default)(void)
 {
-    return IMPL(A, init)();
+    return JOIN(A, init)();
 }
 
 static inline B*
-IMPL(B, init)(T value)
+JOIN(B, init)(T value)
 {
     B* self = (B*) malloc(sizeof(B));
     self->prev = self->next = NULL;
@@ -77,38 +77,38 @@ IMPL(B, init)(T value)
 }
 
 static inline int
-IMPL(A, empty)(A* self)
+JOIN(A, empty)(A* self)
 {
     return self->size == 0;
 }
 
 static inline T*
-IMPL(A, front)(A* self)
+JOIN(A, front)(A* self)
 {
     return &self->head->value;
 }
 
 static inline T*
-IMPL(A, back)(A* self)
+JOIN(A, back)(A* self)
 {
     return &self->tail->value;
 }
 
 static inline B*
-IMPL(A, begin)(A* self)
+JOIN(A, begin)(A* self)
 {
     return self->head;
 }
 
 static inline B*
-IMPL(A, end)(A* self)
+JOIN(A, end)(A* self)
 {
     (void) self;
     return NULL;
 }
 
 static inline void
-IMPL(A, disconnect)(A* self, B* node)
+JOIN(A, disconnect)(A* self, B* node)
 {
     if(node == self->tail) self->tail = self->tail->prev;
     if(node == self->head) self->head = self->head->next;
@@ -119,9 +119,9 @@ IMPL(A, disconnect)(A* self, B* node)
 }
 
 static inline void
-IMPL(A, connect)(A* self, B* position, B* node, int before)
+JOIN(A, connect)(A* self, B* position, B* node, int before)
 {
-    if(IMPL(A, empty)(self))
+    if(JOIN(A, empty)(self))
         self->head = self->tail = node;
     else
     if(before)
@@ -148,81 +148,81 @@ IMPL(A, connect)(A* self, B* position, B* node, int before)
 }
 
 static inline void
-IMPL(A, push_back)(A* self, T value)
+JOIN(A, push_back)(A* self, T value)
 {
-    B* node = IMPL(B, init)(value);
-    IMPL(A, connect)(self, self->tail, node, 0);
+    B* node = JOIN(B, init)(value);
+    JOIN(A, connect)(self, self->tail, node, 0);
 }
 
 static inline void
-IMPL(A, push_front)(A* self, T value)
+JOIN(A, push_front)(A* self, T value)
 {
-    B* node = IMPL(B, init)(value);
-    IMPL(A, connect)(self, self->head, node, 1);
+    B* node = JOIN(B, init)(value);
+    JOIN(A, connect)(self, self->head, node, 1);
 }
 
 static inline void
-IMPL(A, transfer)(A* self, A* other, B* position, B* node, int before)
+JOIN(A, transfer)(A* self, A* other, B* position, B* node, int before)
 {
-    IMPL(A, disconnect)(other, node);
-    IMPL(A, connect)(self, position, node, before);
+    JOIN(A, disconnect)(other, node);
+    JOIN(A, connect)(self, position, node, before);
 }
 
 static inline void
-IMPL(A, erase)(A* self, B* node)
+JOIN(A, erase)(A* self, B* node)
 {
-    IMPL(A, disconnect)(self, node);
+    JOIN(A, disconnect)(self, node);
     if(self->free)
         self->free(&node->value);
     free(node);
 }
 
 static inline void
-IMPL(A, pop_back)(A* self)
+JOIN(A, pop_back)(A* self)
 {
-    IMPL(A, erase)(self, self->tail);
+    JOIN(A, erase)(self, self->tail);
 }
 
 static inline void
-IMPL(A, pop_front)(A* self)
+JOIN(A, pop_front)(A* self)
 {
-    IMPL(A, erase)(self, self->head);
+    JOIN(A, erase)(self, self->head);
 }
 
 static inline void
-IMPL(A, insert)(A* self, B* position, T value)
+JOIN(A, insert)(A* self, B* position, T value)
 {
-    B* node = IMPL(B, init)(value);
-    IMPL(A, connect)(self, position, node, 1);
+    B* node = JOIN(B, init)(value);
+    JOIN(A, connect)(self, position, node, 1);
 }
 
 static inline void
-IMPL(A, clear)(A* self)
+JOIN(A, clear)(A* self)
 {
-    while(!IMPL(A, empty)(self))
-        IMPL(A, pop_back)(self);
+    while(!JOIN(A, empty)(self))
+        JOIN(A, pop_back)(self);
 }
 
 static inline void
-IMPL(A, free)(A* self)
+JOIN(A, free)(A* self)
 {
-    IMPL(A, clear)(self);
-    *self = IMPL(A, init)();
+    JOIN(A, clear)(self);
+    *self = JOIN(A, init)();
 }
 
 static inline void
-IMPL(A, resize)(A* self, size_t size)
+JOIN(A, resize)(A* self, size_t size)
 {
     static T zero;
     if(size != self->size)
         while(size != self->size)
             (size < self->size)
-                ? IMPL(A, pop_back)(self)
-                : IMPL(A, push_back)(self, self->init_default ? self->init_default() : zero);
+                ? JOIN(A, pop_back)(self)
+                : JOIN(A, push_back)(self, self->init_default ? self->init_default() : zero);
 }
 
 static inline void
-IMPL(A, swap)(A* self, A* other)
+JOIN(A, swap)(A* self, A* other)
 {
     A temp = *self;
     *self = *other;
@@ -230,16 +230,16 @@ IMPL(A, swap)(A* self, A* other)
 }
 
 static inline A
-IMPL(A, copy)(A* self)
+JOIN(A, copy)(A* self)
 {
-    A other = IMPL(A, init)();
+    A other = JOIN(A, init)();
     for(B* node = self->head; node; node = node->next)
-        IMPL(A, push_back)(&other, self->copy(&node->value));
+        JOIN(A, push_back)(&other, self->copy(&node->value));
     return other;
 }
 
 static inline void
-IMPL(I, step)(I* self)
+JOIN(I, step)(I* self)
 {
     if(self->next == self->end)
         self->done = 1;
@@ -252,13 +252,13 @@ IMPL(I, step)(I* self)
 }
 
 static inline I
-IMPL(I, range)(B* begin, B* end)
+JOIN(I, range)(B* begin, B* end)
 {
     static I zero;
     I self = zero;
     if(begin)
     {
-        self.step = IMPL(I, step);
+        self.step = JOIN(I, step);
         self.begin = begin;
         self.end = end;
         self.next = begin->next;
@@ -271,15 +271,15 @@ IMPL(I, range)(B* begin, B* end)
 }
 
 static inline I
-IMPL(I, each)(A* a)
+JOIN(I, each)(A* a)
 {
-    return IMPL(I, range)(IMPL(A, begin)(a), IMPL(A, end)(a));
+    return JOIN(I, range)(JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline void
-IMPL(A, assign)(A* self, size_t size, T value)
+JOIN(A, assign)(A* self, size_t size, T value)
 {
-    IMPL(A, resize)(self, size);
+    JOIN(A, resize)(self, size);
     size_t i = 0;
     foreach(A, self, it, {
         if(self->free)
@@ -290,7 +290,7 @@ IMPL(A, assign)(A* self, size_t size, T value)
 }
 
 static inline void
-IMPL(A, reverse)(A* self)
+JOIN(A, reverse)(A* self)
 {
     foreach(A, self, it, {
         B* next = it.node->next;
@@ -305,49 +305,49 @@ IMPL(A, reverse)(A* self)
 }
 
 static inline void
-IMPL(A, remove_if)(A* self, int (*equal)(T*))
+JOIN(A, remove_if)(A* self, int (*equal)(T*))
 {
     foreach(A, self, it, {
         if(equal(it.ref))
-            IMPL(A, erase)(self, it.node);
+            JOIN(A, erase)(self, it.node);
     });
 }
 
 static inline void
-IMPL(A, splice)(A* self, B* position, A* other)
+JOIN(A, splice)(A* self, B* position, A* other)
 {
     if(self->size == 0 && position == NULL)
-        IMPL(A, swap)(self, other);
+        JOIN(A, swap)(self, other);
     else
     {
         foreach(A, other, it, {
-            IMPL(A, transfer)(self, other, position, it.node, 1);
+            JOIN(A, transfer)(self, other, position, it.node, 1);
         });
     }
 }
 
 static inline void
-IMPL(A, merge)(A* self, A* other, int compare(T*, T*))
+JOIN(A, merge)(A* self, A* other, int compare(T*, T*))
 {
-    if(IMPL(A, empty)(self))
-        IMPL(A, swap)(self, other);
+    if(JOIN(A, empty)(self))
+        JOIN(A, swap)(self, other);
     else
     {
         for(B* node = self->head; node; node = node->next)
-            while(!IMPL(A, empty)(other) && compare(&node->value, &other->head->value))
-                IMPL(A, transfer)(self, other, node, other->head, 1);
-        while(!IMPL(A, empty)(other)) // REMAINDER.
-            IMPL(A, transfer)(self, other, self->tail, other->head, 0);
+            while(!JOIN(A, empty)(other) && compare(&node->value, &other->head->value))
+                JOIN(A, transfer)(self, other, node, other->head, 1);
+        while(!JOIN(A, empty)(other)) // REMAINDER.
+            JOIN(A, transfer)(self, other, self->tail, other->head, 0);
     }
 }
 
 static inline int
-IMPL(A, equal)(A* self, A* other, int equal(T*, T*))
+JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
 {
     if(self->size != other->size)
         return 0;
-    I a = IMPL(I, each)(self);
-    I b = IMPL(I, each)(other);
+    I a = JOIN(I, each)(self);
+    I b = JOIN(I, each)(other);
     while(!a.done && !b.done)
     {
         if(!equal(a.ref, b.ref))
@@ -359,41 +359,41 @@ IMPL(A, equal)(A* self, A* other, int equal(T*, T*))
 }
 
 static inline void
-IMPL(A, sort)(A* self, int compare(T*, T*))
+JOIN(A, sort)(A* self, int compare(T*, T*))
 {
     if(self->size > 1)
     {
-        A carry = IMPL(A, init)();
+        A carry = JOIN(A, init)();
         A temp[64];
         for(size_t i = 0; i < len(temp); i++)
-            temp[i] = IMPL(A, init)();
+            temp[i] = JOIN(A, init)();
         A* fill = temp;
         A* counter = NULL;
         do
         {
-            IMPL(A, transfer)(&carry, self, carry.head, self->head, 1);
-            for(counter = temp; counter != fill && !IMPL(A, empty)(counter); counter++)
+            JOIN(A, transfer)(&carry, self, carry.head, self->head, 1);
+            for(counter = temp; counter != fill && !JOIN(A, empty)(counter); counter++)
             {
-                IMPL(A, merge)(counter, &carry, compare);
-                IMPL(A, swap)(&carry, counter);
+                JOIN(A, merge)(counter, &carry, compare);
+                JOIN(A, swap)(&carry, counter);
             }
-            IMPL(A, swap)(&carry, counter);
+            JOIN(A, swap)(&carry, counter);
             if(counter == fill)
                 fill++;
         }
-        while(!IMPL(A, empty)(self));
+        while(!JOIN(A, empty)(self));
         for(counter = temp + 1; counter != fill; counter++)
-            IMPL(A, merge)(counter, counter - 1, compare);
-        IMPL(A, swap)(self, fill - 1);
+            JOIN(A, merge)(counter, counter - 1, compare);
+        JOIN(A, swap)(self, fill - 1);
     }
 }
 
 static inline void
-IMPL(A, unique)(A* self, int equal(T*, T*))
+JOIN(A, unique)(A* self, int equal(T*, T*))
 {
     foreach(A, self, it,
         if(it.next && equal(it.ref, &it.next->value))
-            IMPL(A, erase)(self, it.node);
+            JOIN(A, erase)(self, it.node);
     );
 }
 

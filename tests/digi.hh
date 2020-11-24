@@ -52,6 +52,18 @@ digi_copy(digi* self)
     return copy;
 }
 
+static inline int
+digi_is_odd(digi* d)
+{
+    return *d->value % 2;
+}
+
+static inline int
+digi_match(digi* a, digi* b)
+{
+    return *a->value == *b->value;
+}
+
 struct DIGI
 {
     int* value;
@@ -98,22 +110,10 @@ struct DIGI
     }
 };
 
-static inline int
-digi_is_odd(digi* d)
-{
-    return *d->value % 2;
-}
-
 static inline bool
 DIGI_is_odd(DIGI& d)
 {
     return *d.value % 2;
-}
-
-static inline int
-digi_match(digi* a, digi* b)
-{
-    return *a->value == *b->value;
 }
 
 #undef COMPARE_DIRECTION

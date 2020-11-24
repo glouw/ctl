@@ -4,13 +4,20 @@
 
 #include <ctl.h>
 
-#define A TEMP(T, deq)
-#define B IMPL(A, bucket)
-#define I IMPL(A, it)
+#define A JOIN(deq, T)
+#define B JOIN(A, bucket)
+#define I JOIN(A, it)
 
 #define DEQ_BUCKET_SIZE (64)
 
-#define SWAP(self, a, b) { T temp = *IMPL(A, at)(self, a); *IMPL(A, at)(self, a) = *IMPL(A, at)(self, b); *IMPL(A, at)(self, b) = temp; }
+#define SWAP(self, a, b)                               \
+    do                                                 \
+    {                                                  \
+        T temp = *JOIN(A, at)(self, a);                \
+        *JOIN(A, at)(self, a) = *JOIN(A, at)(self, b); \
+        *JOIN(A, at)(self, b) = temp;                  \
+    }                                                  \
+    while(0)
 
 typedef struct B
 {
@@ -46,41 +53,41 @@ typedef struct I
 I;
 
 static inline int
-IMPL(A, empty)(A* self)
+JOIN(A, empty)(A* self)
 {
     return self->size == 0;
 }
 
 static inline T
-IMPL(A, implicit_copy)(T* self)
+JOIN(A, implicit_copy)(T* self)
 {
     return *self;
 }
 
 static inline A
-IMPL(A, init)(void)
+JOIN(A, init)(void)
 {
     static A zero;
     A self = zero;
 #ifdef P
 #undef P
-    self.copy = IMPL(A, implicit_copy);
+    self.copy = JOIN(A, implicit_copy);
 #else
-    self.init_default = IMPL(T, init_default);
-    self.free = IMPL(T, free);
-    self.copy = IMPL(T, copy);
+    self.init_default = JOIN(T, init_default);
+    self.free = JOIN(T, free);
+    self.copy = JOIN(T, copy);
 #endif
     return self;
 }
 
 static inline A
-IMPL(A, init_default)(void)
+JOIN(A, init_default)(void)
 {
-    return IMPL(A, init)();
+    return JOIN(A, init)();
 }
 
 static inline B*
-IMPL(B, init)(size_t cut)
+JOIN(B, init)(size_t cut)
 {
     B* self = (B*) malloc(sizeof(B));
     self->a = self->b = cut;
@@ -88,25 +95,25 @@ IMPL(B, init)(size_t cut)
 }
 
 static inline B**
-IMPL(A, first)(A* self)
+JOIN(A, first)(A* self)
 {
     return &self->pages[self->mark_a];
 }
 
 static inline B**
-IMPL(A, last)(A* self)
+JOIN(A, last)(A* self)
 {
     return &self->pages[self->mark_b - 1];
 }
 
 static inline T*
-IMPL(A, at)(A* self, size_t index)
+JOIN(A, at)(A* self, size_t index)
 {
     if(self->size == 0)
         return NULL;
     else
     {
-        B* first = *IMPL(A, first)(self);
+        B* first = *JOIN(A, first)(self);
         size_t actual = index + first->a;
         B* page = self->pages[self->mark_a + actual / DEQ_BUCKET_SIZE];
         return &page->value[actual % DEQ_BUCKET_SIZE];
@@ -114,40 +121,40 @@ IMPL(A, at)(A* self, size_t index)
 }
 
 static inline T*
-IMPL(A, front)(A* self)
+JOIN(A, front)(A* self)
 {
-    return IMPL(A, at)(self, 0);
+    return JOIN(A, at)(self, 0);
 }
 
 static inline T*
-IMPL(A, back)(A* self)
+JOIN(A, back)(A* self)
 {
-    return IMPL(A, at)(self, self->size - 1);
+    return JOIN(A, at)(self, self->size - 1);
 }
 
 static inline T*
-IMPL(A, begin)(A* self)
+JOIN(A, begin)(A* self)
 {
-    return IMPL(A, front)(self);
+    return JOIN(A, front)(self);
 }
 
 static inline T*
-IMPL(A, end)(A* self)
+JOIN(A, end)(A* self)
 {
-    return IMPL(A, back)(self) + 1;
+    return JOIN(A, back)(self) + 1;
 }
 
 static inline void
-IMPL(A, set)(A* self, size_t index, T value)
+JOIN(A, set)(A* self, size_t index, T value)
 {
-    T* ref = IMPL(A, at)(self, index);
+    T* ref = JOIN(A, at)(self, index);
     if(self->free)
         self->free(ref);
     *ref = value;
 }
 
 static inline void
-IMPL(A, alloc)(A* self, size_t capacity, size_t shift_from)
+JOIN(A, alloc)(A* self, size_t capacity, size_t shift_from)
 {
     self->capacity = capacity;
     self->pages = (B**) realloc(self->pages, capacity * sizeof(B*));
@@ -163,61 +170,61 @@ IMPL(A, alloc)(A* self, size_t capacity, size_t shift_from)
 }
 
 static inline void
-IMPL(A, push_front)(A* self, T value)
+JOIN(A, push_front)(A* self, T value)
 {
     if(self->capacity == 0)
     {
-        IMPL(A, alloc)(self, 1, 0);
+        JOIN(A, alloc)(self, 1, 0);
         self->mark_b = 1;
-        *IMPL(A, last)(self) = IMPL(B, init)(DEQ_BUCKET_SIZE);
+        *JOIN(A, last)(self) = JOIN(B, init)(DEQ_BUCKET_SIZE);
     }
     else
     {
-        B* page = *IMPL(A, first)(self);
+        B* page = *JOIN(A, first)(self);
         if(page->a == 0)
         {
             if(self->mark_a == 0)
-                IMPL(A, alloc)(self, 2 * self->capacity, self->mark_a);
+                JOIN(A, alloc)(self, 2 * self->capacity, self->mark_a);
             self->mark_a -= 1;
-            *IMPL(A, first)(self) = IMPL(B, init)(DEQ_BUCKET_SIZE);
+            *JOIN(A, first)(self) = JOIN(B, init)(DEQ_BUCKET_SIZE);
         }
     }
-    B* page = *IMPL(A, first)(self);
+    B* page = *JOIN(A, first)(self);
     page->a -= 1;
     self->size += 1;
     page->value[page->a] = value;
 }
 
 static inline void
-IMPL(A, push_back)(A* self, T value)
+JOIN(A, push_back)(A* self, T value)
 {
     if(self->capacity == 0)
     {
-        IMPL(A, alloc)(self, 1, 0);
+        JOIN(A, alloc)(self, 1, 0);
         self->mark_b = 1;
-        *IMPL(A, last)(self) = IMPL(B, init)(0);
+        *JOIN(A, last)(self) = JOIN(B, init)(0);
     }
     else
     {
-        B* page = *IMPL(A, last)(self);
+        B* page = *JOIN(A, last)(self);
         if(page->b == DEQ_BUCKET_SIZE)
         {
             if(self->mark_b == self->capacity)
-                IMPL(A, alloc)(self, 2 * self->capacity, self->mark_b);
+                JOIN(A, alloc)(self, 2 * self->capacity, self->mark_b);
             self->mark_b += 1;
-            *IMPL(A, last)(self) = IMPL(B, init)(0);
+            *JOIN(A, last)(self) = JOIN(B, init)(0);
         }
     }
-    B* page = *IMPL(A, last)(self);
+    B* page = *JOIN(A, last)(self);
     page->value[page->b] = value;
     page->b += 1;
     self->size += 1;
 }
 
 static inline void
-IMPL(A, pop_back)(A* self)
+JOIN(A, pop_back)(A* self)
 {
-    B* page = *IMPL(A, last)(self);
+    B* page = *JOIN(A, last)(self);
     page->b -= 1;
     self->size -= 1;
     if(self->free)
@@ -233,9 +240,9 @@ IMPL(A, pop_back)(A* self)
 }
 
 static inline void
-IMPL(A, pop_front)(A* self)
+JOIN(A, pop_front)(A* self)
 {
-    B* page = *IMPL(A, first)(self);
+    B* page = *JOIN(A, first)(self);
     if(self->free)
     {
         T* ref = &page->value[page->a];
@@ -251,91 +258,91 @@ IMPL(A, pop_front)(A* self)
 }
 
 static inline void
-IMPL(A, erase)(A* self, T* position)
+JOIN(A, erase)(A* self, T* position)
 {
     static T zero;
-    size_t index = position - IMPL(A, begin)(self);
-    IMPL(A, set)(self, index, zero);
+    size_t index = position - JOIN(A, begin)(self);
+    JOIN(A, set)(self, index, zero);
     void (*saved)(T*) = self->free;
     self->free = NULL;
     if(index < self->size / 2)
     {
         for(size_t i = index; i > 0; i--)
-            *IMPL(A, at)(self, i) = *IMPL(A, at)(self, i - 1);
-        IMPL(A, pop_front)(self);
+            *JOIN(A, at)(self, i) = *JOIN(A, at)(self, i - 1);
+        JOIN(A, pop_front)(self);
     }
     else
     {
         for(size_t i = index; i < self->size - 1; i++)
-            *IMPL(A, at)(self, i) = *IMPL(A, at)(self, i + 1);
-        IMPL(A, pop_back)(self);
+            *JOIN(A, at)(self, i) = *JOIN(A, at)(self, i + 1);
+        JOIN(A, pop_back)(self);
     }
     self->free = saved;
 }
 
 static inline void
-IMPL(A, insert)(A* self, T* position, T value)
+JOIN(A, insert)(A* self, T* position, T value)
 {
     if(self->size > 0)
     {
-        size_t index = position - IMPL(A, begin)(self);
+        size_t index = position - JOIN(A, begin)(self);
         void (*saved)(T*) = self->free;
         self->free = NULL;
         if(index < self->size / 2)
         {
-            IMPL(A, push_front)(self, *IMPL(A, at)(self, 0));
+            JOIN(A, push_front)(self, *JOIN(A, at)(self, 0));
             for(size_t i = 0; i < index; i++)
-                *IMPL(A, at)(self, i) = *IMPL(A, at)(self, i + 1);
+                *JOIN(A, at)(self, i) = *JOIN(A, at)(self, i + 1);
         }
         else
         {
-            IMPL(A, push_back)(self, *IMPL(A, at)(self, self->size - 1));
+            JOIN(A, push_back)(self, *JOIN(A, at)(self, self->size - 1));
             for(size_t i = self->size - 1; i > index; i--)
-                *IMPL(A, at)(self, i) = *IMPL(A, at)(self, i - 1);
+                *JOIN(A, at)(self, i) = *JOIN(A, at)(self, i - 1);
         }
-        *IMPL(A, at)(self, index) = value;
+        *JOIN(A, at)(self, index) = value;
         self->free = saved;
     }
     else
-        IMPL(A, push_back)(self, value);
+        JOIN(A, push_back)(self, value);
 }
 
 static inline void
-IMPL(A, resize)(A* self, size_t size)
+JOIN(A, resize)(A* self, size_t size)
 {
     static T zero;
     if(size != self->size)
         while(size != self->size)
             (size < self->size)
-                ? IMPL(A, pop_back)(self)
-                : IMPL(A, push_back)(self, self->init_default ? self->init_default() : zero);
+                ? JOIN(A, pop_back)(self)
+                : JOIN(A, push_back)(self, self->init_default ? self->init_default() : zero);
 }
 
 static inline void
-IMPL(A, assign)(A* self, size_t size, T value)
+JOIN(A, assign)(A* self, size_t size, T value)
 {
-    IMPL(A, resize)(self, size);
+    JOIN(A, resize)(self, size);
     for(size_t i = 0; i < size; i++)
-        IMPL(A, set)(self, i, (i == 0) ? value : self->copy(&value));
+        JOIN(A, set)(self, i, (i == 0) ? value : self->copy(&value));
 }
 
 static inline void
-IMPL(A, clear)(A* self)
+JOIN(A, clear)(A* self)
 {
-    while(!IMPL(A, empty)(self))
-        IMPL(A, pop_back)(self);
+    while(!JOIN(A, empty)(self))
+        JOIN(A, pop_back)(self);
 }
 
 static inline void
-IMPL(A, free)(A* self)
+JOIN(A, free)(A* self)
 {
-    IMPL(A, clear)(self);
+    JOIN(A, clear)(self);
     free(self->pages);
-    *self = IMPL(A, init)();
+    *self = JOIN(A, init)();
 }
 
 static inline void
-IMPL(A, swap)(A* self, A* other)
+JOIN(A, swap)(A* self, A* other)
 {
     A temp = *self;
     *self = *other;
@@ -343,13 +350,13 @@ IMPL(A, swap)(A* self, A* other)
 }
 
 static inline A
-IMPL(A, copy)(A* self)
+JOIN(A, copy)(A* self)
 {
-    A other = IMPL(A, init)();
+    A other = JOIN(A, init)();
     while(other.size < self->size)
     {
-        T* value = IMPL(A, at)(self, other.size);
-        IMPL(A, push_back)(&other, other.copy(value));
+        T* value = JOIN(A, at)(self, other.size);
+        JOIN(A, push_back)(&other, other.copy(value));
     }
     return other;
 }
@@ -357,55 +364,55 @@ IMPL(A, copy)(A* self)
 // KNR2 (PAGE 87)
 
 static inline void
-IMPL(A, ranged_sort)(A* self, int64_t a, int64_t b, int compare(T*, T*))
+JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int compare(T*, T*))
 {
     if(a >= b)
         return;
     SWAP(self, a, (a + b) / 2);
     int64_t z = a;
     for(int64_t i = a + 1; i <= b; i++)
-        if(compare(IMPL(A, at)(self, a), IMPL(A, at)(self, i)))
+        if(compare(JOIN(A, at)(self, a), JOIN(A, at)(self, i)))
         {
             z += 1;
             SWAP(self, z, i);
         }
     SWAP(self, a, z);
-    IMPL(A, ranged_sort)(self, a, z - 1, compare);
-    IMPL(A, ranged_sort)(self, z + 1, b, compare);
+    JOIN(A, ranged_sort)(self, a, z - 1, compare);
+    JOIN(A, ranged_sort)(self, z + 1, b, compare);
 }
 
 static inline void
-IMPL(A, sort)(A* self, int compare(T*, T*))
+JOIN(A, sort)(A* self, int compare(T*, T*))
 {
-    IMPL(A, ranged_sort)(self, 0, self->size - 1, compare);
+    JOIN(A, ranged_sort)(self, 0, self->size - 1, compare);
 }
 
 static inline void
-IMPL(I, step)(I* self)
+JOIN(I, step)(I* self)
 {
     self->index = self->index_next;
     if(self->index == self->index_last)
         self->done = 1;
     else
     {
-        self->ref = IMPL(A, at)(self->container, self->index);
+        self->ref = JOIN(A, at)(self->container, self->index);
         self->index_next += 1;
     }
 }
 
 static inline I
-IMPL(I, range)(A* container, T* begin, T* end)
+JOIN(I, range)(A* container, T* begin, T* end)
 {
     static I zero;
     I self = zero;
     if(begin && end)
     {
         self.container = container;
-        self.step = IMPL(I, step);
-        self.index = begin - IMPL(A, begin)(container);
+        self.step = JOIN(I, step);
+        self.index = begin - JOIN(A, begin)(container);
         self.index_next = self.index + 1;
-        self.index_last = container->size - (IMPL(A, end)(container) - end);
-        self.ref = IMPL(A, at)(container, self.index);
+        self.index_last = container->size - (JOIN(A, end)(container) - end);
+        self.ref = JOIN(A, at)(container, self.index);
     }
     else
         self.done = 1;
@@ -413,20 +420,20 @@ IMPL(I, range)(A* container, T* begin, T* end)
 }
 
 static inline I
-IMPL(I, each)(A* a)
+JOIN(I, each)(A* a)
 {
-    return IMPL(A, empty)(a)
-        ? IMPL(I, range)(a, NULL, NULL)
-        : IMPL(I, range)(a, IMPL(A, begin)(a), IMPL(A, end)(a));
+    return JOIN(A, empty)(a)
+        ? JOIN(I, range)(a, NULL, NULL)
+        : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline void
-IMPL(A, remove_if)(A* self, int (*match)(T*))
+JOIN(A, remove_if)(A* self, int (*match)(T*))
 {
     foreach(A, self, it,
         if(match(it.ref))
         {
-            IMPL(A, erase)(self, IMPL(A, begin)(self) + it.index);
+            JOIN(A, erase)(self, JOIN(A, begin)(self) + it.index);
             it.index_next = it.index;
             it.index_last -= 1;
         }
@@ -434,12 +441,12 @@ IMPL(A, remove_if)(A* self, int (*match)(T*))
 }
 
 static inline int
-IMPL(A, equal)(A* self, A* other, int equal(T*, T*))
+JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
 {
     if(self->size != other->size)
         return 0;
-    I a = IMPL(I, each)(self);
-    I b = IMPL(I, each)(other);
+    I a = JOIN(I, each)(self);
+    I b = JOIN(I, each)(other);
     while(!a.done && !b.done)
     {
         if(!equal(a.ref, b.ref))

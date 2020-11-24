@@ -8,23 +8,26 @@
 
 #define PASTE(a, b) CAT(a, b)
 
-#define TEMP(type, name) PASTE(PASTE(name, _), type)
+#define JOIN(prefix, name) PASTE(prefix, PASTE(_, name))
 
-#define IMPL(container, name) PASTE(container, PASTE(_, name))
+#define iterate(iterator, ...)        \
+    do                                \
+    {                                 \
+        while(!iterator.done)         \
+        {                             \
+            __VA_ARGS__               \
+            iterator.step(&iterator); \
+        }                             \
+    }                                 \
+    while(0)
 
-#define iterate(iterator, ...)    \
-    while(!iterator.done)         \
-    {                             \
-        __VA_ARGS__               \
-        iterator.step(&iterator); \
-    }                             \
-(void) 0
-
-#define foreach(container, variable, iterator, ...) {                         \
-    IMPL(container, it) iterator = IMPL(IMPL(container, it), each)(variable); \
-    iterate(iterator, __VA_ARGS__);                                           \
-}                                                                             \
-(void) 0
+#define foreach(container, variable, iterator, ...)                               \
+    do                                                                            \
+    {                                                                             \
+        JOIN(container, it) iterator = JOIN(JOIN(container, it), each)(variable); \
+        iterate(iterator, __VA_ARGS__);                                           \
+    }                                                                             \
+    while(0)
 
 #define len(a) (sizeof(a) / sizeof(*(a)))
 

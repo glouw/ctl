@@ -63,7 +63,7 @@ define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
-BINS = tc99_cc tc99_cxx tdeq tstk tque tpqu tlst tstr tvec tvecap tccomp astar
+BINS = tc99_cc tc99_cxx tdeq tstk tque tpqu tlst tstr tvec tmap tvecap tccomp astar
 
 all: $(BINS) examples
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
@@ -96,6 +96,9 @@ tstr: ALWAYS
 
 tvec: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_vec.cc -o $@
+
+tmap: ALWAYS
+	$(CXX) $(CFLAGS) tests/test_map.cc -o $@
 
 tvecap: ALWAYS
 	$(CXX) $(CFLAGS) tests/test_vec_capacity.cc -o $@

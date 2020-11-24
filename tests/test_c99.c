@@ -139,10 +139,15 @@ main(void)
         vec_int_free(&a);
     }{
         map_charp_int a = map_charp_int_create(charp_compare);
-        map_charp_int_insert(&a, "Sam", 91);
-        map_charp_int_insert(&a, "Is", 92);
-        map_charp_int_insert(&a, "A", 93);
-        map_charp_int_insert(&a, "Friend", 94);
+        map_charp_int_insert(&a, "C", 93);
+        map_charp_int_insert(&a, "B", 92);
+        map_charp_int_insert(&a, "D", 94);
+        map_charp_int_insert(&a, "A", 91);
+        map_charp_int_insert(&a, "AA", 91);
+        map_charp_int_insert(&a, "AAA", 91);
+        map_charp_int_insert(&a, "E", 94);
+        map_charp_int_insert(&a, "G", 94);
+        map_charp_int_insert(&a, "F", 94);
         map_charp_int_free(&a);
     }{
         const size_t size = 16;

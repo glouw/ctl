@@ -32,20 +32,20 @@
 #include <vec.h>
 #undef vec
 
-#define A TEMP(T, pqu)
+#define A JOIN(pqu, T)
 
-#define SWAP(x, y) { T temp = *x; *x = *y; *y = temp; }
+#define SWAP(x, y) do { T temp = *x; *x = *y; *y = temp; } while(0)
 
 static inline A
-IMPL(A, create)(int compare(T*, T*))
+JOIN(A, create)(int compare(T*, T*))
 {
-    A self = IMPL(A, init)();
+    A self = JOIN(A, init)();
     self.compare = compare;
     return self;
 }
 
 static inline void
-IMPL(A, up)(A* self, size_t n)
+JOIN(A, up)(A* self, size_t n)
 {
     if(n > 0)
     {
@@ -55,13 +55,13 @@ IMPL(A, up)(A* self, size_t n)
         if(self->compare(x, y))
         {
             SWAP(x, y);
-            IMPL(A, up)(self, p);
+            JOIN(A, up)(self, p);
         }
     }
 }
 
 static inline void
-IMPL(A, down)(A* self, size_t n)
+JOIN(A, down)(A* self, size_t n)
 {
     size_t min = 2;
     if(self->size < min)
@@ -86,25 +86,25 @@ IMPL(A, down)(A* self, size_t n)
             if(self->compare(x, y))
             {
                 SWAP(x, y);
-                IMPL(A, down)(self, index);
+                JOIN(A, down)(self, index);
             }
         }
     }
 }
 
 static inline void
-IMPL(A, push)(A* self, T value)
+JOIN(A, push)(A* self, T value)
 {
-    IMPL(A, push_back)(self, value);
-    IMPL(A, up)(self, self->size - 1);
+    JOIN(A, push_back)(self, value);
+    JOIN(A, up)(self, self->size - 1);
 }
 
 static inline void
-IMPL(A, pop)(A* self)
+JOIN(A, pop)(A* self)
 {
-    SWAP(IMPL(A, front)(self), IMPL(A, back)(self));
-    IMPL(A, pop_back)(self);
-    IMPL(A, down)(self, 0);
+    SWAP(JOIN(A, front)(self), JOIN(A, back)(self));
+    JOIN(A, pop_back)(self);
+    JOIN(A, down)(self, 0);
 }
 
 #undef front
