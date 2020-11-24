@@ -10,6 +10,8 @@
 
 #define JOIN(prefix, name) PASTE(prefix, PASTE(_, name))
 
+#define SWAP(TYPE, a, b) do { TYPE temp = *(a); *(a) = *(b); *(b) = temp; } while(0)
+
 #define iterate(iterator, ...)        \
     do                                \
     {                                 \

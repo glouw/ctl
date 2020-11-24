@@ -10,15 +10,6 @@
 
 #define DEQ_BUCKET_SIZE (64)
 
-#define SWAP(self, a, b)                               \
-    do                                                 \
-    {                                                  \
-        T temp = *JOIN(A, at)(self, a);                \
-        *JOIN(A, at)(self, a) = *JOIN(A, at)(self, b); \
-        *JOIN(A, at)(self, b) = temp;                  \
-    }                                                  \
-    while(0)
-
 typedef struct B
 {
     T value[DEQ_BUCKET_SIZE];
@@ -368,15 +359,15 @@ JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int compare(T*, T*))
 {
     if(a >= b)
         return;
-    SWAP(self, a, (a + b) / 2);
+    SWAP(T, JOIN(A, at)(self, a), JOIN(A, at)(self, (a + b) / 2));
     int64_t z = a;
     for(int64_t i = a + 1; i <= b; i++)
         if(compare(JOIN(A, at)(self, a), JOIN(A, at)(self, i)))
         {
             z += 1;
-            SWAP(self, z, i);
+            SWAP(T, JOIN(A, at)(self, z), JOIN(A, at)(self, i));
         }
-    SWAP(self, a, z);
+    SWAP(T, JOIN(A, at)(self, a), JOIN(A, at)(self, z));
     JOIN(A, ranged_sort)(self, a, z - 1, compare);
     JOIN(A, ranged_sort)(self, z + 1, b, compare);
 }
@@ -463,5 +454,3 @@ JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
 #undef I
 
 #undef DEQ_BUCKET_SIZE
-
-#undef SWAP

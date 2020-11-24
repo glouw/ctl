@@ -34,8 +34,6 @@
 
 #define A JOIN(pqu, T)
 
-#define SWAP(x, y) do { T temp = *x; *x = *y; *y = temp; } while(0)
-
 static inline A
 JOIN(A, create)(int compare(T*, T*))
 {
@@ -54,7 +52,7 @@ JOIN(A, up)(A* self, size_t n)
         T* y = &self->value[p];
         if(self->compare(x, y))
         {
-            SWAP(x, y);
+            SWAP(T, x, y);
             JOIN(A, up)(self, p);
         }
     }
@@ -72,7 +70,7 @@ JOIN(A, down)(A* self, size_t n)
         T* a = &self->value[0];
         T* b = &self->value[1];
         if(!self->compare(a, b))
-            SWAP(a, b);
+            SWAP(T, a, b);
     }
     else
     {
@@ -85,7 +83,7 @@ JOIN(A, down)(A* self, size_t n)
             T* y = &self->value[n];
             if(self->compare(x, y))
             {
-                SWAP(x, y);
+                SWAP(T, x, y);
                 JOIN(A, down)(self, index);
             }
         }
@@ -102,7 +100,7 @@ JOIN(A, push)(A* self, T value)
 static inline void
 JOIN(A, pop)(A* self)
 {
-    SWAP(JOIN(A, front)(self), JOIN(A, back)(self));
+    SWAP(T, JOIN(A, front)(self), JOIN(A, back)(self));
     JOIN(A, pop_back)(self);
     JOIN(A, down)(self, 0);
 }
@@ -133,4 +131,3 @@ JOIN(A, pop)(A* self)
 
 #undef T // SEE HOLD.
 #undef A
-#undef SWAP

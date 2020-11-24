@@ -16,8 +16,6 @@
 #define C JOIN(A, inode)
 #define I JOIN(A, it)
 
-#define SWAP(TYPE, a, b) do { TYPE temp = *(a); *(a) = *(b); *(b) = temp; } while(0)
-
 typedef struct B
 {
     struct B* l;
@@ -678,5 +676,3 @@ JOIN(I, each)(A* a)
 #ifdef USE_INTERNAL_VERIFY
 #undef USE_INTERNAL_VERIFY
 #endif
-
-#undef SWAP
