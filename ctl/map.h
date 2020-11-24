@@ -1,3 +1,6 @@
+// For implementation details:
+//   https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
+
 #ifndef T
 #error "Template type T undefined for <map>"
 #endif
@@ -5,9 +8,6 @@
 #ifndef U
 #error "Template type U undefined for <map>"
 #endif
-
-// For implementation details:
-//   https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
 
 #include <ctl.h>
 
@@ -320,7 +320,7 @@ JOIN(A, verify)(A* self)
 {
     JOIN(B, verify_property_1)(self->root); // PROPERTY 1: EACH NODE IS EITHER RED OR BLACK.
     JOIN(B, verify_property_2)(self->root); // PROPERTY 2: THE ROOT NODE IS BLACK.
-    /* JOINICIT */                          // PROPERTY 3: LEAVES ARE COLORED BLACK
+    /* IMPLICIT */                          // PROPERTY 3: LEAVES ARE COLORED BLACK
     JOIN(B, verify_property_4)(self->root); // PROPERTY 4: EVERY RED NODE HAS TWO BLACK NDOES.
     JOIN(B, verify_property_5)(self->root); // PROPERTY 5: ALL PATHS FROM A NODE HAVE THE SAME NUMBER OF BLACK NODES.
 }
