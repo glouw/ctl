@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <limits.h>
 #include <time.h>
 #include <assert.h>
@@ -22,5 +23,14 @@
 #define TEST_PASS(f) printf("%s: PASS\n", f)
 
 #define TEST_RAND(max) (((max) == 0) ? 0 : (rand() % (max)))
+
+
+static inline int
+TEST_TIME(void)
+{
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    return 1000000 * now.tv_sec + now.tv_usec;
+}
 
 #endif
