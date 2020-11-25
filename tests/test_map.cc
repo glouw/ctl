@@ -105,10 +105,10 @@ main(void)
             }
             case TEST_ERASE_IF:
             {
+                size_t b_erases = 0;
                 {   // C++20 STD::REMOVE_IF
                     auto iter = b.begin();
                     auto end = b.end();
-                    size_t b_erases = 0;
                     while(iter != end)
                     {
                         if(*iter->second.value % 2)
