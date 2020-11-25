@@ -1,5 +1,5 @@
 CC = gcc -std=c99
-CXX = g++ -std=c++17
+CXX = g++ -std=c++20
 
 LONG = 0
 SANITIZE = 0

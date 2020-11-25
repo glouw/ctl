@@ -29,17 +29,26 @@ int_compare(int* a, int* b)
     return (*a == *b) ? 0 : (*a < *b) ? -1 : 1;
 }
 
-#define CHECK(_x, _y) {                                      \
-    std::map<int, DIGI>::iterator _iter = _y.begin();        \
-    foreach(map_int_digi, &_x, _it, {                        \
-        assert(_it.node->first == _iter->first);             \
-        _iter++;                                             \
-    });                                                      \
-    map_int_digi_it _it = map_int_digi_it_each(&_x);         \
-    for(auto& _d : _y) {                                     \
-        assert(*_it.node->second.value == *_d.second.value); \
-        _it.step(&_it);                                      \
-    }                                                        \
+static inline int
+int_digi_is_value_odd(int* key, digi* value)
+{
+    (void) key;
+    return *value->value % 2;
+}
+
+#define CHECK(_x, _y) {                                          \
+    std::map<int, DIGI>::iterator _iter = _y.begin();            \
+    foreach(map_int_digi, &_x, _it, {                            \
+        assert(_it.node->first == _iter->first);                 \
+        assert(*_it.node->second.value == *_iter->second.value); \
+        _iter++;                                                 \
+    });                                                          \
+    map_int_digi_it _it = map_int_digi_it_each(&_x);             \
+    for(auto& _d : _y) {                                         \
+        assert(_it.node->first == _d.first);                     \
+        assert(*_it.node->second.value == *_d.second.value);     \
+        _it.step(&_it);                                          \
+    }                                                            \
 }
 
 int
@@ -65,6 +74,7 @@ main(void)
         {
             TEST_INSERT,
             TEST_ERASE,
+            TEST_ERASE_IF,
             TEST_TOTAL,
         };
         int which = TEST_RAND(TEST_TOTAL);
@@ -81,13 +91,29 @@ main(void)
             }
             case TEST_ERASE:
             {
-                if(a.size > 0)
-                {
-                    const int key = TEST_RAND(TEST_MAX_SIZE);
-                    map_int_digi_erase(&a, key);
-                    b.erase(key);
-                    CHECK(a, b);
-                }
+                const size_t erases = TEST_RAND(TEST_MAX_SIZE) / 4;
+                for(size_t i = 0; i < erases; i++)
+                    if(a.size > 0)
+                    {
+                        const int key = TEST_RAND(TEST_MAX_SIZE);
+                        map_int_digi_erase(&a, key);
+                        b.erase(key);
+                        CHECK(a, b);
+                    }
+                CHECK(a, b);
+                break;
+            }
+            case TEST_ERASE_IF:
+            {
+                size_t b_erases = std::erase_if(b,
+                    [](const auto& item)
+                    {
+                        auto const& [key, value] = item;
+                        return *value.value % 2;
+                    });
+                size_t a_erases = map_int_digi_erase_if(&a, int_digi_is_value_odd);
+                assert(a_erases == b_erases);
+                CHECK(a, b);
                 break;
             }
         }

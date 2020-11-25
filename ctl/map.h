@@ -13,7 +13,6 @@
 
 #define A JOIN(map, JOIN(T, U))
 #define B JOIN(A, node)
-#define C JOIN(A, inode)
 #define I JOIN(A, it)
 
 typedef struct B
@@ -26,13 +25,6 @@ typedef struct B
     int color; // RED 0, BLK 1
 }
 B;
-
-typedef struct C
-{
-    struct B* node;
-    struct C* next;
-}
-C;
 
 typedef struct
 {
@@ -47,31 +39,12 @@ A;
 typedef struct I
 {
     void (*step)(struct I*);
-    B* begin;
     B* end;
     B* node;
     B* next;
-    C* stack;
     int done;
 }
 I;
-
-static inline void
-JOIN(C, push)(C** self, B* node)
-{
-    C* inode = (C*) malloc(sizeof(C));
-    inode->next = *self;
-    inode->node = node;
-    *self = inode;
-}
-
-static inline void
-JOIN(C, pop)(C** self)
-{
-    C* next = (*self)->next;
-    free(*self);
-    *self = next;
-}
 
 static inline B*
 JOIN(A, begin)(A* self)
@@ -224,6 +197,26 @@ static inline U*
 JOIN(A, at)(A* self, T key)
 {
     return &JOIN(A, find)(self, key)->second;
+}
+
+static inline int
+JOIN(A, count)(A* self, T key)
+{
+    return JOIN(A, find)(self, key) ? 1 : 0;
+}
+
+static inline int
+JOIN(A, contains)(A* self, T key)
+{
+    return JOIN(A, count)(self, key) == 1;
+}
+
+static inline void
+JOIN(A, equal_range)(A* self, T key, B** a, B** b) // XXX. CORRECT?
+{
+    B* node = JOIN(A, find)(self, key);
+    *a = node ? JOIN(B, lower_bound)(node) : NULL;
+    *b = node ? JOIN(B, upper_bound)(node) : NULL;
 }
 
 static inline void
@@ -475,35 +468,37 @@ JOIN(A, erase_5)(A*, B*),
 JOIN(A, erase_6)(A*, B*);
 
 static inline void
+JOIN(A, erase_node)(A* self, B* node)
+{
+    if(node->l && node->r)
+    {
+        B* pred = JOIN(B, upper_bound)(node->l);
+        SWAP(T, &node->first, &pred->first);
+        SWAP(U, &node->second, &pred->second);
+        node = pred;
+    }
+    B* child = node->r ? node->r : node->l;
+    if(JOIN(B, is_blk)(node))
+    {
+        node->color = JOIN(B, color)(child);
+        JOIN(A, erase_1)(self, node);
+    }
+    JOIN(B, replace)(self, node, child);
+    if(node->p == NULL && child)
+        child->color = 1;
+    JOIN(A, free_node)(self, node);
+    self->size -= 1;
+#ifdef USE_INTERNAL_VERIFY
+    JOIN(A, verify)(self);
+#endif
+}
+
+static inline void
 JOIN(A, erase)(A* self, T key)
 {
     B* node = JOIN(A, find)(self, key);
     if(node)
-    {
-        if(node->l && node->r)
-        {
-            B* pred = JOIN(B, upper_bound)(node->l);
-            SWAP(T, &node->first, &pred->first);
-            SWAP(U, &node->second, &pred->second);
-            node = pred;
-        }
-        B* child = node->r ? node->r : node->l;
-        if(JOIN(B, is_blk)(node))
-        {
-            node->color = JOIN(B, color)(child);
-            JOIN(A, erase_1)(self, node);
-        }
-        JOIN(B, replace)(self, node, child);
-        if(node->p == NULL && child)
-            child->color = 1;
-        if(self->free)
-            self->free(&node->first, &node->second);
-        free(node);
-        self->size -= 1;
-#ifdef USE_INTERNAL_VERIFY
-        JOIN(A, verify)(self);
-#endif
-    }
+        JOIN(A, erase_node)(self, node);
 }
 
 static inline void
@@ -599,6 +594,7 @@ JOIN(A, erase_6)(A* self, B* node)
         JOIN(A, rotate_r)(self, node->p);
     }
 }
+
 static inline void
 JOIN(A, clear)(A* self)
 {
@@ -621,22 +617,37 @@ JOIN(A, swap)(A* self, A* other)
     *other = temp;
 }
 
+static inline B*
+JOIN(B, next)(B* self)
+{
+    if(self->r)
+    {
+        self = self->r;
+        while(self->l)
+            self = self->l;
+    }
+    else
+    {
+        B* parent = self->p;
+        while(parent && self == parent->r)
+        {
+            self = parent;
+            parent = parent->p;
+        }
+        self = parent;
+    }
+    return self;
+}
+
 static inline void
 JOIN(I, step)(I* self)
 {
-    if(self->next == self->end && self->stack == NULL)
+    if(self->next == self->end)
         self->done = 1;
     else
     {
         self->node = self->next;
-        while(self->node)
-        {
-            JOIN(C, push)(&self->stack, self->node);
-            self->node = self->node->l;
-        }
-        self->node = self->stack->node;
-        JOIN(C, pop)(&self->stack);
-        self->next = self->node->r;
+        self->next = JOIN(B, next)(self->node);
     }
 }
 
@@ -648,11 +659,9 @@ JOIN(I, range)(B* begin, B* end)
     if(begin)
     {
         self.step = JOIN(I, step);
-        self.begin = begin;
-        self.node = begin;
-        self.next = begin;
+        self.node = JOIN(B, lower_bound)(begin);
+        self.next = JOIN(B, next)(self.node);
         self.end = end;
-        JOIN(I, step)(&self);
     }
     else
         self.done = 1;
@@ -663,6 +672,53 @@ static inline I
 JOIN(I, each)(A* a)
 {
     return JOIN(I, range)(JOIN(A, begin)(a), JOIN(A, end)(a));
+}
+
+static inline int
+JOIN(A, equal)(A* self, A* other, int equal(T*, T*, U*, U*))
+{
+    if(self->size != other->size)
+        return 0;
+    I a = JOIN(I, each)(self);
+    I b = JOIN(I, each)(other);
+    while(!a.done && !b.done)
+    {
+        if(!equal(&a.node->first, &b.node->first, &a.node->second, &b.node->second))
+            return 0;
+        a.step(&a);
+        b.step(&b);
+    }
+    return 1;
+}
+
+static inline A
+JOIN(A, copy)(A* self)
+{
+    I it = JOIN(I, each)(self);
+    A copy =  JOIN(A, create)(self->compare);
+    while(!it.done)
+    {
+        T first;
+        U second;
+        self->copy(&first, &it.node->first, &second, &it.node->second);
+        JOIN(A, insert)(&copy, first, second);
+        it.step(&it);
+    }
+    return copy;
+}
+
+static inline size_t
+JOIN(A, erase_if)(A* self, int (*equal)(T*, U*))
+{
+    size_t erases = 0;
+    foreach(A, self, it,
+        if(equal(&it.node->first, &it.node->second))
+        {
+            JOIN(A, erase_node)(self, it.node);
+            erases += 1;
+        }
+    );
+    return erases;
 }
 
 #undef T

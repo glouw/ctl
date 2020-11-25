@@ -17,6 +17,11 @@ typedef const char* charp;
 
 #define P
 #define T int
+#define U int
+#include <map.h>
+
+#define P
+#define T int
 #include <pqu.h>
 
 #define P
@@ -122,9 +127,22 @@ int_compare(int* a, int* b)
 }
 
 static int
-charp_compare(charp* a, charp* b)
+int_key_compare(int* a, int* b)
+{
+    return (*a == *b) ? 0 : (*a < *b) ? -1 : 1;
+}
+
+static int
+charp_key_compare(charp* a, charp* b)
 {
     return strcmp(*a, *b);
+}
+
+static int
+is_value_2(int* key, int* value)
+{
+    (void) key;
+    return *value == 2;
 }
 
 int
@@ -138,7 +156,7 @@ main(void)
         vec_int_push_back(&a, 4);
         vec_int_free(&a);
     }{
-        map_charp_int a = map_charp_int_create(charp_compare);
+        map_charp_int a = map_charp_int_create(charp_key_compare);
         map_charp_int_insert(&a, "C", 93);
         map_charp_int_insert(&a, "B", 92);
         map_charp_int_insert(&a, "D", 94);
@@ -149,6 +167,22 @@ main(void)
         map_charp_int_insert(&a, "G", 94);
         map_charp_int_insert(&a, "F", 94);
         map_charp_int_free(&a);
+    }{
+        map_int_int a = map_int_int_create(int_key_compare);
+        map_int_int_insert(&a, 1, 1);
+        map_int_int_insert(&a, 4, 1);
+        map_int_int_insert(&a, 8, 2);
+        map_int_int_insert(&a, -1, 2);
+        map_int_int_insert(&a, -3, 2);
+        map_int_int_insert(&a, -2, 2);
+        map_int_int_insert(&a, 2, 2);
+        map_int_int_insert(&a, 21, 2);
+        map_int_int_insert(&a, 3, 1);
+        map_int_int_insert(&a, 9, 1);
+        map_int_int_insert(&a, -21, 2);
+        map_int_int_insert(&a, -4, 2);
+        map_int_int_erase_if(&a, is_value_2);
+        map_int_int_free(&a);
     }{
         const size_t size = 16;
         deq_int a = deq_int_init();
