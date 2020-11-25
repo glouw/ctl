@@ -105,12 +105,21 @@ main(void)
             }
             case TEST_ERASE_IF:
             {
-                size_t b_erases = std::erase_if(b,
-                    [](const auto& item)
+                {   // C++20 STD::REMOVE_IF
+                    auto iter = b.begin();
+                    auto end = b.end();
+                    size_t b_erases = 0;
+                    while(iter != end)
                     {
-                        auto const& [key, value] = item;
-                        return *value.value % 2;
-                    });
+                        if(*iter->second.value % 2)
+                        {
+                            iter = b.erase(iter);
+                            b_erases += 1;
+                        }
+                        else
+                            iter++;
+                    }
+                }
                 size_t a_erases = map_int_digi_erase_if(&a, int_digi_is_value_odd);
                 assert(a_erases == b_erases);
                 CHECK(a, b);
