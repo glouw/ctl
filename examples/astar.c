@@ -82,7 +82,7 @@ astar(str* maze, int width)
     map_point_int_insert(&costs, start, 0);
     while(!pqu_point_empty(&front))
     {
-        point current = front.copy(pqu_point_top(&front));
+        point current = *pqu_point_top(&front);
         pqu_point_pop(&front);
         if(point_equal(&current, &goal))
             break;

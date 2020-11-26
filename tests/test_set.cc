@@ -1,0 +1,189 @@
+#include "test.h"
+#include "digi.hh"
+
+static inline int
+digi_key_compare(digi* a, digi* b)
+{
+    return (*a->value == *b->value) ? 0 : (*a->value < *b->value) ? -1 : 1;
+}
+
+#define USE_INTERNAL_VERIFY
+#define T digi
+#include <set.h>
+
+#include <set>
+#include <algorithm>
+
+#define CHECK(_x, _y) {                                \
+    std::set<DIGI>::iterator _iter = _y.begin();       \
+    foreach(set_digi, &_x, _it, {                      \
+        assert(*_it.node->key.value == *_iter->value); \
+        _iter++;                                       \
+    });                                                \
+    set_digi_it _it = set_digi_it_each(&_x);           \
+    for(auto& _d : _y) {                               \
+        assert(*_it.node->key.value == *_d.value);     \
+        _it.step(&_it);                                \
+    }                                                  \
+}
+int
+main(void)
+{
+#ifdef SRAND
+    srand(time(NULL));
+#endif
+    const size_t loops = TEST_RAND(TEST_MAX_LOOPS);
+    for(size_t loop = 0; loop < loops; loop++)
+    {
+        size_t iters = TEST_RAND(TEST_MAX_SIZE);
+        set_digi a = set_digi_create(digi_key_compare);
+        std::set<DIGI> b;
+        for(size_t inserts = 0; inserts < iters; inserts++)
+        {
+            const int vb = TEST_RAND(TEST_MAX_SIZE);
+            set_digi_insert(&a, digi_init(vb));
+            b.insert(DIGI{vb});
+        }
+        enum
+        {
+            TEST_INSERT,
+            TEST_ERASE,
+            TEST_REMOVE_IF,
+            TEST_CLEAR,
+            TEST_SWAP,
+            TEST_COUNT,
+            TEST_FIND,
+            TEST_COPY,
+            TEST_EQUAL,
+            TEST_TOTAL,
+        };
+        int which = TEST_RAND(TEST_TOTAL);
+        switch(which)
+        {
+            case TEST_INSERT:
+            {
+                const int vb = TEST_RAND(TEST_MAX_SIZE);
+                set_digi_insert(&a, digi_init(vb));
+                b.insert(DIGI{vb});
+                CHECK(a, b);
+                break;
+            }
+            case TEST_ERASE:
+            {
+                const size_t erases = TEST_RAND(TEST_MAX_SIZE) / 4;
+                for(size_t i = 0; i < erases; i++)
+                    if(a.size > 0)
+                    {
+                        const int key = TEST_RAND(TEST_MAX_SIZE);
+                        digi kd = digi_init(key);
+                        set_digi_erase(&a, kd);
+                        b.erase(DIGI{key});
+                        CHECK(a, b);
+                        digi_free(&kd);
+                    }
+                CHECK(a, b);
+                break;
+            }
+            case TEST_REMOVE_IF:
+            {
+                size_t b_erases = 0;
+                {   // C++20 STD::ERASE_IF
+                    auto iter = b.begin();
+                    auto end = b.end();
+                    while(iter != end)
+                    {
+                        if(*iter->value % 2)
+                        {
+                            iter = b.erase(iter);
+                            b_erases += 1;
+                        }
+                        else
+                            iter++;
+                    }
+                }
+                size_t a_erases = set_digi_remove_if(&a, digi_is_odd);
+                assert(a_erases == b_erases);
+                CHECK(a, b);
+                break;
+            }
+            case TEST_CLEAR:
+            {
+                b.clear();
+                set_digi_clear(&a);
+                CHECK(a, b);
+                break;
+            }
+            case TEST_SWAP:
+            {
+                set_digi aa = set_digi_copy(&a);
+                set_digi aaa = set_digi_init();
+                std::set<DIGI> bb = b;
+                std::set<DIGI> bbb;
+                set_digi_swap(&aaa, &aa);
+                std::swap(bb, bbb);
+                CHECK(aaa, bbb);
+                set_digi_free(&aaa);
+                CHECK(a, b);
+                break;
+            }
+            case TEST_COUNT:
+            {
+                int key = TEST_RAND(TEST_MAX_SIZE);
+                digi kd = digi_init(key);
+                int aa = set_digi_count(&a, kd);
+                int bb = b.count(DIGI{key});
+                assert(aa == bb);
+                CHECK(a, b);
+                digi_free(&kd);
+                break;
+            }
+            case TEST_FIND:
+            {
+                int key = TEST_RAND(TEST_MAX_SIZE);
+                digi kd = digi_init(key);
+                set_digi_node* aa = set_digi_find(&a, kd);
+                auto bb = b.find(DIGI{key});
+                if(bb == b.end())
+                    assert(set_digi_end(&a) == aa);
+                else
+                    assert(*bb->value == *aa->key.value);
+                CHECK(a, b);
+                digi_free(&kd);
+                break;
+            }
+#if 0
+            case TEST_CONTAINS: // C++20.
+            {
+                int key = TEST_RAND(TEST_MAX_SIZE);
+                int aa = set_digi_contains(&a, key);
+                int bb = b.contains(key);
+                assert(aa == bb);
+                CHECK(a, b);
+                break;
+            }
+#endif
+            case TEST_COPY:
+            {
+                set_digi aa = set_digi_copy(&a);
+                std::set<DIGI> bb = b;
+                CHECK(aa, bb);
+                set_digi_free(&aa);
+                CHECK(a, b);
+                break;
+            }
+            case TEST_EQUAL:
+            {
+                set_digi aa = set_digi_copy(&a);
+                std::set<DIGI> bb = b;
+                assert(set_digi_equal(&a, &aa, digi_match));
+                assert(b == bb);
+                set_digi_free(&aa);
+                CHECK(a, b);
+                break;
+            }
+        }
+        CHECK(a, b);
+        set_digi_free(&a);
+    }
+    TEST_PASS(__FILE__);
+}

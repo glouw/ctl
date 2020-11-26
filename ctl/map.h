@@ -2,24 +2,24 @@
 //     https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
 
 #ifdef MAKE_SET
-#    ifndef T
-#        error "Template type T undefined for <set.h>"
-#    endif
+#ifndef T
+#error "Template type T undefined for <set.h>"
+#endif
 #else
-#    ifndef T
-#        error "Template type T undefined for <map.h>"
-#    endif
-#    ifndef U
-#        error "Template type U undefined for <map.h>"
-#    endif
+#ifndef T
+#error "Template type T undefined for <map.h>"
+#endif
+#ifndef U
+#error "Template type U undefined for <map.h>"
+#endif
 #endif
 
 #include <ctl.h>
 
 #ifdef MAKE_SET
-#    define A JOIN(set, T)
+#define A JOIN(set, T)
 #else
-#    define A JOIN(map, JOIN(T, U))
+#define A JOIN(map, JOIN(T, U))
 #endif
 
 #define B JOIN(A, node)
@@ -36,7 +36,7 @@ typedef struct B
     T first;
     U second;
 #endif
-    int color; // RED 0, BLK 1
+    int color; // RED 0, BLK 1.
 }
 B;
 
@@ -225,11 +225,10 @@ JOIN(A, find)(A* self, T key)
     B* node = self->root;
     while(node)
     {
-        int diff =
 #ifdef MAKE_SET
-            self->compare(&key, &node->key);
+        int diff = self->compare(&key, &node->key);
 #else
-            self->compare(&key, &node->first);
+        int diff = self->compare(&key, &node->first);
 #endif
         if(diff == 0)
             return node;
@@ -242,7 +241,9 @@ JOIN(A, find)(A* self, T key)
     return node;
 }
 
-#ifndef MAKE_SET
+#ifdef MAKE_SET
+// NO AT() OPERATION FOR SET.
+#else
 static inline U*
 JOIN(A, at)(A* self, T key)
 {
@@ -391,22 +392,20 @@ JOIN(A, insert)(A* self, T key)
 JOIN(A, insert)(A* self, T key, U value)
 #endif
 {
-    B* insert =
 #ifdef MAKE_SET
-        JOIN(B, init)(key, 0);
+    B* insert = JOIN(B, init)(key, 0);
 #else
-        JOIN(B, init)(key, value, 0);
+    B* insert = JOIN(B, init)(key, value, 0);
 #endif
     if(self->root)
     {
         B* node = self->root;
         while(1)
         {
-            int diff =
 #ifdef MAKE_SET
-                self->compare(&key, &node->key);
+            int diff = self->compare(&key, &node->key);
 #else
-                self->compare(&key, &node->first);
+            int diff = self->compare(&key, &node->first);
 #endif
             if(diff == 0)
             {
@@ -730,13 +729,11 @@ JOIN(I, each)(A* a)
 }
 
 static inline int
-JOIN(A, equal)(A* self, A* other,
 #ifdef MAKE_SET
-int equal(T*, T*)
+JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
 #else
-int equal(T*, T*, U*, U*)
+JOIN(A, equal)(A* self, A* other, int equal(T*, T*, U*, U*))
 #endif
-)
 {
     if(self->size != other->size)
         return 0;
