@@ -15,6 +15,7 @@ digi_key_compare(digi* a, digi* b)
 #include <algorithm>
 
 #define CHECK(_x, _y) {                                \
+    assert(_x.size == _y.size());                      \
     std::set<DIGI>::iterator _iter = _y.begin();       \
     foreach(set_digi, &_x, _it, {                      \
         assert(*_it.node->key.value == *_iter->value); \
@@ -26,6 +27,20 @@ digi_key_compare(digi* a, digi* b)
         _it.step(&_it);                                \
     }                                                  \
 }
+
+static void
+setup_sets(set_digi* a, std::set<DIGI>& b)
+{
+    size_t iters = TEST_RAND(TEST_MAX_SIZE);
+    *a = set_digi_create(digi_key_compare);
+    for(size_t inserts = 0; inserts < iters; inserts++)
+    {
+        const int vb = TEST_RAND(TEST_MAX_SIZE);
+        set_digi_insert(a, digi_init(vb));
+        b.insert(DIGI{vb});
+    }
+}
+
 int
 main(void)
 {
@@ -35,15 +50,9 @@ main(void)
     const size_t loops = TEST_RAND(TEST_MAX_LOOPS);
     for(size_t loop = 0; loop < loops; loop++)
     {
-        size_t iters = TEST_RAND(TEST_MAX_SIZE);
-        set_digi a = set_digi_create(digi_key_compare);
+        set_digi a;
         std::set<DIGI> b;
-        for(size_t inserts = 0; inserts < iters; inserts++)
-        {
-            const int vb = TEST_RAND(TEST_MAX_SIZE);
-            set_digi_insert(&a, digi_init(vb));
-            b.insert(DIGI{vb});
-        }
+        setup_sets(&a, b);
         enum
         {
             TEST_INSERT,
@@ -55,6 +64,10 @@ main(void)
             TEST_FIND,
             TEST_COPY,
             TEST_EQUAL,
+            TEST_UNION,
+            TEST_INTERSECTION,
+            TEST_SYMMETRIC_DIFFERENCE,
+            TEST_DIFFERENCE,
             TEST_TOTAL,
         };
         int which = TEST_RAND(TEST_TOTAL);
@@ -179,6 +192,66 @@ main(void)
                 assert(b == bb);
                 set_digi_free(&aa);
                 CHECK(a, b);
+                break;
+            }
+            case TEST_UNION:
+            {
+                set_digi aa;
+                std::set<DIGI> bb;
+                setup_sets(&aa, bb);
+                set_digi aaa = set_digi_union(&a, &aa);
+                std::set<DIGI> bbb;
+                std::set_union(b.begin(), b.end(), bb.begin(), bb.end(), std::inserter(bbb, bbb.begin()));
+                CHECK(a, b);
+                CHECK(aa, bb);
+                CHECK(aaa, bbb);
+                set_digi_free(&aa);
+                set_digi_free(&aaa);
+                break;
+            }
+            case TEST_INTERSECTION:
+            {
+                set_digi aa;
+                std::set<DIGI> bb;
+                setup_sets(&aa, bb);
+                set_digi aaa = set_digi_intersection(&a, &aa);
+                std::set<DIGI> bbb;
+                std::set_intersection(b.begin(), b.end(), bb.begin(), bb.end(), std::inserter(bbb, bbb.begin()));
+                CHECK(a, b);
+                CHECK(aa, bb);
+                CHECK(aaa, bbb);
+                set_digi_free(&aa);
+                set_digi_free(&aaa);
+                break;
+            }
+            case TEST_SYMMETRIC_DIFFERENCE:
+            {
+                set_digi aa;
+                std::set<DIGI> bb;
+                setup_sets(&aa, bb);
+                set_digi aaa = set_digi_symmetric_difference(&a, &aa);
+                std::set<DIGI> bbb;
+                std::set_symmetric_difference(b.begin(), b.end(), bb.begin(), bb.end(), std::inserter(bbb, bbb.begin()));
+                CHECK(a, b);
+                CHECK(aa, bb);
+                CHECK(aaa, bbb);
+                set_digi_free(&aa);
+                set_digi_free(&aaa);
+                break;
+            }
+            case TEST_DIFFERENCE:
+            {
+                set_digi aa;
+                std::set<DIGI> bb;
+                setup_sets(&aa, bb);
+                set_digi aaa = set_digi_difference(&a, &aa);
+                std::set<DIGI> bbb;
+                std::set_difference(b.begin(), b.end(), bb.begin(), bb.end(), std::inserter(bbb, bbb.begin()));
+                CHECK(a, b);
+                CHECK(aa, bb);
+                CHECK(aaa, bbb);
+                set_digi_free(&aa);
+                set_digi_free(&aaa);
                 break;
             }
         }

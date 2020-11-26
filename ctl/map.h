@@ -801,7 +801,12 @@ JOIN(A, remove_if)(A* self, int (*match)(T*, U*))
     return erases;
 }
 
+#ifdef HOLD
+#undef HOLD
+#else
 #undef T
+#endif
+
 #undef U
 #undef A
 #undef B
