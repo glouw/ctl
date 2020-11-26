@@ -20,7 +20,7 @@ point_init(int x, int y, int width)
 }
 
 static int
-point_compare(point* a, point* b)
+point_compare_priority(point* a, point* b)
 {
     return a->priorty < b->priorty;
 }
@@ -75,7 +75,7 @@ astar(str* maze, int width)
 {
     point start = point_from(maze, "@", width);
     point goal = point_from(maze, "!", width);
-    pqu_point front = pqu_point_create(point_compare);
+    pqu_point front = pqu_point_create(point_compare_priority);
     pqu_point_push(&front, start);
     map_point_point from = map_point_point_create(point_key_compare);
     map_point_int costs = map_point_int_create(point_key_compare);
