@@ -1,3 +1,6 @@
+// For implementation details:
+//     https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
+
 #ifdef MAKE_SET
 #    ifndef T
 #        error "Template type T undefined for <set.h>"
@@ -21,9 +24,6 @@
 
 #define B JOIN(A, node)
 #define I JOIN(A, it)
-
-// For implementation details:
-//   https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
 
 typedef struct B
 {

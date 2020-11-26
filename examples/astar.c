@@ -1,3 +1,6 @@
+// For implementation details:
+//     https://www.redblobgames.com/pathfinding/a-star/introduction.html
+
 #include <str.h>
 #include <stdio.h>
 
