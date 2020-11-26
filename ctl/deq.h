@@ -1,5 +1,5 @@
 #ifndef T
-#error "Template type T undefined for <deq>"
+#error "Template type T undefined for <deq.h>"
 #endif
 
 #include <ctl.h>
@@ -418,17 +418,20 @@ JOIN(I, each)(A* a)
         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
-static inline void
+static inline size_t
 JOIN(A, remove_if)(A* self, int (*match)(T*))
 {
+    size_t erases = 0;
     foreach(A, self, it,
         if(match(it.ref))
         {
             JOIN(A, erase)(self, JOIN(A, begin)(self) + it.index);
             it.index_next = it.index;
             it.index_last -= 1;
+            erases += 1;
         }
     );
+    return erases;
 }
 
 static inline int

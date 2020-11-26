@@ -1,5 +1,5 @@
 #ifndef T
-#error "Template type T undefined for <pqu>"
+#error "Template type T undefined for <pqu.h>"
 #endif
 
 #define front         top

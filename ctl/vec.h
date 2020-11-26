@@ -1,5 +1,5 @@
 #ifndef T
-#error "Template type T undefined for <vec>"
+#error "Template type T undefined for <vec.h>"
 #endif
 
 #include <ctl.h>
@@ -331,17 +331,20 @@ JOIN(I, each)(A* a)
         : JOIN(I, range)(JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
-static inline void
+static inline size_t
 JOIN(A, remove_if)(A* self, int (*match)(T*))
 {
+    size_t erases = 0;
     foreach(A, self, it,
         if(match(it.ref))
         {
             JOIN(A, erase)(self, it.ref);
             it.end = JOIN(A, end)(self);
             it.next = it.ref;
+            erases += 1;
         }
     );
+    return erases;
 }
 
 static inline int

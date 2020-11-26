@@ -1,5 +1,5 @@
 #ifndef T
-#error "Template type T undefined for <stk>"
+#error "Template type T undefined for <stk.h>"
 #endif
 
 #define push_back   push
@@ -23,6 +23,7 @@
 #define step        __STEP
 #define remove_if   __REMOVE_IF
 
+// CAN ALSO USE VEC OR LST.
 #define deq stk
 #include <deq.h>
 #undef deq
@@ -46,4 +47,4 @@
 #undef range
 #undef each
 #undef step
-#undef remove
+#undef remove_if

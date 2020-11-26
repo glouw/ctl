@@ -1,5 +1,5 @@
 #ifndef T
-#error "Template type T undefined for <lst>"
+#error "Template type T undefined for <lst.h>"
 #endif
 
 #include <ctl.h>
@@ -304,13 +304,18 @@ JOIN(A, reverse)(A* self)
     self->head = tail;
 }
 
-static inline void
+static inline size_t
 JOIN(A, remove_if)(A* self, int (*equal)(T*))
 {
-    foreach(A, self, it, {
+    size_t erases = 0;
+    foreach(A, self, it,
         if(equal(it.ref))
+        {
             JOIN(A, erase)(self, it.node);
-    });
+            erases += 1;
+        }
+    );
+    return erases;
 }
 
 static inline void

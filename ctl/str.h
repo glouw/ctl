@@ -2,7 +2,7 @@
 #define __STR__H__
 
 #ifdef T
-#error "Template type T defined for <str>"
+#error "Template type T defined for <str.h>"
 #endif
 
 #define vec_char str

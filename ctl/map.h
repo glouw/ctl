@@ -1,27 +1,41 @@
-// For implementation details:
-//   https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
-
-#ifndef T
-#error "Template type T undefined for <map>"
-#endif
-
-#ifndef U
-#error "Template type U undefined for <map>"
+#ifdef MAKE_SET
+#    ifndef T
+#        error "Template type T undefined for <set.h>"
+#    endif
+#else
+#    ifndef T
+#        error "Template type T undefined for <map.h>"
+#    endif
+#    ifndef U
+#        error "Template type U undefined for <map.h>"
+#    endif
 #endif
 
 #include <ctl.h>
 
-#define A JOIN(map, JOIN(T, U))
+#ifdef MAKE_SET
+#    define A JOIN(set, T)
+#else
+#    define A JOIN(map, JOIN(T, U))
+#endif
+
 #define B JOIN(A, node)
 #define I JOIN(A, it)
+
+// For implementation details:
+//   https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
 
 typedef struct B
 {
     struct B* l;
     struct B* r;
     struct B* p;
+#ifdef MAKE_SET
+    T key;
+#else
     T first;
     U second;
+#endif
     int color; // RED 0, BLK 1
 }
 B;
@@ -30,8 +44,13 @@ typedef struct
 {
     B* root;
     int (*compare)(T*, T*);
+#ifdef MAKE_SET
+    void (*free)(T*);
+    T (*copy)(T*);
+#else
     void (*free)(T*, U*);
     void (*copy)(T*, T*, U*, U*);
+#endif
     size_t size;
 }
 A;
@@ -65,12 +84,20 @@ JOIN(A, empty)(A* self)
     return self->size == 0;
 }
 
+#ifdef MAKE_SET
+static inline T
+JOIN(A, implicit_copy)(T* self)
+{
+    return *self;
+}
+#else
 static inline void
 JOIN(A, implicit_copy)(T* a, T* b, U* c, U* d)
 {
     *a = *b;
     *c = *d;
 }
+#endif
 
 static inline A
 JOIN(A, init)(void)
@@ -81,8 +108,13 @@ JOIN(A, init)(void)
 #undef P
     self.copy = JOIN(A, implicit_copy);
 #else
+#ifdef MAKE_SET
+    self.free = JOIN(T, free);
+    self.copy = JOIN(T, copy);
+#else
     self.free = JOIN(T, JOIN(U, free));
     self.copy = JOIN(T, JOIN(U, copy));
+#endif
 #endif
     return self;
 }
@@ -105,7 +137,11 @@ static inline void
 JOIN(A, free_node)(A* self, B* node)
 {
     if(self->free)
+#ifdef MAKE_SET
+        self->free(&node->key);
+#else
         self->free(&node->first, &node->second);
+#endif
     free(node);
 }
 
@@ -128,7 +164,7 @@ JOIN(B, is_red)(B* self)
 }
 
 static inline B*
-JOIN(B, lower_bound)(B* self) // XXX. CORRECT?
+JOIN(B, min)(B* self)
 {
     while(self->l)
         self = self->l;
@@ -136,7 +172,7 @@ JOIN(B, lower_bound)(B* self) // XXX. CORRECT?
 }
 
 static inline B*
-JOIN(B, upper_bound)(B* self) // XXX. CORRECT?
+JOIN(B, max)(B* self)
 {
     while(self->r)
         self = self->r;
@@ -165,11 +201,19 @@ JOIN(B, uncle)(B* self)
 }
 
 static inline B*
+#ifdef MAKE_SET
+JOIN(B, init)(T key, int color)
+#else
 JOIN(B, init)(T key, U value, int color)
+#endif
 {
     B* self = (B*) malloc(sizeof(B));
+#ifdef MAKE_SET
+    self->key = key;
+#else
     self->first = key;
     self->second = value;
+#endif
     self->color = color;
     self->l = self->r = self->p = NULL;
     return self;
@@ -181,7 +225,12 @@ JOIN(A, find)(A* self, T key)
     B* node = self->root;
     while(node)
     {
-        int diff = self->compare(&key, &node->first);
+        int diff =
+#ifdef MAKE_SET
+            self->compare(&key, &node->key);
+#else
+            self->compare(&key, &node->first);
+#endif
         if(diff == 0)
             return node;
         else
@@ -193,11 +242,13 @@ JOIN(A, find)(A* self, T key)
     return node;
 }
 
+#ifndef MAKE_SET
 static inline U*
 JOIN(A, at)(A* self, T key)
 {
     return &JOIN(A, find)(self, key)->second;
 }
+#endif
 
 static inline int
 JOIN(A, count)(A* self, T key)
@@ -209,24 +260,6 @@ static inline int
 JOIN(A, contains)(A* self, T key)
 {
     return JOIN(A, count)(self, key) == 1;
-}
-
-static inline void
-JOIN(A, equal_range)(A* self, T key, B** a, B** b) // XXX. CORRECT?
-{
-    B* node = JOIN(A, find)(self, key);
-    *a = node ? JOIN(B, lower_bound)(node) : NULL;
-    *b = node ? JOIN(B, upper_bound)(node) : NULL;
-}
-
-static inline void
-JOIN(A, set)(A* self, T key, U value)
-{
-    B* node = JOIN(A, find)(self, key);
-    if(self->free)
-        self->free(&node->first, &node->second);
-    node->first = key;
-    node->second = value;
 }
 
 static inline void
@@ -352,15 +385,29 @@ JOIN(A, insert_4)(A*, B*),
 JOIN(A, insert_5)(A*, B*);
 
 static inline void
+#ifdef MAKE_SET
+JOIN(A, insert)(A* self, T key)
+#else
 JOIN(A, insert)(A* self, T key, U value)
+#endif
 {
-    B* insert = JOIN(B, init)(key, value, 0);
+    B* insert =
+#ifdef MAKE_SET
+        JOIN(B, init)(key, 0);
+#else
+        JOIN(B, init)(key, value, 0);
+#endif
     if(self->root)
     {
         B* node = self->root;
         while(1)
         {
-            int diff = self->compare(&key, &node->first);
+            int diff =
+#ifdef MAKE_SET
+                self->compare(&key, &node->key);
+#else
+                self->compare(&key, &node->first);
+#endif
             if(diff == 0)
             {
                 JOIN(A, free_node)(self, insert);
@@ -472,9 +519,13 @@ JOIN(A, erase_node)(A* self, B* node)
 {
     if(node->l && node->r)
     {
-        B* pred = JOIN(B, upper_bound)(node->l);
+        B* pred = JOIN(B, max)(node->l);
+#ifdef MAKE_SET
+        SWAP(T, &node->key, &pred->key);
+#else
         SWAP(T, &node->first, &pred->first);
         SWAP(U, &node->second, &pred->second);
+#endif
         node = pred;
     }
     B* child = node->r ? node->r : node->l;
@@ -599,7 +650,11 @@ static inline void
 JOIN(A, clear)(A* self)
 {
     while(!JOIN(A, empty)(self))
+#ifdef MAKE_SET
+        JOIN(A, erase)(self, self->root->key);
+#else
         JOIN(A, erase)(self, self->root->first);
+#endif
 }
 
 static inline void
@@ -659,7 +714,7 @@ JOIN(I, range)(B* begin, B* end)
     if(begin)
     {
         self.step = JOIN(I, step);
-        self.node = JOIN(B, lower_bound)(begin);
+        self.node = JOIN(B, min)(begin);
         self.next = JOIN(B, next)(self.node);
         self.end = end;
     }
@@ -675,7 +730,13 @@ JOIN(I, each)(A* a)
 }
 
 static inline int
-JOIN(A, equal)(A* self, A* other, int equal(T*, T*, U*, U*))
+JOIN(A, equal)(A* self, A* other,
+#ifdef MAKE_SET
+int equal(T*, T*)
+#else
+int equal(T*, T*, U*, U*)
+#endif
+)
 {
     if(self->size != other->size)
         return 0;
@@ -683,7 +744,11 @@ JOIN(A, equal)(A* self, A* other, int equal(T*, T*, U*, U*))
     I b = JOIN(I, each)(other);
     while(!a.done && !b.done)
     {
+#ifdef MAKE_SET
+        if(!equal(&a.node->key, &b.node->key))
+#else
         if(!equal(&a.node->first, &b.node->first, &a.node->second, &b.node->second))
+#endif
             return 0;
         a.step(&a);
         b.step(&b);
@@ -698,26 +763,44 @@ JOIN(A, copy)(A* self)
     A copy =  JOIN(A, create)(self->compare);
     while(!it.done)
     {
+#ifdef MAKE_SET
+        JOIN(A, insert)(&copy, self->copy(&it.node->key));
+#else
         T first;
         U second;
         self->copy(&first, &it.node->first, &second, &it.node->second);
         JOIN(A, insert)(&copy, first, second);
+#endif
         it.step(&it);
     }
     return copy;
 }
 
 static inline size_t
-JOIN(A, erase_if)(A* self, int (*equal)(T*, U*))
+#ifdef MAKE_SET
+JOIN(A, remove_if)(A* self, int (*match)(T*))
+#else
+JOIN(A, remove_if)(A* self, int (*match)(T*, U*))
+#endif
 {
     size_t erases = 0;
+#ifdef MAKE_SET
     foreach(A, self, it,
-        if(equal(&it.node->first, &it.node->second))
+        if(match(&it.node->key))
         {
             JOIN(A, erase_node)(self, it.node);
             erases += 1;
         }
     );
+#else
+    foreach(A, self, it,
+        if(match(&it.node->first, &it.node->second))
+        {
+            JOIN(A, erase_node)(self, it.node);
+            erases += 1;
+        }
+    );
+#endif
     return erases;
 }
 
@@ -731,4 +814,8 @@ JOIN(A, erase_if)(A* self, int (*equal)(T*, U*))
 
 #ifdef USE_INTERNAL_VERIFY
 #undef USE_INTERNAL_VERIFY
+#endif
+
+#ifdef MAKE_SET
+#undef MAKE_SET
 #endif

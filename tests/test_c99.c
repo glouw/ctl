@@ -37,6 +37,10 @@ typedef const char* charp;
 #include <deq.h>
 
 #define P
+#define T int
+#include <set.h>
+
+#define P
 #define T char
 #include <vec.h>
 
@@ -181,7 +185,7 @@ main(void)
         map_int_int_insert(&a, 9, 1);
         map_int_int_insert(&a, -21, 2);
         map_int_int_insert(&a, -4, 2);
-        map_int_int_erase_if(&a, is_value_2);
+        map_int_int_remove_if(&a, is_value_2);
         map_int_int_free(&a);
     }{
         const size_t size = 16;

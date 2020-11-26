@@ -137,4 +137,7 @@ pqu:
 map:
 	$(call expand,$@,-DT=int -DU=int -DP)
 
+set:
+	$(call expand,$@,-DT=int -DP)
+
 ALWAYS:
