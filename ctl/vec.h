@@ -265,11 +265,27 @@ JOIN(A, erase)(A* self, T* position)
 }
 
 static inline void
+JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int compare(T*, T*))
+{
+    if(a >= b)
+        return;
+    SWAP(T, &self->value[a], &self->value[(a + b) / 2]);
+    int64_t z = a;
+    for(int64_t i = a + 1; i <= b; i++)
+        if(compare(&self->value[a], &self->value[i]))
+        {
+            z += 1;
+            SWAP(T, &self->value[z], &self->value[i]);
+        }
+    SWAP(T, &self->value[a], &self->value[z]);
+    JOIN(A, ranged_sort)(self, a, z - 1, compare);
+    JOIN(A, ranged_sort)(self, z + 1, b, compare);
+}
+
+static inline void
 JOIN(A, sort)(A* self, int compare(T*, T*))
 {
-    typedef int (*generic)(const void*, const void*);
-    if(self->size > 0)
-        qsort(self->value, self->size, sizeof(T), (generic) compare);
+    JOIN(A, ranged_sort)(self, 0, self->size - 1, compare);
 }
 
 static inline A

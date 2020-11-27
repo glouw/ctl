@@ -1,7 +1,5 @@
 # C TEMPLATE LIBRARY (CTL)
 
-![](images/logo.png)
-
 CTL is a lightweight, type safe, header only, template library for ISO C99.
 
 ## Motivation
@@ -52,8 +50,6 @@ To compile, include the `ctl` directory as a system directory:
 
     gcc main.c -isystem ctl
 
-Please see the examples folder for a more thorough introduction.
-
 ## Memory Ownership
 
 Types with memory ownership require definition `P` be omitted, and require
@@ -84,6 +80,8 @@ To run performance tests that generate graph output comparing CTL
 and STL performance, run:
 
     make perf
+
+Graphing requires Python3 and the Plotly family of libraries.
 
 # Acknowledgements
 
