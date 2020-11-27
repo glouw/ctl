@@ -4,7 +4,6 @@ CXX = g++ -std=c++17
 LONG = 0
 SANITIZE = 0
 SRAND = 1
-COMPARE_A = 0
 
 O0 = 0
 O1 = 0
@@ -53,10 +52,6 @@ endif
 
 ifeq (1, $(SRAND))
 CFLAGS += -DSRAND
-endif
-
-ifeq (1, $(COMPARE_A))
-CFLAGS += -DCOMPARE_A
 endif
 
 define expand
