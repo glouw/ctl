@@ -1,6 +1,6 @@
 # C TEMPLATE LIBRARY (CTL)
 
-![](logo/logo.png)
+![](images/logo.png)
 
 CTL is a lightweight, type safe, header only, template library for ISO C99.
 
