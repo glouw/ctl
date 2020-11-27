@@ -40,7 +40,7 @@ Configure a CTL container with a built-in or typedef type `T`.
         vec_int_sort(&a, compare);
         foreach(vec_int, &a, it,
             printf("%d\n", *it.ref);
-        );
+        )
         vec_int_free(&a);
     }
 
