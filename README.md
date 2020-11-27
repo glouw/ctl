@@ -52,6 +52,8 @@ To compile, include the `ctl` directory as a system directory:
 
     gcc main.c -isystem ctl
 
+Please see the examples folder for a more thorough introduction.
+
 ## Memory Ownership
 
 Types with memory ownership require definition `P` be omitted, and require
