@@ -68,11 +68,21 @@ destructor, and copy constructor, prior to the inclusion of the container:
 # Performance
 
 Performance measurements display CTL performance in solid colors, and STL
-performance measurements in dotted colors. Type T `int` is used with all
-performance measurements.
+performance measurements in dotted colors. Template type `T` of type `int`
+is used in all performance measurements.
 
 ![](images/perf_vec.log.png)
 
 # Running Tests
-All functional tests will compile and run with `make`. To run performance
-tests that generate graph output, run `make perf`.
+To run all functional tests, run:
+
+    make
+
+To run performance tests that generate graph output comparing CTL
+and STL performance, run:
+
+    make perf
+
+# Acknowledgements
+
+Thank you github.com/kully/ for the plotly code, and thank you for the general review.
