@@ -46,9 +46,9 @@ Configure a CTL container with a built-in or typedef type `T`.
 
 Definition `P` states type `T` is Plain Old Data (POD).
 
-To compile, include the `ctl` directory as a system directory:
+To compile, include the `ctl` directory:
 
-    gcc main.c -isystem ctl
+    gcc main.c -I ctl
 
 ## Memory Ownership
 
