@@ -42,7 +42,6 @@ def plot_data_from_file(file_lines):
 
             name_plot_hash[plot_name]["num_of_ints"].append(x)
             name_plot_hash[plot_name]["time"].append(y)
-            
     return name_plot_hash
 
 def plot_from_data(name_plot_hash):
@@ -66,9 +65,7 @@ def plot_from_data(name_plot_hash):
    trace_list = []
    for name in name_plot_hash.keys():
        name_base = name.split(".")[0]
-       
        alt_name_base = toggle_vec_and_vector_in_string(name_base)
-       
        # ensure the stored name doesn't have `vec_`
        stored_name = name_base.replace("vec_", "vector_")  
 
