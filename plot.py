@@ -117,7 +117,7 @@ def plot_from_data(name_plot_hash):
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
         raise Warning(
-          "You forgot the 2nd argument. Eg. `python plot.py vec.log`"
+            "You forgot the 2nd argument. Eg. `python plot.py vec.log`"
         )
 
     filename = sys.argv[1]
