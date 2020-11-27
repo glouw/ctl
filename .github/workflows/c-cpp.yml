@@ -43,30 +43,6 @@ jobs:
       run:
         make -j9 LONG=1 Ofast=1
 
-    - name: O0 (COMPARE_A=1)
-      run:
-        make -j9 LONG=1 O0=1 COMPARE_A=1
-
-    - name: O1 (COMPARE_A=1)
-      run:
-        make -j9 LONG=1 O1=1 COMPARE_A=1
-
-    - name: O2 (COMPARE_A=1)
-      run:
-        make -j9 LONG=1 O2=1 COMPARE_A=1
-
-    - name: O3 (COMPARE_A=1)
-      run:
-        make -j9 LONG=1 O3=1 COMPARE_A=1
-
-    - name: Og (COMPARE_A=1)
-      run:
-        make -j9 LONG=1 Og=1 COMPARE_A=1
-
-    - name: Ofast (COMPARE_A=1)
-      run:
-        make -j9 LONG=1 Ofast=1 COMPARE_A=1
-
     - name: O0 (SANITIZE=0)
       run:
         make -j9 LONG=1 O0=1 SANITIZE=0

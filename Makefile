@@ -71,11 +71,11 @@ tests/test_container_composing \
 tests/test_deq \
 tests/test_lst \
 tests/test_map \
+tests/test_str \
 tests/test_pqu \
 tests/test_que \
 tests/test_set \
 tests/test_stk \
-tests/test_str \
 tests/test_vec_capacity \
 tests/test_vec
 

@@ -109,9 +109,10 @@ person_free(person* self)
 static person
 person_copy(person* self)
 {
-    person copy;
-    copy.path = vec_point_copy(&self->path);
-    copy.name = str_copy(&self->name);
+    person copy = {
+        vec_point_copy(&self->path),
+        str_copy(&self->name),
+    };
     return copy;
 }
 
