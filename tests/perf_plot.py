@@ -41,7 +41,7 @@ def plot_data_from_file(file_lines):
             y = int(line[half_line_len:])
 
             name_plot_hash[plot_name]["num_of_ints"].append(x)
-            name_plot_hash[plot_name]["time"].append(y)
+            name_plot_hash[plot_name]["time"].append(y / 1e6)
     return name_plot_hash
 
 def plot_from_data(name_plot_hash):
@@ -53,12 +53,12 @@ def plot_from_data(name_plot_hash):
    plot_bgcolor = "#f9f9f9"
    paper_bgcolor = "#f1f1f1"
    color_list = [
-       "#120078",
-       "#120078",
-       "#ec5858",
-       "#ec5858",
-       "#5c6e91",
-       "#5c6e91",
+       "#0000FF",
+       "#0000FF",
+       "#00FF00",
+       "#00FF00",
+       "#FF0000",
+       "#FF0000",
    ]
 
    used_basenames = []
@@ -84,7 +84,7 @@ def plot_from_data(name_plot_hash):
            marker=dict(color=trace_color),
            line=dict(
                width=2,
-               dash=("dashdot" if name.endswith(".cc") else "solid")
+               dash=("dot" if name.endswith(".cc") else "solid")
            )
        )
        trace_list.append(trace)
@@ -97,24 +97,24 @@ def plot_from_data(name_plot_hash):
        plot_bgcolor=plot_bgcolor,
        paper_bgcolor=paper_bgcolor,
        xaxis=dict(
-           title="Time",
+           title="Size",
            nticks=40,
            showgrid=True,
            gridcolor=grid_color
        ),
        yaxis=dict(
-           title="Number of Integers",
+           title="Seconds",
            showgrid=True,
            gridcolor=grid_color
        ),
-       title="C++ vs C Performance",
+       title="STL vector<int> vs. CTL vec_int"
    )
    return fig
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
         raise Warning(
-            "You forgot the 2nd argument. Eg. `python plot.py vec.log`"
+            "You forgot the 2nd argument. Eg. `python perf_plot.py vec.log`"
         )
 
     filename = sys.argv[1]
@@ -122,4 +122,4 @@ if __name__ == "__main__":
     file_lines = lines_from_file(filename)
     name_plot_hash = plot_data_from_file(file_lines)
     fig = plot_from_data(name_plot_hash)
-    plotly.offline.plot(fig)
+    fig.write_image("%s.png" % filename, width=1000, height=500)

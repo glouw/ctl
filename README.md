@@ -64,3 +64,15 @@ destructor, and copy constructor, prior to the inclusion of the container:
     type type_copy(type*);
     #define T type
     #include <vec.h>
+
+# Performance
+
+Performance measurements display CTL performance in solid colors, and STL
+performance measurements in dotted colors. Type T `int` is used with all
+performance measurements.
+
+![](images/perf_vec.log.png)
+
+# Running Tests
+All functional tests will compile and run with `make`. To run performance
+tests that generate graph output, run `make perf`.
