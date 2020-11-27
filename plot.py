@@ -1,4 +1,5 @@
 import string
+import sys
 
 import plotly
 import plotly.express as px
@@ -113,10 +114,15 @@ def plot_from_data(name_plot_hash):
    )
    return fig
 
+if __name__ == "__main__":
+    if len(sys.argv) <= 1:
+        raise Warning(
+          "You forgot the 2nd argument. Eg. `python plot.py vec.log`"
+        )
 
-file_lines = lines_from_file("vec.log")
-name_plot_hash = plot_data_from_file(file_lines)
-fig = plot_from_data(name_plot_hash)
-
-# plot the chart offline
-plotly.offline.plot(fig)
+    filename = sys.argv[1]
+    print(f"plotting {filename}...")
+    file_lines = lines_from_file(filename)
+    name_plot_hash = plot_data_from_file(file_lines)
+    fig = plot_from_data(name_plot_hash)
+    plotly.offline.plot(fig)
