@@ -81,8 +81,8 @@ and STL performance, run:
 
     make perf
 
-Graphing requires Python3 and the Plotly family of libraries.
+Graphing requires Python3 and the Plotly family of libraries via pip3.
 
 # Acknowledgements
 
-Thank you `github.com/kully/` for the plotly code, and thank you for the general review.
+Thank you `github.com/kully/` for the Plotly code, and thank you for the general review.

@@ -269,7 +269,8 @@ JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int compare(T*, T*))
 {
     if(a >= b)
         return;
-    SWAP(T, &self->value[a], &self->value[(a + b) / 2]);
+    int64_t mid = (a + b) / 2;
+    SWAP(T, &self->value[a], &self->value[mid]);
     int64_t z = a;
     for(int64_t i = a + 1; i <= b; i++)
         if(compare(&self->value[a], &self->value[i]))
