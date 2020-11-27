@@ -95,46 +95,51 @@ tests/perf_lst_push_front \
 tests/perf_list_sort \
 tests/perf_lst_sort
 
-all: $(BINS)
+test: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
 	@$(CC) --version
 	@$(CXX) --version
 
-ALWAYS:
+perf: perf_vec perf_lst
+
+clean:
+	@rm -f $(BINS)
+	@rm -f $(BINS_PERF)
+	@rm -f perf_*.log
 
 # PERF C
-tests/perf_vec_pop_back:  		ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_vec_push_back: 		ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_vec_sort: 	  		ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_push_back:		ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_pop_back: 		ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_pop_front:		ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_push_front:		ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_sort:      		ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_vec_pop_back:        ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_vec_push_back:       ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_vec_sort:            ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_lst_push_back:       ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_lst_pop_back:        ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_lst_pop_front:       ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_lst_push_front:      ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_lst_sort:            ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
 
 # PERF C++
 tests/perf_vector_pop_back:     ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
 tests/perf_vector_push_back:    ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_vector_sort: 	    ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_push_back:		ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_pop_back: 		ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_pop_front:		ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_push_front:		ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_sort:      		ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
+tests/perf_vector_sort:         ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
+tests/perf_list_push_back:      ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
+tests/perf_list_pop_back:       ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
+tests/perf_list_pop_front:      ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
+tests/perf_list_push_front:     ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
+tests/perf_list_sort:           ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
 
 # FUNCTIONAL (C / C++)
-tests/test_c99: 				ALWAYS; $(CC) $(CFLAGS) $@.c -o $@
+tests/test_c99:                 ALWAYS; $(CC) $(CFLAGS) $@.c -o $@
 tests/test_container_composing: ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_deq: 				ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_lst: 				ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_map: 				ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_pqu: 				ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_que: 				ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_set: 				ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_stk: 				ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_str: 				ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_vec_capacity: 		ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_vec: 		 		ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_deq:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_lst:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_map:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_pqu:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_que:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_set:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_stk:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_str:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_vec_capacity:        ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/test_vec:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 
 # PERFORMANCE.
 
@@ -178,37 +183,25 @@ tests/perf_lst_sort
 	python3 tests/perf_plot.py $@.log "std::list<int> vs. CTL lst_int (-O3 -march=native)"
 	mv $@.log.png images/
 
-perf: perf_vec perf_lst
-
-clean:
-	@rm -f $(BINS)
-	@rm -f $(BINS_PERF)
-	@rm -f perf_*.log
-
 # EXPANSIONS.
+
 str:
 	$(call expand,$@)
-
 lst:
 	$(call expand,$@,-DT=int -DP)
-
 vec:
 	$(call expand,$@,-DT=int -DP)
-
 deq:
 	$(call expand,$@,-DT=int -DP)
-
 stk:
 	$(call expand,$@,-DT=int -DP)
-
 que:
 	$(call expand,$@,-DT=int -DP)
-
 pqu:
 	$(call expand,$@,-DT=int -DP)
-
 map:
 	$(call expand,$@,-DT=int -DU=int -DP)
-
 set:
 	$(call expand,$@,-DT=int -DP)
+
+ALWAYS:
