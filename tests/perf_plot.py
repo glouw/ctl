@@ -44,21 +44,25 @@ def plot_data_from_file(file_lines):
             name_plot_hash[plot_name]["time"].append(y / 1e6)
     return name_plot_hash
 
-def plot_from_data(name_plot_hash):
+def plot_from_data(name_plot_hash, title):
 
    # variables for the plot
    color_for_c = "#333"
    color_for_cpp = "#888"
-   grid_color = "#c9c9c9"
-   plot_bgcolor = "#f9f9f9"
-   paper_bgcolor = "#f1f1f1"
+   grid_color = "#C9C9C9"
+   plot_bgcolor = "#F9F9F9"
+   paper_bgcolor = "#F6F8FA"
    color_list = [
-       "#0000FF",
-       "#0000FF",
-       "#00FF00",
-       "#00FF00",
-       "#FF0000",
-       "#FF0000",
+       "#0099E5",
+       "#0099E5",
+       "#A98AEE",
+       "#A98AEE",
+       "#FF70BF",
+       "#FF70BF",
+       "#FF766E",
+       "#FF766E",
+       "#FFA600",
+       "#FFA600",
    ]
 
    used_basenames = []
@@ -107,19 +111,15 @@ def plot_from_data(name_plot_hash):
            showgrid=True,
            gridcolor=grid_color
        ),
-       title="STL vector<int> vs. CTL vec_int"
+       title=title
    )
    return fig
 
 if __name__ == "__main__":
-    if len(sys.argv) <= 1:
-        raise Warning(
-            "You forgot the 2nd argument. Eg. `python perf_plot.py vec.log`"
-        )
-
     filename = sys.argv[1]
+    title = sys.argv[2]
     print(f"plotting {filename}...")
     file_lines = lines_from_file(filename)
     name_plot_hash = plot_data_from_file(file_lines)
-    fig = plot_from_data(name_plot_hash)
+    fig = plot_from_data(name_plot_hash, title)
     fig.write_image("%s.png" % filename, width=1000, height=500)

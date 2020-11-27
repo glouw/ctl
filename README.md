@@ -70,6 +70,7 @@ performance measurements in dotted colors. Template type `T` of type `int`
 is used in all performance measurements.
 
 ![](images/perf_vec.log.png)
+![](images/perf_lst.log.png)
 
 # Running Tests
 To run all functional tests, run:
