@@ -151,7 +151,7 @@ tests/perf_vec_sort
 	./$(word 4,$^) >> $@.log
 	./$(word 5,$^) >> $@.log
 	./$(word 6,$^) >> $@.log
-	python3 tests/perf_plot.py $@.log "std::vector<int> vs. CTL vec_int"
+	python3 tests/perf_plot.py $@.log "std::vector<int> vs. CTL vec_int (-O3 -march=native)"
 	mv $@.log.png images/
 
 perf_lst: \
@@ -175,7 +175,7 @@ tests/perf_lst_sort
 	./$(word 8,$^) >> $@.log
 	./$(word 9,$^) >> $@.log
 	./$(word 10,$^) >> $@.log
-	python3 tests/perf_plot.py $@.log "std::list<int> vs. CTL lst_int"
+	python3 tests/perf_plot.py $@.log "std::list<int> vs. CTL lst_int (-O3 -march=native)"
 	mv $@.log.png images/
 
 perf: perf_vec perf_lst
