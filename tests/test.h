@@ -11,11 +11,11 @@
 #include <assert.h>
 
 #ifdef LONG
-#    define TEST_MAX_SIZE  (4096)
-#    define TEST_MAX_LOOPS (8096)
+#define TEST_MAX_SIZE  (4096)
+#define TEST_MAX_LOOPS (8096)
 #else
-#    define TEST_MAX_SIZE  (512)
-#    define TEST_MAX_LOOPS (512)
+#define TEST_MAX_SIZE  (512)
+#define TEST_MAX_LOOPS (512)
 #endif
 
 #define TEST_SIGN(a) ((a < 0) ? (-1) : (a > 0) ? (1) : (0))
@@ -24,6 +24,9 @@
 
 #define TEST_RAND(max) (((max) == 0) ? 0 : (rand() % (max)))
 
+#define TEST_PERF_RUNS (100)
+
+#define TEST_PERF_CHUNKS (63356)
 
 static inline int
 TEST_TIME(void)

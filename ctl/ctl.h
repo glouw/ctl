@@ -22,7 +22,7 @@
 #define foreach(container, variable, iterator, ...)                               \
     {                                                                             \
         JOIN(container, it) iterator = JOIN(JOIN(container, it), each)(variable); \
-        iterate(iterator, __VA_ARGS__);                                           \
+        iterate(iterator, __VA_ARGS__)                                            \
     }                                                                             \
 
 #define len(a) (sizeof(a) / sizeof(*(a)))

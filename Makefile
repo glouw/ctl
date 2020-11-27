@@ -59,61 +59,77 @@ ifeq (1, $(COMPARE_A))
 CFLAGS += -DCOMPARE_A
 endif
 
+CXXFLAGS = $(CFLAGS)
+
 define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit
 endef
 
-BINS = tc99_cc tc99_cxx tdeq tstk tque tpqu tlst tstr tvec tmap tset tvecap tccomp astar
+BINS = \
+tests/test_c99 \
+tests/test_container_composing \
+tests/test_deq \
+tests/test_lst \
+tests/test_map \
+tests/test_pqu \
+tests/test_que \
+tests/test_set \
+tests/test_stk \
+tests/test_str \
+tests/test_vec_capacity \
+tests/test_vec
 
-all: $(BINS) examples
+all: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
 	@$(CC) --version
 	@$(CXX) --version
 
-tc99_cc: ALWAYS
-	$(CC) $(CFLAGS) tests/test_c99.c -o $@
+TEST_DEPS = tests/test.h
+TEST_DEPS_CXX = $(TEST_DEPS) tests/test.h
 
-tc99_cxx: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_c99.c -o $@
+# CC
+tests/test_c99: $(TEST_DEPS)
+tests/perf_vector_pop_back: $(TEST_DEPS)
+tests/perf_vector_push_back: $(TEST_DEPS)
+tests/perf_vector_sort: $(TEST_DEPS)
 
-tdeq: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_deq.cc -o $@
+# CXX
+tests/test_container_composing: $(TEST_DEPS_CXX)
+tests/test_deq: $(TEST_DEPS_CXX)
+tests/test_lst: $(TEST_DEPS_CXX)
+tests/test_map: $(TEST_DEPS_CXX)
+tests/test_pqu: $(TEST_DEPS_CXX)
+tests/test_que: $(TEST_DEPS_CXX)
+tests/test_set: $(TEST_DEPS_CXX)
+tests/test_stk: $(TEST_DEPS_CXX)
+tests/test_str: $(TEST_DEPS_CXX)
+tests/test_vec_capacity: $(TEST_DEPS_CXX)
+tests/test_vec: $(TEST_DEPS_CXX)
+tests/perf_vec_pop_back: $(TEST_DEPS_CXX)
+tests/perf_vec_push_back: $(TEST_DEPS_CXX)
+tests/perf_vec_sort: $(TEST_DEPS_CXX)
 
-tstk: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_stk.cc -o $@
+# PERFORMANCE.
 
-tque: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_que.cc -o $@
+perf_vec: \
+tests/perf_vector_push_back \
+tests/perf_vec_push_back \
+tests/perf_vector_pop_back \
+tests/perf_vec_pop_back \
+tests/perf_vector_sort \
+tests/perf_vec_sort
+	./$(word 1,$^) >  $@.log
+	./$(word 2,$^) >> $@.log
+	./$(word 3,$^) >> $@.log
+	./$(word 4,$^) >> $@.log
+	./$(word 5,$^) >> $@.log
+	./$(word 6,$^) >> $@.log
 
-tpqu: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_pqu.cc -o $@
-
-tlst: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_lst.cc -o $@
-
-tstr: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_str.cc -o $@
-
-tvec: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_vec.cc -o $@
-
-tmap: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_map.cc -o $@
-
-tset: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_set.cc -o $@
-
-tvecap: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_vec_capacity.cc -o $@
-
-tccomp: ALWAYS
-	$(CXX) $(CFLAGS) tests/test_container_composing.cc -o $@
-
-astar: ALWAYS
-	$(CC) $(CFLAGS) examples/astar.c -o $@
+perf: perf_vec
 
 clean:
 	@rm -f $(BINS)
+	@rm -f *.log
 
 # EXPANSIONS.
 str:
@@ -142,5 +158,3 @@ map:
 
 set:
 	$(call expand,$@,-DT=int -DP)
-
-ALWAYS:
