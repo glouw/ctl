@@ -1,3 +1,6 @@
+// This example uses CTL to build an astar pathfinder.
+// The solver starts from position '@' and ends at position '!'.
+//
 // For implementation details:
 //     https://www.redblobgames.com/pathfinding/a-star/introduction.html
 
