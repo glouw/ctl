@@ -79,6 +79,14 @@ tests/test_stk \
 tests/test_vec_capacity \
 tests/test_vec
 
+BINS_PERF = \
+tests/perf_vec_pop_back \
+tests/perf_vec_push_back \
+tests/perf_vec_sort \
+tests/perf_vector_pop_back \
+tests/perf_vector_push_back \
+tests/perf_vector_sort \
+
 all: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
 	@$(CC) --version
@@ -129,6 +137,7 @@ perf: perf_vec
 
 clean:
 	@rm -f $(BINS)
+	@rm -f $(BINS_PERF)
 	@rm -f *.log
 
 # EXPANSIONS.
