@@ -85,4 +85,4 @@ and STL performance, run:
 
 # Acknowledgements
 
-Thank you github.com/kully/ for the plotly code, and thank you for the general review.
+Thank you `github.com/kully/` for the plotly code, and thank you for the general review.
