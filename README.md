@@ -63,7 +63,7 @@ destructor, and copy constructor, prior to the inclusion of the container:
     #define T type
     #include <vec.h>
 
-# Performance
+## Performance
 
 Performance measurements display CTL performance in solid colors, and STL
 performance measurements in dotted colors. Template type `T` of type `int`
@@ -72,7 +72,7 @@ is used in all performance measurements.
 ![](images/perf_vec.log.png)
 ![](images/perf_lst.log.png)
 
-# Running Tests
+## Running Tests
 To run all functional tests, run:
 
     make
@@ -84,6 +84,6 @@ and STL performance, run:
 
 Graphing requires Python3 and the Plotly family of libraries via pip3.
 
-# Acknowledgements
+## Acknowledgements
 
 Thank you `github.com/kully/` for the Plotly code, and thank you for the general review.
