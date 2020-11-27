@@ -13,7 +13,7 @@ int main(void)
         int elems = TEST_PERF_CHUNKS * run;
         int t0 = TEST_TIME();
         for(int elem = 0; elem < elems; elem++)
-            lst_int_push_back(&c, rand());
+            lst_int_push_front(&c, rand());
         int t1 = TEST_TIME();
         printf("%10d %10d\n", elems, t1 - t0);
         lst_int_free(&c);
