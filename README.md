@@ -79,15 +79,15 @@ Maps require `T` and `U` pairs, and do not require an `init_default` declaration
 
 ## Performance
 
-Performance measurements display CTL performance in solid colors, and STL
-performance measurements in dotted colors, and use template type `T` type `int`
-for all performance measurements.
+CTL performance is presented in solid colors, and STL in dotted colors,
+for template type `T` and `U` as type `int` for all measurements.
 
 ![](images/perf_vec.log.png)
 ![](images/perf_lst.log.png)
 ![](images/compile_bar.png)
 
 ## Running Tests
+
 To run all functional tests, run:
 
     make
