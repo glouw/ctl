@@ -95,7 +95,7 @@ test: $(BINS)
 	@$(CC) --version
 	@$(CXX) --version
 
-perf: perf_vec perf_lst
+perf: perf_vec perf_lst perf_compile
 
 clean:
 	@rm -f $(BINS)
@@ -125,25 +125,25 @@ set:
 
 # PERF C.
 
-tests/perf_vec_pop_back:        ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_vec_push_back:       ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_vec_sort:            ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_push_back:       ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_pop_back:        ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_pop_front:       ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_push_front:      ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
-tests/perf_lst_sort:            ALWAYS; $(CC) $(CFLAGS) -O3 -march=native $@.c -o $@
+tests/perf_vec_pop_back:        ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
+tests/perf_vec_push_back:       ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
+tests/perf_vec_sort:            ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
+tests/perf_lst_push_back:       ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
+tests/perf_lst_pop_back:        ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
+tests/perf_lst_pop_front:       ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
+tests/perf_lst_push_front:      ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
+tests/perf_lst_sort:            ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
 
 # PERF C++.
 
-tests/perf_vector_pop_back:     ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_vector_push_back:    ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_vector_sort:         ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_push_back:      ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_pop_back:       ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_pop_front:      ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_push_front:     ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
-tests/perf_list_sort:           ALWAYS; $(CXX) $(CFLAGS) -O3 -march=native $@.cc -o $@
+tests/perf_vector_pop_back:     ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
+tests/perf_vector_push_back:    ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
+tests/perf_vector_sort:         ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
+tests/perf_list_push_back:      ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
+tests/perf_list_pop_back:       ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
+tests/perf_list_pop_front:      ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
+tests/perf_list_push_front:     ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
+tests/perf_list_sort:           ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
 
 # FUNCTIONAL (C/C++).
 
@@ -201,6 +201,16 @@ tests/perf_lst_sort
 	./$(word 10,$^) >> $@.log
 	python3 tests/perf_plot.py $@.log "std::list<int> vs. CTL lst_int (-O3 -march=native)"
 	mv $@.log.png images/
+
+perf_compile:
+	KEY='stamp' ;\
+	TIMEFORMAT="$$KEY %R" ;\
+	OUT=compile_bar ;\
+	X=`(time $(CC)  $(CFLAGS) -O3 tests/perf_compile_c99.c) 2>&1 | grep $$KEY | cut -d ' ' -f 2` ;\
+	Y=`(time $(CXX) $(CFLAGS) -O3 tests/perf_compile_cc.cc) 2>&1 | grep $$KEY | cut -d ' ' -f 2` ;\
+	python3 tests/perf_plot_bar.py $$OUT $$X $$Y ;\
+	mv $$OUT.png images/ ;\
+	rm a.out
 
 # MISC.
 

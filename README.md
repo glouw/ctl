@@ -1,6 +1,6 @@
 # C TEMPLATE LIBRARY (CTL)
 
-CTL is a lightweight, type safe, header only, template library for ISO C99.
+CTL is a fast compiling, type safe, header only, template library for ISO C99.
 
 ## Motivation
 
@@ -63,14 +63,29 @@ destructor, and copy constructor, prior to the inclusion of the container:
     #define T type
     #include <vec.h>
 
+Forgetting a declaration will print a human-readable error message:
+
+    tests/test_c99.c:11:11: error: ‘type_free’ undeclared (first use in this function)
+       11 | #define T type
+
+Maps require `T` and `U` pairs, and do not require an `init_default` declaration:
+
+    typedef struct { ... } type;
+    void type_free(int*, type*);
+    void type_copy(int*, int*, type*, type*);
+    #define T int
+    #define U type
+    #include <map.h>
+
 ## Performance
 
 Performance measurements display CTL performance in solid colors, and STL
-performance measurements in dotted colors. Template type `T` of type `int`
-is used in all performance measurements.
+performance measurements in dotted colors, and use template type `T` type `int`
+for all performance measurements.
 
 ![](images/perf_vec.log.png)
 ![](images/perf_lst.log.png)
+![](images/compile_bar.png)
 
 ## Running Tests
 To run all functional tests, run:
