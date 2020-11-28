@@ -207,8 +207,10 @@ perf_compile:
 	TIMEFORMAT="$$KEY %R" ;\
 	OUT=compile_bar ;\
 	X=`(time $(CC)  $(CFLAGS) -O3 tests/perf_compile_c99.c) 2>&1 | grep $$KEY | cut -d ' ' -f 2` ;\
+	A=`stat --printf="%s" a.out` ;\
 	Y=`(time $(CXX) $(CFLAGS) -O3 tests/perf_compile_cc.cc) 2>&1 | grep $$KEY | cut -d ' ' -f 2` ;\
-	python3 tests/perf_plot_bar.py $$OUT $$X $$Y ;\
+	B=`stat --printf="%s" a.out` ;\
+	python3 tests/perf_plot_bar.py $$OUT $$X $$Y $$A $$B ;\
 	mv $$OUT.png images/ ;\
 	rm a.out
 
