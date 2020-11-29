@@ -7,7 +7,9 @@ if __name__ == '__main__':
     b = sys.argv[3]
     c = sys.argv[4]
     d = sys.argv[5]
-    compiler=['tests/perf_compile_c99.c', 'tests/perf_compile_cc.cc']
+    e = sys.argv[6]
+    f = sys.argv[7]
+    compiler=[e, f]
     y = [float(a), float(b)]
     sizes = [
         str(int(c) / 1000) + ' KB',

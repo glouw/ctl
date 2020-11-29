@@ -17,43 +17,41 @@ CFLAGS += -Wall -Wextra -Wpedantic -Wfatal-errors -Wshadow
 CFLAGS += -march=native
 CFLAGS += -g
 
-# GITHUB CI FLAGS.
-
 ifeq (1, $(LONG))
-	CFLAGS += -Werror
-	CFLAGS += -DLONG
+CFLAGS += -Werror
+CFLAGS += -DLONG
 endif
 
 ifeq (1, $(SANITIZE))
-	CFLAGS += -fsanitize=address -fsanitize=undefined
+CFLAGS += -fsanitize=address -fsanitize=undefined
 endif
 
 ifeq (1, $(Og))
-	CFLAGS += -Og
+CFLAGS += -Og
 endif
 
 ifeq (1, $(O0))
-	CFLAGS += -O0
+CFLAGS += -O0
 endif
 
 ifeq (1, $(O1))
-	CFLAGS += -O1
+CFLAGS += -O1
 endif
 
 ifeq (1, $(O2))
-	CFLAGS += -O2
+CFLAGS += -O2
 endif
 
 ifeq (1, $(O3))
-	CFLAGS += -O3
+CFLAGS += -O3
 endif
 
 ifeq (1, $(Ofast))
-	CFLAGS += -Ofast
+CFLAGS += -Ofast
 endif
 
 ifeq (1, $(SRAND))
-	CFLAGS += -DSRAND
+CFLAGS += -DSRAND
 endif
 
 BINS = \
@@ -70,39 +68,13 @@ tests/test_stk \
 tests/test_vec_capacity \
 tests/test_vec
 
-BINS_PERF = \
-tests/perf_vec_pop_back \
-tests/perf_vec_push_back \
-tests/perf_vec_sort \
-tests/perf_vector_pop_back \
-tests/perf_vector_push_back \
-tests/perf_vector_sort \
-tests/perf_list_push_back \
-tests/perf_lst_push_back \
-tests/perf_list_pop_back \
-tests/perf_lst_pop_back \
-tests/perf_list_pop_front \
-tests/perf_lst_pop_front \
-tests/perf_list_push_front \
-tests/perf_lst_push_front \
-tests/perf_list_sort \
-tests/perf_lst_sort
+clean: all
+	@rm -f $(BINS)
 
-# COMMANDS.
-
-test: $(BINS)
+all: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
 	@$(CC) --version
 	@$(CXX) --version
-
-perf: perf_vec perf_lst perf_compile
-
-clean:
-	@rm -f $(BINS)
-	@rm -f $(BINS_PERF)
-	@rm -f perf_*.log
-
-# DEBUG EXPANSIONS WITH POD T=INT U=FLOAT.
 
 str:
 	$(call expand,$@)
@@ -123,30 +95,6 @@ map:
 set:
 	$(call expand,$@,-DT=int -DP)
 
-# PERF C.
-
-tests/perf_vec_pop_back:        ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
-tests/perf_vec_push_back:       ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
-tests/perf_vec_sort:            ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
-tests/perf_lst_push_back:       ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
-tests/perf_lst_pop_back:        ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
-tests/perf_lst_pop_front:       ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
-tests/perf_lst_push_front:      ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
-tests/perf_lst_sort:            ALWAYS; $(CC) $(CFLAGS) -O3 $@.c -o $@
-
-# PERF C++.
-
-tests/perf_vector_pop_back:     ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
-tests/perf_vector_push_back:    ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
-tests/perf_vector_sort:         ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
-tests/perf_list_push_back:      ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
-tests/perf_list_pop_back:       ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
-tests/perf_list_pop_front:      ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
-tests/perf_list_push_front:     ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
-tests/perf_list_sort:           ALWAYS; $(CXX) $(CFLAGS) -O3 $@.cc -o $@
-
-# FUNCTIONAL (C/C++).
-
 tests/test_c99:                 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 tests/test_container_composing: ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/test_deq:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
@@ -159,62 +107,6 @@ tests/test_stk:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/test_str:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/test_vec_capacity:        ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/test_vec:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-
-# PERFORMANCE.
-
-perf_vec: \
-tests/perf_vector_push_back \
-tests/perf_vec_push_back \
-tests/perf_vector_pop_back \
-tests/perf_vec_pop_back \
-tests/perf_vector_sort \
-tests/perf_vec_sort
-	./$(word 1,$^) >  $@.log
-	./$(word 2,$^) >> $@.log
-	./$(word 3,$^) >> $@.log
-	./$(word 4,$^) >> $@.log
-	./$(word 5,$^) >> $@.log
-	./$(word 6,$^) >> $@.log
-	python3 tests/perf_plot.py $@.log "std::vector<int> vs. CTL vec_int (-O3 -march=native)"
-	mv $@.log.png images/
-
-perf_lst: \
-tests/perf_list_push_back \
-tests/perf_lst_push_back \
-tests/perf_list_pop_back \
-tests/perf_lst_pop_back \
-tests/perf_list_pop_front \
-tests/perf_lst_pop_front \
-tests/perf_list_push_front \
-tests/perf_lst_push_front \
-tests/perf_list_sort \
-tests/perf_lst_sort
-	./$(word 1,$^) >  $@.log
-	./$(word 2,$^) >> $@.log
-	./$(word 3,$^) >> $@.log
-	./$(word 4,$^) >> $@.log
-	./$(word 5,$^) >> $@.log
-	./$(word 6,$^) >> $@.log
-	./$(word 7,$^) >> $@.log
-	./$(word 8,$^) >> $@.log
-	./$(word 9,$^) >> $@.log
-	./$(word 10,$^) >> $@.log
-	python3 tests/perf_plot.py $@.log "std::list<int> vs. CTL lst_int (-O3 -march=native)"
-	mv $@.log.png images/
-
-perf_compile:
-	KEY='stamp' ;\
-	TIMEFORMAT="$$KEY %R" ;\
-	OUT=compile_bar ;\
-	X=`(time $(CC)  $(CFLAGS) -O3 tests/perf_compile_c99.c) 2>&1 | grep $$KEY | cut -d ' ' -f 2` ;\
-	A=`stat --printf="%s" a.out` ;\
-	Y=`(time $(CXX) $(CFLAGS) -O3 tests/perf_compile_cc.cc) 2>&1 | grep $$KEY | cut -d ' ' -f 2` ;\
-	B=`stat --printf="%s" a.out` ;\
-	python3 tests/perf_plot_bar.py $$OUT $$X $$Y $$A $$B ;\
-	mv $$OUT.png images/ ;\
-	rm a.out
-
-# MISC.
 
 define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit

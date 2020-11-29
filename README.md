@@ -82,9 +82,9 @@ Maps require `T` and `U` pairs, and do not require an `init_default` declaration
 CTL performance is presented in solid colors, and STL in dotted colors,
 for template type `T` and `U` as type `int` for all measurements.
 
-![](images/perf_vec.log.png)
-![](images/perf_lst.log.png)
-![](images/compile_bar.png)
+![](images/vec.log.png)
+![](images/lst.log.png)
+![](images/compile.log.png)
 
 ## Running Tests
 
