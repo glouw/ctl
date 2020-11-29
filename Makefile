@@ -55,18 +55,18 @@ CFLAGS += -DSRAND
 endif
 
 BINS = \
-tests/test_c99 \
-tests/test_container_composing \
-tests/test_deq \
-tests/test_lst \
-tests/test_map \
-tests/test_str \
-tests/test_pqu \
-tests/test_que \
-tests/test_set \
-tests/test_stk \
-tests/test_vec_capacity \
-tests/test_vec
+tests/func/test_c99 \
+tests/func/test_container_composing \
+tests/func/test_deq \
+tests/func/test_lst \
+tests/func/test_map \
+tests/func/test_str \
+tests/func/test_pqu \
+tests/func/test_que \
+tests/func/test_set \
+tests/func/test_stk \
+tests/func/test_vec_capacity \
+tests/func/test_vec
 
 all: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
@@ -96,18 +96,18 @@ map:
 set:
 	$(call expand,$@,-DT=int -DP)
 
-tests/test_c99:                 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
-tests/test_container_composing: ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_deq:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_lst:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_map:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_pqu:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_que:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_set:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_stk:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_str:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_vec_capacity:        ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/test_vec:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_c99:                 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
+tests/func/test_container_composing: ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_deq:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_lst:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_map:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_pqu:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_que:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_set:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_stk:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_str:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_vec_capacity:        ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_vec:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 
 define expand
 	@$(CC) $(CFLAGS) ctl/$(1).h -E $(2) | clang-format -style=webkit

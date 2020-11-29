@@ -8,7 +8,7 @@
 #define B JOIN(A, bucket)
 #define I JOIN(A, it)
 
-#define DEQ_BUCKET_SIZE (64)
+#define DEQ_BUCKET_SIZE (128)
 
 typedef struct B
 {
@@ -351,8 +351,6 @@ JOIN(A, copy)(A* self)
     }
     return other;
 }
-
-// KNR2 (PAGE 87)
 
 static inline void
 JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int compare(T*, T*))

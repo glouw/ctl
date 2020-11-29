@@ -17,7 +17,7 @@ function perf_graph
         fi
         ./$OUT >> $LOG
     done
-    python3 tests/perf_plot.py $LOG "$TITLE"
+    python3 tests/perf/perf_plot.py $LOG "$TITLE"
     mv $LOG.png images/
     rm $LOG
     rm $OUT
@@ -38,12 +38,68 @@ function perf_compile_two_bar
     Y=`(time g++ -o $BB $CFLAGS $B)        2>&1 | grep $KEY | cut -d ' ' -f 2`
     I=`stat --printf="%s" $AA`
     J=`stat --printf="%s" $BB`
-    python3 tests/perf_plot_bar.py $LOG "$TITLE" $X $Y $I $J $A $B
+    python3 tests/perf/perf_plot_bar.py $LOG "$TITLE" $X $Y $I $J $A $B
     mv $LOG.png images/
     rm $AA
     rm $BB
 }
 
-perf_graph 'vec.log' "std::vector<int> vs. CTL vec_int ($CFLAGS)"     'tests/perf_vector_push_back.cc tests/perf_vec_push_back.c tests/perf_vector_pop_back.cc tests/perf_vec_pop_back.c tests/perf_vector_sort.cc tests/perf_vec_sort.c'
-perf_graph 'lst.log' "std::list<int> vs. CTL lst_int ($CFLAGS)"       'tests/perf_list_push_back.cc tests/perf_lst_push_back.c tests/perf_list_pop_back.cc tests/perf_lst_pop_back.c tests/perf_list_pop_front.cc tests/perf_lst_pop_front.c tests/perf_list_push_front.cc tests/perf_lst_push_front.c tests/perf_list_sort.cc tests/perf_lst_sort.c'
-perf_compile_two_bar 'compile.log' "CTL vs STL Compilation ($CFLAGS)" 'tests/perf_compile_c99.c' 'tests/perf_compile_cc.cc'
+perf_graph \
+    'map.log' \
+    "std::map<int, int> vs. CTL map_int_int ($CFLAGS)" \
+    "tests/perf/map/perf_map_insert.cc \
+     tests/perf/map/perf_map_insert.c \
+     tests/perf/map/perf_map_erase.cc \
+     tests/perf/map/perf_map_erase.c"
+
+perf_graph \
+    'pqu.log' \
+    "std::priority_queue<int> vs. CTL pqu_int ($CFLAGS)" \
+    "tests/perf/pqu/perf_priority_queue_push.cc \
+     tests/perf/pqu/perf_pqu_push.c \
+     tests/perf/pqu/perf_priority_queue_pop.cc \
+     tests/perf/pqu/perf_pqu_pop.c"
+
+perf_graph \
+    'vec.log' \
+    "std::vector<int> vs. CTL vec_int ($CFLAGS)" \
+    "tests/perf/vec/perf_vector_push_back.cc \
+     tests/perf/vec/perf_vec_push_back.c \
+     tests/perf/vec/perf_vector_pop_back.cc \
+     tests/perf/vec/perf_vec_pop_back.c \
+     tests/perf/vec/perf_vector_sort.cc \
+     tests/perf/vec/perf_vec_sort.c"
+
+perf_graph \
+    'lst.log' \
+    "std::list<int> vs. CTL lst_int ($CFLAGS)" \
+    "tests/perf/lst/perf_list_push_back.cc
+     tests/perf/lst/perf_lst_push_back.c \
+     tests/perf/lst/perf_list_pop_back.cc \
+     tests/perf/lst/perf_lst_pop_back.c \
+     tests/perf/lst/perf_list_pop_front.cc \
+     tests/perf/lst/perf_lst_pop_front.c \
+     tests/perf/lst/perf_list_push_front.cc \
+     tests/perf/lst/perf_lst_push_front.c \
+     tests/perf/lst/perf_list_sort.cc \
+     tests/perf/lst/perf_lst_sort.c"
+
+perf_graph \
+    'deq.log' \
+    "std::deque<int> vs. CTL deq_int ($CFLAGS)" \
+    "tests/perf/deq/perf_deque_push_back.cc
+     tests/perf/deq/perf_deq_push_back.c \
+     tests/perf/deq/perf_deque_pop_back.cc \
+     tests/perf/deq/perf_deq_pop_back.c \
+     tests/perf/deq/perf_deque_pop_front.cc \
+     tests/perf/deq/perf_deq_pop_front.c \
+     tests/perf/deq/perf_deque_push_front.cc \
+     tests/perf/deq/perf_deq_push_front.c \
+     tests/perf/deq/perf_deque_sort.cc \
+     tests/perf/deq/perf_deq_sort.c"
+
+perf_compile_two_bar \
+    'compile.log' \
+    "CTL vs STL Compilation ($CFLAGS)" \
+    'tests/perf/perf_compile_c99.c' \
+    'tests/perf/perf_compile_cc.cc'
