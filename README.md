@@ -84,6 +84,9 @@ for template type `T` and `U` as type `int` for all measurements.
 
 ![](images/vec.log.png)
 ![](images/lst.log.png)
+![](images/deq.log.png)
+![](images/map.log.png)
+![](images/pqu.log.png)
 ![](images/compile.log.png)
 
 ## Running Tests
