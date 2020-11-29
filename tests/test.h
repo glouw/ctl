@@ -26,7 +26,7 @@
 
 #define TEST_PERF_RUNS (100)
 
-#define TEST_PERF_CHUNKS (1024)
+#define TEST_PERF_CHUNKS (2048)
 
 static inline int
 TEST_TIME(void)

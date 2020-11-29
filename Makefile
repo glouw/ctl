@@ -68,13 +68,14 @@ tests/test_stk \
 tests/test_vec_capacity \
 tests/test_vec
 
-clean: all
-	@rm -f $(BINS)
-
 all: $(BINS)
 	$(foreach bin,$(BINS),./$(bin) &&) exit 0
 	@$(CC) --version
 	@$(CXX) --version
+	@rm -f $(BINS)
+
+clean:
+	@rm -f $(BINS)
 
 str:
 	$(call expand,$@)

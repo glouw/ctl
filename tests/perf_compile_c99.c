@@ -27,26 +27,65 @@
 #define T int
 #include <vec.h>
 
+#define P
+#define T int
+#include <pqu.h>
+
 #include <str.h>
+
+static int
+compare_key_int(int* a, int* b)
+{
+    return (*a == *b) ? 0 : (*a < *b) ? -1 : 1;
+}
+
+static int
+compare_int(int* a, int* b)
+{
+    return *a < *b;
+}
 
 int main(void)
 {
     deq_int a = deq_int_init();
-    lst_int c = lst_int_init();
     vec_int b = vec_int_init();
+    lst_int c = lst_int_init();
     que_int d = que_int_init();
-    set_int e = set_int_init();
+    set_int e = set_int_create(compare_key_int);
     stk_int f = stk_int_init();
-    vec_int g = vec_int_init();
-    str h = str_init();
-    map_int_int i = map_int_int_init();
+    str g = str_create("test");
+    map_int_int h = map_int_int_create(compare_key_int);
+    pqu_int i = pqu_int_create(compare_int);
+
+    deq_int_push_back(&a, 1);
+    deq_int_push_front(&a, 1);
+    vec_int_push_back(&b, 1);
+    lst_int_push_back(&c, 1);
+    lst_int_push_front(&c, 1);
+    que_int_push(&d, 1);
+    set_int_insert(&e, 1);
+    stk_int_push(&f, 1);
+    map_int_int_insert(&h, 1, 1);
+    pqu_int_push(&i, 1);
+
+    deq_int_pop_back(&a);
+    deq_int_pop_front(&a);
+    vec_int_pop_back(&b);
+    lst_int_pop_back(&c);
+    lst_int_pop_front(&c);
+    que_int_pop(&d);
+    set_int_erase(&e, 1);
+    stk_int_pop(&f);
+    map_int_int_erase(&h, 1);
+    pqu_int_pop(&i);
+
     deq_int_free(&a);
     lst_int_free(&c);
     vec_int_free(&b);
     que_int_free(&d);
     set_int_free(&e);
     stk_int_free(&f);
-    vec_int_free(&g);
-    str_free(&h);
-    map_int_int_free(&i);
+    str_free(&g);
+    map_int_int_free(&h);
+    pqu_int_free(&i);
 }

@@ -1,10 +1,6 @@
-import string
-import sys
-
-import plotly
-import plotly.express as px
 import plotly.graph_objs as go
-
+import sys
+import string
 
 def lines_from_file(log_fname):
     with open(log_fname, "r") as f:
@@ -13,9 +9,6 @@ def lines_from_file(log_fname):
     return file_lines
 
 def toggle_vec_and_vector_in_string(string):
-    """If a string contains `vector_`, replace with `vec_`.
-       If a string contains `vec_`, replace with `vec_`.
-    """
     if "vec_" in string:
         return string.replace("vec_", "vector_")
     elif "vector_" in string:
@@ -24,7 +17,6 @@ def toggle_vec_and_vector_in_string(string):
         return string
 
 def plot_data_from_file(file_lines):
-    """Returns a dict of plots"""
     name_plot_hash = {}
     fname_base = None
     fname_ext = None
@@ -39,14 +31,11 @@ def plot_data_from_file(file_lines):
             half_line_len = int(len(line)/2)
             x = int(line[:half_line_len])
             y = int(line[half_line_len:])
-
             name_plot_hash[plot_name]["num_of_ints"].append(x)
             name_plot_hash[plot_name]["time"].append(y / 1e6)
     return name_plot_hash
 
 def plot_from_data(name_plot_hash, title):
-
-   # variables for the plot
    color_for_c = "#333"
    color_for_cpp = "#888"
    grid_color = "#C9C9C9"
@@ -64,53 +53,32 @@ def plot_from_data(name_plot_hash, title):
        "#FFA600",
        "#FFA600",
    ]
-
    used_basenames = []
    trace_list = []
    for name in name_plot_hash.keys():
        name_base = name.split(".")[0]
        alt_name_base = toggle_vec_and_vector_in_string(name_base)
-       # ensure the stored name doesn't have `vec_`
-       stored_name = name_base.replace("vec_", "vector_")  
-
+       stored_name = name_base.replace("vec_", "vector_")
        if (name_base not in used_basenames or
            alt_name_base not in used_basenames):
            used_basenames.append(stored_name)
-
        color_idx = used_basenames.index(stored_name)
        trace_color = color_list[color_idx]
-
        trace = go.Scatter(
            x=name_plot_hash[name]["num_of_ints"],
            y=name_plot_hash[name]["time"],
            name=name,
            mode="lines",
            marker=dict(color=trace_color),
-           line=dict(
-               width=2,
-               dash=("dot" if name.endswith(".cc") else "solid")
-           )
+           line=dict(width=2, dash=("dot" if name.endswith(".cc") else "solid"))
        )
        trace_list.append(trace)
-
-   fig = go.Figure(
-       data=trace_list
-   )
-
+   fig = go.Figure(data=trace_list)
    fig.update_layout(
        plot_bgcolor=plot_bgcolor,
        paper_bgcolor=paper_bgcolor,
-       xaxis=dict(
-           title="Size",
-           nticks=40,
-           showgrid=True,
-           gridcolor=grid_color
-       ),
-       yaxis=dict(
-           title="Seconds",
-           showgrid=True,
-           gridcolor=grid_color
-       ),
+       xaxis=dict(title="Size", nticks=40, showgrid=True, gridcolor=grid_color),
+       yaxis=dict(title="Seconds", showgrid=True, gridcolor=grid_color),
        title=title
    )
    return fig
@@ -118,7 +86,6 @@ def plot_from_data(name_plot_hash, title):
 if __name__ == "__main__":
     filename = sys.argv[1]
     title = sys.argv[2]
-    print(f"plotting {filename}...")
     file_lines = lines_from_file(filename)
     name_plot_hash = plot_data_from_file(file_lines)
     fig = plot_from_data(name_plot_hash, title)

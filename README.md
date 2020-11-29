@@ -92,12 +92,11 @@ To run all functional tests, run:
 
     make
 
-To run performance tests that generate graph output comparing CTL
-and STL performance, run:
+To generate performance graphs, run:
 
-    make perf
+    sh gen_images.sh
 
-Graphing requires Python3 and the Plotly family of libraries via pip3.
+Graphing requires python3 and the Plotly family of libraries via pip3.
 
 ## Acknowledgements
 
