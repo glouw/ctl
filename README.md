@@ -77,10 +77,13 @@ Maps require `T` and `U` pairs, and do not require an `init_default` declaration
     #define U type
     #include <map.h>
 
+Containers requiring more complex initialization (`str.h`, `map.h`, `pqu.h`, `set.h`)
+provide a `create` function en-lieu of their `init` functions.
+
 ## Performance
 
 CTL performance is presented in solid colors, and STL in dotted colors,
-for template type `T` and `U` as type `int` for all measurements.
+for template type `T` (and `U` for map) as type `int` for all measurements.
 
 ![](images/vec.log.png)
 ![](images/lst.log.png)
@@ -88,6 +91,12 @@ for template type `T` and `U` as type `int` for all measurements.
 ![](images/map.log.png)
 ![](images/pqu.log.png)
 ![](images/compile.log.png)
+
+Omitted from these performance measurements are `que.h`, `stk.h`, `set.h`, and `str.h`,
+as their performance characteristics can be inferred from `deq.h`, `map.h`, and `vec.h`,
+respectively.
+
+Of not, CTL strings do not support short strings.
 
 ## Running Tests
 
