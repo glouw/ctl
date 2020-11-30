@@ -34,21 +34,17 @@ def plot_from_data(name_plot_hash, title):
    plot_bgcolor = "#F9F9F9"
    paper_bgcolor = "#F6F8FA"
    color_list = [
-       "#0099E5",
-       "#0099E5",
-       "#A98AEE",
-       "#A98AEE",
-       "#FF70BF",
-       "#FF70BF",
-       "#FF766E",
-       "#FF766E",
-       "#FFA600",
-       "#FFA600",
+       "#003f5c",
+       "#444e86",
+       "#955196",
+       "#dd5182",
+       "#ff6e54",
+       "#ffa600",
    ]
    used_basenames = []
    trace_list = []
    for idx, name in enumerate(name_plot_hash.keys()):
-       trace_color = color_list[idx]
+       trace_color = color_list[int(idx / 2)]
        trace = go.Scatter(
            x=name_plot_hash[name]["num_of_ints"],
            y=name_plot_hash[name]["time"],
@@ -63,7 +59,7 @@ def plot_from_data(name_plot_hash, title):
        plot_bgcolor=plot_bgcolor,
        paper_bgcolor=paper_bgcolor,
        xaxis=dict(title="Size", nticks=40, showgrid=True, gridcolor=grid_color),
-       yaxis=dict(title="Seconds", showgrid=True, gridcolor=grid_color),
+       yaxis=dict(title="Seconds", showgrid=True, gridcolor=grid_color, type="log"),
        title=title
    )
    return fig

@@ -50,7 +50,9 @@ perf_graph \
     "tests/perf/map/perf_map_insert.cc \
      tests/perf/map/perf_map_insert.c \
      tests/perf/map/perf_map_erase.cc \
-     tests/perf/map/perf_map_erase.c"
+     tests/perf/map/perf_map_erase.c
+     tests/perf/map/perf_map_iterate.cc \
+     tests/perf/map/perf_map_iterate.c"
 
 perf_graph \
     'pqu.log' \
@@ -68,7 +70,9 @@ perf_graph \
      tests/perf/vec/perf_vector_pop_back.cc \
      tests/perf/vec/perf_vec_pop_back.c \
      tests/perf/vec/perf_vector_sort.cc \
-     tests/perf/vec/perf_vec_sort.c"
+     tests/perf/vec/perf_vec_sort.c \
+     tests/perf/vec/perf_vector_iterate.cc \
+     tests/perf/vec/perf_vec_iterate.c"
 
 perf_graph \
     'lst.log' \
@@ -82,7 +86,10 @@ perf_graph \
      tests/perf/lst/perf_list_push_front.cc \
      tests/perf/lst/perf_lst_push_front.c \
      tests/perf/lst/perf_list_sort.cc \
-     tests/perf/lst/perf_lst_sort.c"
+     tests/perf/lst/perf_lst_sort.c \
+     tests/perf/lst/perf_list_iterate.cc \
+     tests/perf/lst/perf_lst_iterate.c"
+
 
 perf_graph \
     'deq.log' \
@@ -96,7 +103,9 @@ perf_graph \
      tests/perf/deq/perf_deque_push_front.cc \
      tests/perf/deq/perf_deq_push_front.c \
      tests/perf/deq/perf_deque_sort.cc \
-     tests/perf/deq/perf_deq_sort.c"
+     tests/perf/deq/perf_deq_sort.c \
+     tests/perf/deq/perf_deque_iterate.cc \
+     tests/perf/deq/perf_deq_iterate.c"
 
 perf_compile_two_bar \
     'compile.log' \
