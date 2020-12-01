@@ -8,7 +8,7 @@
 #define B JOIN(A, bucket)
 #define I JOIN(A, it)
 
-#define DEQ_BUCKET_SIZE (128)
+#define DEQ_BUCKET_SIZE (512)
 
 typedef struct B
 {
@@ -20,7 +20,6 @@ B;
 
 typedef struct
 {
-    T (*init_default)(void);
     void (*free)(T*);
     T (*copy)(T*);
     B** pages;
@@ -64,17 +63,10 @@ JOIN(A, init)(void)
 #undef P
     self.copy = JOIN(A, implicit_copy);
 #else
-    self.init_default = JOIN(T, init_default);
     self.free = JOIN(T, free);
     self.copy = JOIN(T, copy);
 #endif
     return self;
-}
-
-static inline A
-JOIN(A, init_default)(void)
-{
-    return JOIN(A, init)();
 }
 
 static inline B*
@@ -166,6 +158,7 @@ JOIN(A, push_front)(A* self, T value)
     if(self->capacity == 0)
     {
         JOIN(A, alloc)(self, 1, 0);
+        self->mark_a = 0;
         self->mark_b = 1;
         *JOIN(A, last)(self) = JOIN(B, init)(DEQ_BUCKET_SIZE);
     }
@@ -192,6 +185,7 @@ JOIN(A, push_back)(A* self, T value)
     if(self->capacity == 0)
     {
         JOIN(A, alloc)(self, 1, 0);
+        self->mark_a = 0;
         self->mark_b = 1;
         *JOIN(A, last)(self) = JOIN(B, init)(0);
     }
@@ -227,6 +221,7 @@ JOIN(A, pop_back)(A* self)
     {
         free(page);
         self->mark_b -= 1;
+        self->capacity -= 1;
     }
 }
 
@@ -245,6 +240,7 @@ JOIN(A, pop_front)(A* self)
     {
         free(page);
         self->mark_a += 1;
+        self->capacity -= 1;
     }
 }
 
@@ -299,20 +295,20 @@ JOIN(A, insert)(A* self, T* position, T value)
 }
 
 static inline void
-JOIN(A, resize)(A* self, size_t size)
+JOIN(A, resize)(A* self, size_t size, T value)
 {
-    static T zero;
     if(size != self->size)
-        while(size != self->size)
+        for(size_t i = 0; size != self->size; i++)
             (size < self->size)
                 ? JOIN(A, pop_back)(self)
-                : JOIN(A, push_back)(self, self->init_default ? self->init_default() : zero);
+                : JOIN(A, push_back)(self, (i == 0) ? value : self->copy(&value));
 }
 
 static inline void
 JOIN(A, assign)(A* self, size_t size, T value)
 {
-    JOIN(A, resize)(self, size);
+    static T zero;
+    JOIN(A, resize)(self, size, zero);
     for(size_t i = 0; i < size; i++)
         JOIN(A, set)(self, i, (i == 0) ? value : self->copy(&value));
 }
@@ -429,7 +425,7 @@ JOIN(A, remove_if)(A* self, int (*match)(T*))
             it.index_last -= 1;
             erases += 1;
         }
-    );
+    )
     return erases;
 }
 

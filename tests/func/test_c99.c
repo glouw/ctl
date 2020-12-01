@@ -86,17 +86,11 @@ person_init(size_t path_capacity, const char* first, const char* last)
 {
     person self;
     self.path = vec_point_init();
-    self.name = str_create(first);
+    self.name = str_init(first);
     str_append(&self.name, " ");
     str_append(&self.name, last);
     vec_point_reserve(&self.path, path_capacity);
     return self;
-}
-
-static person
-person_init_default(void)
-{
-    return person_init(0, "NONE", "NONE");
 }
 
 static void
@@ -161,7 +155,7 @@ main(void)
         vec_int_push_back(&a, 4);
         vec_int_free(&a);
     }{
-        map_charp_int a = map_charp_int_create(charp_key_compare);
+        map_charp_int a = map_charp_int_init(charp_key_compare);
         map_charp_int_insert(&a, "C", 93);
         map_charp_int_insert(&a, "B", 92);
         map_charp_int_insert(&a, "D", 94);
@@ -173,7 +167,7 @@ main(void)
         map_charp_int_insert(&a, "F", 94);
         map_charp_int_free(&a);
     }{
-        map_int_int a = map_int_int_create(int_key_compare);
+        map_int_int a = map_int_int_init(int_key_compare);
         map_int_int_insert(&a, 1, 1);
         map_int_int_insert(&a, 4, 1);
         map_int_int_insert(&a, 8, 2);
@@ -209,11 +203,11 @@ main(void)
         lst_int_free(&a);
     }{
         vec_str b = vec_str_init();
-        vec_str_push_back(&b, str_create("This"));
-        vec_str_push_back(&b, str_create("is"));
-        vec_str_push_back(&b, str_create("a"));
-        vec_str_push_back(&b, str_create("test"));
-        vec_str_resize(&b, 512);
+        vec_str_push_back(&b, str_init("This"));
+        vec_str_push_back(&b, str_init("is"));
+        vec_str_push_back(&b, str_init("a"));
+        vec_str_push_back(&b, str_init("test"));
+        vec_str_resize(&b, 512, str_init(""));
         vec_str_free(&b);
     }{
         vec_person c = vec_person_init();

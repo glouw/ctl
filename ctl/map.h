@@ -100,10 +100,11 @@ JOIN(A, implicit_copy)(T* a, T* b, U* c, U* d)
 #endif
 
 static inline A
-JOIN(A, init)(void)
+JOIN(A, init)(int compare(T*, T*))
 {
     static A zero;
     A self = zero;
+    self.compare = compare;
 #ifdef P
 #undef P
     self.copy = JOIN(A, implicit_copy);
@@ -117,20 +118,6 @@ JOIN(A, init)(void)
 #endif
 #endif
     return self;
-}
-
-static inline A
-JOIN(A, create)(int compare(T*, T*))
-{
-    A self = JOIN(A, init)();
-    self.compare = compare;
-    return self;
-}
-
-static inline A
-JOIN(A, init_default)(void)
-{
-    return JOIN(A, init)();
 }
 
 static inline void
@@ -660,7 +647,7 @@ static inline void
 JOIN(A, free)(A* self)
 {
     JOIN(A, clear)(self);
-    *self = JOIN(A, init)();
+    *self = JOIN(A, init)(self->compare);
 }
 
 static inline void
@@ -757,7 +744,7 @@ static inline A
 JOIN(A, copy)(A* self)
 {
     I it = JOIN(I, each)(self);
-    A copy =  JOIN(A, create)(self->compare);
+    A copy =  JOIN(A, init)(self->compare);
     while(!it.done)
     {
 #ifdef MAKE_SET
@@ -788,7 +775,7 @@ JOIN(A, remove_if)(A* self, int (*match)(T*, U*))
             JOIN(A, erase_node)(self, it.node);
             erases += 1;
         }
-    );
+    )
 #else
     foreach(A, self, it,
         if(match(&it.node->first, &it.node->second))
@@ -796,7 +783,7 @@ JOIN(A, remove_if)(A* self, int (*match)(T*, U*))
             JOIN(A, erase_node)(self, it.node);
             erases += 1;
         }
-    );
+    )
 #endif
     return erases;
 }

@@ -8,18 +8,20 @@
 #define vec_char str
 #define P
 #define T char
-#define str_init_default str___INIT_DEFAULT
+#define str_init str___INIT
+#define str_equal str___EQUAL
 #include <vec.h>
-#undef str_init_default
+#undef str_init
+#undef str_equal
 #undef vec_char
 
 #include <stdint.h>
 #include <string.h>
 
 static inline str
-str_create(const char* c_str)
+str_init(const char* c_str)
 {
-    str self = str_init();
+    str self = str___INIT();
     size_t len = strlen(c_str);
     size_t min = 15;
     str_reserve(&self, len < min ? min : len);
@@ -28,18 +30,12 @@ str_create(const char* c_str)
     return self;
 }
 
-static inline str
-str_init_default(void)
-{
-    return str_create("");
-}
-
 static inline void
 str_append(str* self, const char* s)
 {
     size_t start = self->size;
     size_t len = strlen(s);
-    str_resize(self, self->size + len);
+    str_resize(self, self->size + len, '\0');
     for(size_t i = 0; i < len; i++)
         self->value[start + i] = s[i];
 }
@@ -49,7 +45,7 @@ str_insert_str(str* self, size_t index, const char* s)
 {
     size_t start = self->size;
     size_t len = strlen(s);
-    str_resize(self, self->size + len);
+    str_resize(self, self->size + len, '\0');
     self->size = start;
     while(len != 0)
     {
@@ -151,8 +147,8 @@ str_find_last_not_of(str* self, const char* s)
 static inline str
 str_substr(str* self, size_t index, size_t size)
 {
-    str substr = str_create("");
-    str_resize(&substr, size);
+    str substr = str_init("");
+    str_resize(&substr, size, '\0');
     for(size_t i = 0; i < size; i++)
         substr.value[i] = self->value[index + i];
     return substr;
@@ -162,6 +158,12 @@ static inline int
 str_compare(str* self, const char* s)
 {
     return strcmp(str_c_str(self), s);
+}
+
+static inline int
+str_equal(str* self, const char* s)
+{
+    return str_compare(self, s) == 0;
 }
 
 #endif

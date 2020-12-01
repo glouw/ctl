@@ -54,28 +54,35 @@ ifeq (1, $(SRAND))
 CFLAGS += -DSRAND
 endif
 
-BINS = \
-tests/func/test_c99 \
-tests/func/test_container_composing \
-tests/func/test_deq \
-tests/func/test_lst \
-tests/func/test_map \
-tests/func/test_str \
-tests/func/test_pqu \
-tests/func/test_que \
-tests/func/test_set \
-tests/func/test_stk \
-tests/func/test_vec_capacity \
-tests/func/test_vec
+TESTS = \
+	tests/func/test_c99 \
+	tests/func/test_container_composing \
+	tests/func/test_deq \
+	tests/func/test_lst \
+	tests/func/test_map \
+	tests/func/test_str \
+	tests/func/test_pqu \
+	tests/func/test_que \
+	tests/func/test_set \
+	tests/func/test_stk \
+	tests/func/test_vec_capacity \
+	tests/func/test_vec
 
-all: $(BINS)
-	$(foreach bin,$(BINS),./$(bin) &&) exit 0
+EXAMPLES = \
+	examples/astar \
+	examples/postfix
+
+all: $(TESTS)
+	$(foreach bin,$(TESTS),./$(bin) &&) exit 0
 	@$(CC) --version
 	@$(CXX) --version
-	@rm -f $(BINS)
+	@rm -f $(TESTS)
+
+examples: $(EXAMPLES)
 
 clean:
-	@rm -f $(BINS)
+	@rm -f $(TESTS)
+	@rm -f $(EXAMPLES)
 
 str:
 	$(call expand,$@)
@@ -96,6 +103,8 @@ map:
 set:
 	$(call expand,$@,-DT=int -DP)
 
+examples/astar:                		 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
+examples/postfix:              		 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 tests/func/test_c99:                 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 tests/func/test_container_composing: ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_deq:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@

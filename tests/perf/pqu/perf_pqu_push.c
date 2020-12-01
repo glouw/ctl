@@ -14,7 +14,7 @@ int main(void)
     srand(time(NULL));
     for(int run = 0; run < TEST_PERF_RUNS; run++)
     {
-        pqu_int c = pqu_int_create(compare);
+        pqu_int c = pqu_int_init(compare);
         int elems = TEST_PERF_CHUNKS * run;
         int t0 = TEST_TIME();
         for(int elem = 0; elem < elems; elem++)

@@ -15,7 +15,7 @@ int main(void)
     srand(time(NULL));
     for(int run = 0; run < TEST_PERF_RUNS; run++)
     {
-        map_int_int c = map_int_int_create(compare);
+        map_int_int c = map_int_int_init(compare);
         int elems = TEST_PERF_CHUNKS * run;
         for(int elem = 0; elem < elems; elem++)
             map_int_int_insert(&c, rand() % elems, rand() % elems);

@@ -51,11 +51,11 @@ int main(void)
     vec_int b = vec_int_init();
     lst_int c = lst_int_init();
     que_int d = que_int_init();
-    set_int e = set_int_create(compare_key_int);
+    set_int e = set_int_init(compare_key_int);
     stk_int f = stk_int_init();
-    str g = str_create("test");
-    map_int_int h = map_int_int_create(compare_key_int);
-    pqu_int i = pqu_int_create(compare_int);
+    str g = str_init("test");
+    map_int_int h = map_int_int_init(compare_key_int);
+    pqu_int i = pqu_int_init(compare_int);
 
     deq_int_push_back(&a, 1);
     deq_int_push_front(&a, 1);

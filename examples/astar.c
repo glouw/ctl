@@ -13,38 +13,38 @@ typedef struct
 }
 point;
 
-static point
+point
 point_init(int x, int y, int width)
 {
     return (point) { x, y, 0, width };
 }
 
-static int
+int
 point_compare_priority(point* a, point* b)
 {
     return a->priorty < b->priorty;
 }
 
-static int
+int
 point_equal(point* a, point* b)
 {
     return a->x == b->x && a->y == b->y;
 }
 
-static point
+point
 point_from(str* maze, const char* c, int width)
 {
     int index = str_find(maze, c);
     return point_init(index % width, index / width, width);
 }
 
-static int
+int
 point_index(point* p)
 {
     return p->x + p->width * p->y;
 }
 
-static int
+int
 point_key_compare(point* a, point* b)
 {
     int i = point_index(a);
@@ -75,10 +75,10 @@ astar(str* maze, int width)
 {
     point start = point_from(maze, "@", width);
     point goal = point_from(maze, "!", width);
-    pqu_point front = pqu_point_create(point_compare_priority);
+    pqu_point front = pqu_point_init(point_compare_priority);
     pqu_point_push(&front, start);
-    map_point_point from = map_point_point_create(point_key_compare);
-    map_point_int costs = map_point_int_create(point_key_compare);
+    map_point_point from = map_point_point_init(point_key_compare);
+    map_point_int costs = map_point_int_init(point_key_compare);
     map_point_int_insert(&costs, start, 0);
     while(!pqu_point_empty(&front))
     {
@@ -127,7 +127,7 @@ astar(str* maze, int width)
 int
 main(void)
 {
-    str maze = str_create(
+    str maze = str_init(
         "#########################################################################\n"
         "#   #               #               #           #                   #   #\n"
         "#   #   #########   #   #####   #########   #####   #####   #####   # ! #\n"

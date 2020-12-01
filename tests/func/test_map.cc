@@ -68,7 +68,7 @@ main(void)
     for(size_t loop = 0; loop < loops; loop++)
     {
         size_t iters = TEST_RAND(TEST_MAX_SIZE);
-        map_int_digi a = map_int_digi_create(int_key_compare);
+        map_int_digi a = map_int_digi_init(int_key_compare);
         std::map<int, DIGI> b;
         for(size_t inserts = 0; inserts < iters; inserts++)
         {
@@ -148,7 +148,7 @@ main(void)
             case TEST_SWAP:
             {
                 map_int_digi aa = map_int_digi_copy(&a);
-                map_int_digi aaa = map_int_digi_init();
+                map_int_digi aaa = map_int_digi_init(int_key_compare);
                 std::map<int, DIGI> bb = b;
                 std::map<int, DIGI> bbb;
                 map_int_digi_swap(&aaa, &aa);

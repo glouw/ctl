@@ -22,12 +22,6 @@ digi_init(int value)
     return self;
 }
 
-static inline digi
-digi_init_default(void)
-{
-    return digi_init(0);
-}
-
 static inline void
 digi_free(digi* self)
 {
@@ -43,7 +37,7 @@ digi_compare(digi* a, digi* b)
 static inline digi
 digi_copy(digi* self)
 {
-    digi copy = digi_init_default();
+    digi copy = digi_init(0);
     *copy.value = *self->value;
     return copy;
 }

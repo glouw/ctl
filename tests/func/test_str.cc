@@ -73,16 +73,16 @@ main(void)
         for(size_t mode = MODE_DIRECT; mode < MODE_TOTAL; mode++)
         {
             char* base = create_test_string(str_size);
-            str a = str_init();
+            str a = str_init("");
             std::string b;
             if(mode == MODE_DIRECT)
             {
-                a = str_create(base);
+                str_free(&a);
+                a = str_init(base);
                 b = base;
             }
             if(mode == MODE_GROWTH)
             {
-                a = str_create("");
                 for(size_t i = 0; i < str_size; i++)
                 {
                     str_push_back(&a, base[i]);
@@ -236,8 +236,8 @@ main(void)
                     size_t size = TEST_RAND(512);
                     char* _ta = create_test_string(size);
                     char* _tb = create_test_string(size);
-                    str _a = str_create(_ta);
-                    str _b = str_create(_tb);
+                    str _a = str_init(_ta);
+                    str _b = str_init(_tb);
                     std::string _aa = _ta;
                     std::string _bb = _tb;
                     assert(TEST_SIGN(str_compare(&_a, _tb)) == TEST_SIGN(_aa.compare(_tb)));
@@ -283,7 +283,7 @@ main(void)
                 {
                     const size_t resize = 3 * TEST_RAND(a.size);
                     b.resize(resize);
-                    str_resize(&a, resize);
+                    str_resize(&a, resize, '\0');
                     CHECK(a, b);
                     break;
                 }
@@ -330,13 +330,14 @@ main(void)
                 case TEST_SWAP:
                 {
                     str aa = str_copy(&a);
-                    str aaa = str_init();
+                    str aaa = str_init("");
                     std::string cb = b;
                     std::string bbb;
                     str_swap(&aaa, &aa);
                     std::swap(cb, bbb);
                     CHECK(aaa, bbb);
                     str_free(&aaa);
+                    str_free(&aa);
                     CHECK(a, b);
                     break;
                 }

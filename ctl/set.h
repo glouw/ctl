@@ -7,7 +7,7 @@
 static inline A
 JOIN(A, intersection)(A* a, A* b)
 {
-    A self = JOIN(A, create)(a->compare);
+    A self = JOIN(A, init)(a->compare);
     foreach(A, a, i,
         if(JOIN(A, find)(b, i.node->key))
             JOIN(A, insert)(&self, self.copy(&i.node->key));
@@ -18,7 +18,7 @@ JOIN(A, intersection)(A* a, A* b)
 static inline A
 JOIN(A, union)(A* a, A* b)
 {
-    A self = JOIN(A, create)(a->compare);
+    A self = JOIN(A, init)(a->compare);
     foreach(A, a, i, JOIN(A, insert)(&self, self.copy(&i.node->key));)
     foreach(A, b, i, JOIN(A, insert)(&self, self.copy(&i.node->key));)
     return self;

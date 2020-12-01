@@ -50,7 +50,7 @@ main(void)
             std::deque<DIGI> b;
             if(mode == MODE_DIRECT)
             {
-                deq_digi_resize(&a, size);
+                deq_digi_resize(&a, size, digi_init(0));
                 b.resize(size);
             }
             if(mode == MODE_GROWTH)
@@ -142,7 +142,7 @@ main(void)
                 {
                     const size_t resize = 3 * TEST_RAND(a.size) + 1;
                     b.resize(resize);
-                    deq_digi_resize(&a, resize);
+                    deq_digi_resize(&a, resize, digi_init(0));
                     CHECK(a, b);
                     break;
                 }

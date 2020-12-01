@@ -27,7 +27,7 @@ main(void)
     for(size_t loop = 0; loop < loops; loop++)
     {
         size_t size = TEST_RAND(TEST_MAX_SIZE);
-        pqu_digi a = pqu_digi_create(digi_compare);
+        pqu_digi a = pqu_digi_init(digi_compare);
         std::priority_queue<DIGI> b;
         for(size_t pushes = 0; pushes < size; pushes++)
         {
@@ -66,7 +66,7 @@ main(void)
             case TEST_SWAP:
             {
                 pqu_digi aa = pqu_digi_copy(&a);
-                pqu_digi aaa = pqu_digi_create(digi_compare);
+                pqu_digi aaa = pqu_digi_init(digi_compare);
                 std::priority_queue<DIGI> bb = b;
                 std::priority_queue<DIGI> bbb;
                 pqu_digi_swap(&aaa, &aa);

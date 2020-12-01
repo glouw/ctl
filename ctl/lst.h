@@ -18,7 +18,6 @@ B;
 
 typedef struct
 {
-    T (*init_default)(void);
     void (*free)(T*);
     T (*copy)(T*);
     B* head;
@@ -54,17 +53,10 @@ JOIN(A, init)(void)
 #undef P
     self.copy = JOIN(A, implicit_copy);
 #else
-    self.init_default = JOIN(T, init_default);
     self.free = JOIN(T, free);
     self.copy = JOIN(T, copy);
 #endif
     return self;
-}
-
-static inline A
-JOIN(A, init_default)(void)
-{
-    return JOIN(A, init)();
 }
 
 static inline B*
@@ -211,14 +203,13 @@ JOIN(A, free)(A* self)
 }
 
 static inline void
-JOIN(A, resize)(A* self, size_t size)
+JOIN(A, resize)(A* self, size_t size, T value)
 {
-    static T zero;
     if(size != self->size)
-        while(size != self->size)
+        for(size_t i = 0; size != self->size; i++)
             (size < self->size)
                 ? JOIN(A, pop_back)(self)
-                : JOIN(A, push_back)(self, self->init_default ? self->init_default() : zero);
+                : JOIN(A, push_back)(self, (i == 0) ? value : self->copy(&value));
 }
 
 static inline void
@@ -279,25 +270,26 @@ JOIN(I, each)(A* a)
 static inline void
 JOIN(A, assign)(A* self, size_t size, T value)
 {
-    JOIN(A, resize)(self, size);
+    static T zero;
+    JOIN(A, resize)(self, size, zero);
     size_t i = 0;
-    foreach(A, self, it, {
+    foreach(A, self, it,
         if(self->free)
             self->free(it.ref);
         *it.ref = (i == 0) ? value : self->copy(&value);
         i += 1;
-    });
+    )
 }
 
 static inline void
 JOIN(A, reverse)(A* self)
 {
-    foreach(A, self, it, {
+    foreach(A, self, it,
         B* next = it.node->next;
         B* prev = it.node->prev;
         it.node->prev = next;
         it.node->next = prev;
-    });
+    )
     B* tail = self->tail;
     B* head = self->head;
     self->tail = head;
@@ -314,7 +306,7 @@ JOIN(A, remove_if)(A* self, int (*equal)(T*))
             JOIN(A, erase)(self, it.node);
             erases += 1;
         }
-    );
+    )
     return erases;
 }
 
@@ -324,11 +316,7 @@ JOIN(A, splice)(A* self, B* position, A* other)
     if(self->size == 0 && position == NULL)
         JOIN(A, swap)(self, other);
     else
-    {
-        foreach(A, other, it, {
-            JOIN(A, transfer)(self, other, position, it.node, 1);
-        });
-    }
+        foreach(A, other, it, JOIN(A, transfer)(self, other, position, it.node, 1);)
 }
 
 static inline void

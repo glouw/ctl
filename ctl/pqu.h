@@ -29,15 +29,17 @@
 #define vec pqu
 #define HOLD
 #define COMPARE
+#define init __INIT
 #include <vec.h>
+#undef init
 #undef vec
 
 #define A JOIN(pqu, T)
 
 static inline A
-JOIN(A, create)(int compare(T*, T*))
+JOIN(A, init)(int compare(T*, T*))
 {
-    A self = JOIN(A, init)();
+    A self = JOIN(A, __INIT)();
     self.compare = compare;
     return self;
 }

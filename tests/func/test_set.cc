@@ -32,7 +32,7 @@ static void
 setup_sets(set_digi* a, std::set<DIGI>& b)
 {
     size_t iters = TEST_RAND(TEST_MAX_SIZE);
-    *a = set_digi_create(digi_key_compare);
+    *a = set_digi_init(digi_key_compare);
     for(size_t inserts = 0; inserts < iters; inserts++)
     {
         const int vb = TEST_RAND(TEST_MAX_SIZE);
@@ -129,7 +129,7 @@ main(void)
             case TEST_SWAP:
             {
                 set_digi aa = set_digi_copy(&a);
-                set_digi aaa = set_digi_init();
+                set_digi aaa = set_digi_init(digi_key_compare);
                 std::set<DIGI> bb = b;
                 std::set<DIGI> bbb;
                 set_digi_swap(&aaa, &aa);

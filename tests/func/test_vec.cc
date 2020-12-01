@@ -51,7 +51,7 @@ main(void)
             std::vector<DIGI> b;
             if(mode == MODE_DIRECT)
             {
-                vec_digi_resize(&a, size);
+                vec_digi_resize(&a, size, digi_init(0));
                 b.resize(size);
             }
             if(mode == MODE_GROWTH)
@@ -137,7 +137,7 @@ main(void)
                 {
                     const size_t resize = 3 * TEST_RAND(a.size) + 1;
                     b.resize(resize);
-                    vec_digi_resize(&a, resize);
+                    vec_digi_resize(&a, resize, digi_init(0));
                     CHECK(a, b);
                     break;
                 }

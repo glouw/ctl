@@ -71,12 +71,12 @@ main(void)
                 d.resize (size);
                 e.resize (size);
                 f.resize (size);
-                vec_uint8_t_resize  (&aa, size);
-                vec_uint16_t_resize (&bb, size);
-                vec_uint32_t_resize (&cc, size);
-                vec_uint64_t_resize (&dd, size);
-                vec_float_resize    (&ee, size);
-                vec_double_resize   (&ff, size);
+                vec_uint8_t_resize  (&aa, size, 0);
+                vec_uint16_t_resize (&bb, size, 0);
+                vec_uint32_t_resize (&cc, size, 0);
+                vec_uint64_t_resize (&dd, size, 0);
+                vec_float_resize    (&ee, size, 0.0);
+                vec_double_resize   (&ff, size, 0.0);
             }
             if(mode == MODE_GROWTH)
             {

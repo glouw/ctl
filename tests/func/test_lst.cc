@@ -162,7 +162,7 @@ main(void)
             case TEST_RESIZE:
             {
                 size_t resize = 3 * TEST_RAND(a.size);
-                lst_digi_resize(&a, resize);
+                lst_digi_resize(&a, resize, digi_init(0));
                 b.resize(resize);
                 CHECK(a, b);
                 break;

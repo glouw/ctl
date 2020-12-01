@@ -53,11 +53,10 @@ To compile, include the `ctl` directory:
 ## Memory Ownership
 
 Types with memory ownership require definition `P` be omitted, and require
-function declarations for the C++ equivalent of the default constructor,
-destructor, and copy constructor, prior to the inclusion of the container:
+function declarations for the C++ equivalent of the destructor and copy constructor,
+prior to the inclusion of the container:
 
     typedef struct { ... } type;
-    type type_init_default(void);
     void type_free(type*);
     type type_copy(type*);
     #define T type
@@ -68,7 +67,7 @@ Forgetting a declaration will print a human-readable error message:
     tests/test_c99.c:11:11: error: ‘type_free’ undeclared (first use in this function)
        11 | #define T type
 
-Maps require `T` and `U` pairs, and do not require an `init_default` declaration:
+Maps require `T` and `U` pairs declaration:
 
     typedef struct { ... } type;
     void type_free(int*, type*);

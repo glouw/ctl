@@ -12,7 +12,6 @@
 typedef struct
 {
     T* value;
-    T (*init_default)(void);
     void (*free)(T*);
 #ifdef COMPARE
     int (*compare)(T*, T*);
@@ -49,17 +48,10 @@ JOIN(A, init)(void)
 #undef P
     self.copy = JOIN(A, implicit_copy);
 #else
-    self.init_default = JOIN(T, init_default);
     self.free = JOIN(T, free);
     self.copy = JOIN(T, copy);
 #endif
     return self;
-}
-
-static inline A
-JOIN(A, init_default)(void)
-{
-    return JOIN(A, init)();
 }
 
 static inline int
@@ -192,9 +184,8 @@ JOIN(A, push_back)(A* self, T value)
 }
 
 static inline void
-JOIN(A, resize)(A* self, size_t size)
+JOIN(A, resize)(A* self, size_t size, T value)
 {
-    static T zero;
     if(size < self->size)
     {
         int64_t less = self->size - size;
@@ -210,15 +201,16 @@ JOIN(A, resize)(A* self, size_t size)
                 capacity = size;
             JOIN(A, reserve)(self, capacity);
         }
-        while(self->size < size)
-            JOIN(A, push_back)(self, self->init_default ? self->init_default() : zero);
+        for(size_t i = 0; self->size < size; i++)
+            JOIN(A, push_back)(self, (i == 0) ? value : self->copy(&value));
     }
 }
 
 static inline void
 JOIN(A, assign)(A* self, size_t size, T value)
 {
-    JOIN(A, resize)(self, size);
+    static T zero;
+    JOIN(A, resize)(self, size, zero);
     for(size_t i = 0; i < size; i++)
         JOIN(A, set)(self, i, (i == 0) ? value : self->copy(&value));
 }
@@ -360,7 +352,7 @@ JOIN(A, remove_if)(A* self, int (*match)(T*))
             it.next = it.ref;
             erases += 1;
         }
-    );
+    )
     return erases;
 }
 
