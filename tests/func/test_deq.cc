@@ -28,9 +28,65 @@
         assert(*_y.at(i).value == *deq_digi_at(&_x, i)->value);   \
 }
 
+// TESTS DEQ STABILITY WITH SELF CLEANUP.
+// EDGE CASE:
+//     MISC CALLS TO POP/PUSH FRONT/BACK WITH
+//     DEQUE SIZE 1 CAUSED HEAP USE AFTER FREE ISSUES.
+
+void
+test_zero_capacity_edge_case(void)
+{
+    {
+        deq_digi a = deq_digi_init();
+        deq_digi_push_back(&a, digi_init(1));
+        assert(a.capacity == 1);
+        deq_digi_pop_back(&a);
+        assert(a.capacity == 0);
+        deq_digi_push_back(&a, digi_init(1));
+        assert(a.capacity == 1);
+        deq_digi_pop_back(&a);
+        assert(a.capacity == 0);
+        deq_digi_free(&a);
+    }{
+        deq_digi a = deq_digi_init();
+        deq_digi_push_back(&a, digi_init(1));
+        assert(a.capacity == 1);
+        deq_digi_pop_front(&a);
+        assert(a.capacity == 0);
+        deq_digi_push_back(&a, digi_init(1));
+        assert(a.capacity == 1);
+        deq_digi_pop_front(&a);
+        assert(a.capacity == 0);
+        deq_digi_free(&a);
+    }{
+        deq_digi a = deq_digi_init();
+        deq_digi_push_front(&a, digi_init(1));
+        assert(a.capacity == 1);
+        deq_digi_pop_front(&a);
+        assert(a.capacity == 0);
+        deq_digi_push_front(&a, digi_init(1));
+        assert(a.capacity == 1);
+        deq_digi_pop_front(&a);
+        assert(a.capacity == 0);
+        deq_digi_free(&a);
+    }{
+        deq_digi a = deq_digi_init();
+        deq_digi_push_front(&a, digi_init(1));
+        assert(a.capacity == 1);
+        deq_digi_pop_back(&a);
+        assert(a.capacity == 0);
+        deq_digi_push_front(&a, digi_init(1));
+        assert(a.capacity == 1);
+        deq_digi_pop_back(&a);
+        assert(a.capacity == 0);
+        deq_digi_free(&a);
+    }
+}
+
 int
 main(void)
 {
+    test_zero_capacity_edge_case();
 #ifdef SRAND
     srand(time(NULL));
 #endif
