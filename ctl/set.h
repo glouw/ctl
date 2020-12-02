@@ -8,7 +8,6 @@
 #include <ctl.h>
 
 #define A JOIN(set, T)
-
 #define B JOIN(A, node)
 #define I JOIN(A, it)
 
