@@ -717,7 +717,6 @@ JOIN(A, symmetric_difference)(A* a, A* b)
 
 #undef T
 
-#undef U
 #undef A
 #undef B
 #undef C
