@@ -390,6 +390,16 @@ JOIN(A, unique)(A* self, int equal(T*, T*))
     );
 }
 
+static inline B*
+JOIN(A, find)(A* self, T key, int equal(T*, T*))
+{
+    foreach(A, self, it,
+        if(equal(it.ref, &key))
+            return it.node;
+    );
+    return NULL;
+}
+
 #undef T
 #undef A
 #undef B

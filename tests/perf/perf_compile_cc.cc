@@ -1,6 +1,5 @@
 #include <deque>
 #include <list>
-#include <map>
 #include <queue>
 #include <set>
 #include <stack>
@@ -16,7 +15,6 @@ int main()
     std::set<int> e;
     std::stack<int> f;
     std::string g;
-    std::map<int, int> h;
     std::priority_queue<int> i;
 
     a.push_back(1);
@@ -27,7 +25,6 @@ int main()
     d.push(1);
     e.insert(1);
     f.push(1);
-    h.insert(std::pair<int, int>(1, 1));
     i.push(1);
 
     a.pop_back();
@@ -38,6 +35,5 @@ int main()
     d.pop();
     e.erase(1);
     f.pop();
-    h.erase(1);
     i.pop();
 }

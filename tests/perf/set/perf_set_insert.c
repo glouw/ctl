@@ -2,8 +2,7 @@
 
 #define P
 #define T int
-#define U int
-#include <map.h>
+#include <set.h>
 
 #include <time.h>
 
@@ -15,15 +14,13 @@ int main(void)
     srand(time(NULL));
     for(int run = 0; run < TEST_PERF_RUNS; run++)
     {
-        map_int_int c = map_int_int_init(compare);
+        set_int c = set_int_init(compare);
         int elems = TEST_PERF_CHUNKS * run;
-        for(int elem = 0; elem < elems; elem++)
-            map_int_int_insert(&c, rand() % elems, rand() % elems);
-        volatile int sum = 0;
         int t0 = TEST_TIME();
-        foreach(map_int_int, &c, it, sum += it.node->second;);
+        for(int elem = 0; elem < elems; elem++)
+            set_int_insert(&c, rand() % elems);
         int t1 = TEST_TIME();
         printf("%10d %10d\n", elems, t1 - t0);
-        map_int_int_free(&c);
+        set_int_free(&c);
     }
 }

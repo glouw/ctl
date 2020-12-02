@@ -14,18 +14,18 @@ digi_key_compare(digi* a, digi* b)
 #include <set>
 #include <algorithm>
 
-#define CHECK(_x, _y) {                                \
-    assert(_x.size == _y.size());                      \
-    std::set<DIGI>::iterator _iter = _y.begin();       \
-    foreach(set_digi, &_x, _it, {                      \
-        assert(*_it.node->key.value == *_iter->value); \
-        _iter++;                                       \
-    });                                                \
-    set_digi_it _it = set_digi_it_each(&_x);           \
-    for(auto& _d : _y) {                               \
-        assert(*_it.node->key.value == *_d.value);     \
-        _it.step(&_it);                                \
-    }                                                  \
+#define CHECK(_x, _y) {                           \
+    assert(_x.size == _y.size());                 \
+    std::set<DIGI>::iterator _iter = _y.begin();  \
+    foreach(set_digi, &_x, _it, {                 \
+        assert(*_it.ref->value == *_iter->value); \
+        _iter++;                                  \
+    });                                           \
+    set_digi_it _it = set_digi_it_each(&_x);      \
+    for(auto& _d : _y) {                          \
+        assert(*_it.ref->value == *_d.value);     \
+        _it.step(&_it);                           \
+    }                                             \
 }
 
 static void

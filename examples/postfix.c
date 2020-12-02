@@ -1,13 +1,16 @@
+//
+// -- INFIX TO POSTFIX TO PSEUDO ASM CONVERTER --
+//
+
 #include <stdio.h>
 
 #include <str.h>
 
 #define lst_str ls
-#define stk_str ss
-
 #define T str
 #include <lst.h>
 
+#define stk_str ss
 #define T str
 #include <stk.h>
 
@@ -29,21 +32,7 @@ get_prec(char c)
 int
 is_digit(char c)
 {
-    switch(c)
-    {
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-        return 1;
-    }
-    return 0;
+    return c >= '0' && c <= '9';
 }
 
 int
@@ -63,10 +52,10 @@ is_of_operator(char c)
 int
 is_operator(str* s)
 {
-    return str_equal(s, "+")
-        || str_equal(s, "-")
-        || str_equal(s, "/")
-        || str_equal(s, "*");
+    return str_match(s, "+")
+        || str_match(s, "-")
+        || str_match(s, "/")
+        || str_match(s, "*");
 }
 
 int

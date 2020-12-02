@@ -45,14 +45,14 @@ function perf_compile_two_bar
 }
 
 perf_graph \
-    'map.log' \
-    "std::map<int, int> vs. CTL map_int_int ($CFLAGS)" \
-    "tests/perf/map/perf_map_insert.cc \
-     tests/perf/map/perf_map_insert.c \
-     tests/perf/map/perf_map_erase.cc \
-     tests/perf/map/perf_map_erase.c
-     tests/perf/map/perf_map_iterate.cc \
-     tests/perf/map/perf_map_iterate.c"
+    'set.log' \
+    "std::set<int> vs. CTL set_int ($CFLAGS)" \
+    "tests/perf/set/perf_set_insert.cc \
+     tests/perf/set/perf_set_insert.c \
+     tests/perf/set/perf_set_erase.cc \
+     tests/perf/set/perf_set_erase.c
+     tests/perf/set/perf_set_iterate.cc \
+     tests/perf/set/perf_set_iterate.c"
 
 perf_graph \
     'pqu.log' \

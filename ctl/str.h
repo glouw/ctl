@@ -161,9 +161,21 @@ str_compare(str* self, const char* s)
 }
 
 static inline int
-str_equal(str* self, const char* s)
+str_match(str* self, const char* s)
 {
     return str_compare(self, s) == 0;
+}
+
+static inline int
+str_key_compare(str* self, str* b)
+{
+    return str_compare(self, str_c_str(b));
+}
+
+static inline int
+str_equal(str* self, str* b)
+{
+    return str_key_compare(self, b) == 0;
 }
 
 #endif

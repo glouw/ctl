@@ -59,7 +59,6 @@ TESTS = \
 	tests/func/test_container_composing \
 	tests/func/test_deq \
 	tests/func/test_lst \
-	tests/func/test_map \
 	tests/func/test_str \
 	tests/func/test_pqu \
 	tests/func/test_que \
@@ -70,7 +69,8 @@ TESTS = \
 
 EXAMPLES = \
 	examples/astar \
-	examples/postfix
+	examples/postfix \
+	examples/6502
 
 all: $(TESTS)
 	$(foreach bin,$(TESTS),./$(bin) &&) exit 0
@@ -98,18 +98,16 @@ que:
 	$(call expand,$@,-DT=int -DP)
 pqu:
 	$(call expand,$@,-DT=int -DP)
-map:
-	$(call expand,$@,-DT=int -DU=float -DP)
 set:
 	$(call expand,$@,-DT=int -DP)
 
 examples/astar:                		 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 examples/postfix:              		 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
+examples/6502:                		 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 tests/func/test_c99:                 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 tests/func/test_container_composing: ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_deq:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_lst:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
-tests/func/test_map:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_pqu:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_que:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_set:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@

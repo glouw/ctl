@@ -8,11 +8,6 @@
 
 #define P
 #define T int
-#define U int
-#include <map.h>
-
-#define P
-#define T int
 #include <que.h>
 
 #define P
@@ -54,7 +49,6 @@ int main(void)
     set_int e = set_int_init(compare_key_int);
     stk_int f = stk_int_init();
     str g = str_init("test");
-    map_int_int h = map_int_int_init(compare_key_int);
     pqu_int i = pqu_int_init(compare_int);
 
     deq_int_push_back(&a, 1);
@@ -65,7 +59,6 @@ int main(void)
     que_int_push(&d, 1);
     set_int_insert(&e, 1);
     stk_int_push(&f, 1);
-    map_int_int_insert(&h, 1, 1);
     pqu_int_push(&i, 1);
 
     deq_int_pop_back(&a);
@@ -76,7 +69,6 @@ int main(void)
     que_int_pop(&d);
     set_int_erase(&e, 1);
     stk_int_pop(&f);
-    map_int_int_erase(&h, 1);
     pqu_int_pop(&i);
 
     deq_int_free(&a);
@@ -86,6 +78,5 @@ int main(void)
     set_int_free(&e);
     stk_int_free(&f);
     str_free(&g);
-    map_int_int_free(&h);
     pqu_int_free(&i);
 }

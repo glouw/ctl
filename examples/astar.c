@@ -1,3 +1,6 @@
+//
+// -- A* PATHFINDER --
+//
 // For implementation details:
 //     https://www.redblobgames.com/pathfinding/a-star/introduction.html
 
@@ -52,6 +55,32 @@ point_key_compare(point* a, point* b)
     return (i == j) ? 0 : (i < j) ? -1 : 1;
 }
 
+typedef struct
+{
+    point p;
+    int i;
+}
+pi;
+
+typedef struct
+{
+    point a;
+    point b;
+}
+pp;
+
+int
+pp_key_compare(pp* a, pp* b)
+{
+    return point_key_compare(&a->a, &b->a);
+}
+
+int
+pi_key_compare(pi* a, pi* b)
+{
+    return point_key_compare(&a->p, &b->p);
+}
+
 #define P
 #define T point
 #include <pqu.h>
@@ -61,14 +90,12 @@ point_key_compare(point* a, point* b)
 #include <deq.h>
 
 #define P
-#define T point
-#define U int
-#include <map.h>
+#define T pi
+#include <set.h>
 
 #define P
-#define T point
-#define U point
-#include <map.h>
+#define T pp
+#include <set.h>
 
 deq_point
 astar(str* maze, int width)
@@ -77,9 +104,9 @@ astar(str* maze, int width)
     point goal = point_from(maze, "!", width);
     pqu_point front = pqu_point_init(point_compare_priority);
     pqu_point_push(&front, start);
-    map_point_point from = map_point_point_init(point_key_compare);
-    map_point_int costs = map_point_int_init(point_key_compare);
-    map_point_int_insert(&costs, start, 0);
+    set_pp from = set_pp_init(pp_key_compare);
+    set_pi costs = set_pi_init(pi_key_compare);
+    set_pi_insert(&costs, (pi) {start, 0});
     while(!pqu_point_empty(&front))
     {
         point current = *pqu_point_top(&front);
@@ -95,17 +122,17 @@ astar(str* maze, int width)
         {
             point delta = deltas[i];
             point next = point_init(current.x + delta.x, current.y + delta.y, width);
-            int new_cost = *map_point_int_at(&costs, current);
+            int new_cost = set_pi_find(&costs, (pi) {.p = current})->key.i;
             if(maze->value[point_index(&next)] != '#')
             {
-                map_point_int_node* cost = map_point_int_find(&costs, next);
-                if(cost == map_point_int_end(&costs)
-                || new_cost < cost->second)
+                set_pi_node* cost = set_pi_find(&costs, (pi) {.p = next});
+                if(cost == set_pi_end(&costs)
+                || new_cost < cost->key.i)
                 {
-                    map_point_int_insert(&costs, next, new_cost);
+                    set_pi_insert(&costs, (pi) {next, new_cost});
                     next.priorty = new_cost + abs(goal.x - next.x) + abs(goal.y - next.y);
                     pqu_point_push(&front, next);
-                    map_point_point_insert(&from, next, current);
+                    set_pp_insert(&from, (pp) { next, current });
                 }
             }
         }
@@ -115,12 +142,12 @@ astar(str* maze, int width)
     while(!point_equal(&current, &start))
     {
         deq_point_push_front(&path, current);
-        current = *map_point_point_at(&from, current);
+        current = set_pp_find(&from, (pp) {.a = current})->key.b;
     }
     deq_point_push_front(&path, start);
     pqu_point_free(&front);
-    map_point_point_free(&from);
-    map_point_int_free(&costs);
+    set_pp_free(&from);
+    set_pi_free(&costs);
     return path;
 }
 
