@@ -716,11 +716,8 @@ JOIN(A, symmetric_difference)(A* a, A* b)
 }
 
 #undef T
-
 #undef A
 #undef B
-#undef C
-#undef D
 #undef I
 
 #ifdef USE_INTERNAL_VERIFY
