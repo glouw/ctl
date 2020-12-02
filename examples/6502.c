@@ -24,96 +24,199 @@ quit(char* message, ...)
     exit(1);
 }
 
+#define BINDS X(TYPE) X(STRUCTURE) X(VARIABLE) X(INTERNAL)
+
 typedef enum
 {
-    LOCAL, GLOBAL, ARRAY, STRUCTURE, FUNCTION, RESERVED
+#define X(name) name,
+BINDS
+#undef X
 }
-fam_t;
+bind_t;
+
+char*
+printable(bind_t bind)
+{
+    return (char* [])
+    {
+#define X(name) #name,
+BINDS
+#undef X
+    }
+    [bind];
+}
 
 typedef struct
 {
-    str name; // NEEDS TYPE.
+    bind_t bind;
+    str type;
+    str name; // KEY.
+    size_t size;
     size_t offset;
 }
-offsetof_t;
+var_t;
 
-offsetof_t
-offsetof_t_copy(offsetof_t* self)
+void
+tab(size_t n)
 {
-    return (offsetof_t)
+    while(n--)
+        printf("\t");
+}
+
+void
+var_t_print(var_t* var, size_t tabs)
+{
+    tab(tabs); printf("name : %s\n", var->name.value);
+    tab(tabs); printf("\tbind : %s\n", printable(var->bind));
+    tab(tabs); printf("\ttype : %s\n", var->type.value);
+    tab(tabs); printf("\tsize : %lu\n", var->size);
+    tab(tabs); printf("\toffs : %lu\n", var->offset);
+}
+
+var_t
+var_t_init(str type, str name, bind_t bind, size_t size, size_t offset)
+{
+    return (var_t)
     {
-        str_copy(&self->name),
-        self->offset
+        .type = type,
+        .name = name,
+        .bind = bind,
+        .size = size,
+        .offset = offset,
+    };
+}
+
+var_t
+var_t_copy(var_t* self)
+{
+    return (var_t)
+    {
+        .type = str_copy(&self->name),
+        .bind = self->bind,
+        .name = str_copy(&self->type),
+        .size = self->size,
+        .offset = self->offset,
     };
 }
 
 void
-offsetof_t_free(offsetof_t* self)
+var_t_free(var_t* self)
 {
+    str_free(&self->type);
     str_free(&self->name);
+    *self = (var_t) { 0 };
 }
 
 int
-offsetof_t_key_compare(offsetof_t* a, offsetof_t* b)
+var_t_key_compare(var_t* a, var_t* b)
 {
     return str_key_compare(&a->name, &b->name);
 }
 
-#define T offsetof_t
+#define T var_t
 #include <set.h>
 
-typedef struct
+void
+set_var_t_put(set_var_t* self, var_t var)
 {
-    str type;
-    size_t size;
-    set_offsetof_t offset;
+    if(set_var_t_contains(self, var))
+        quit("'%s' already defined", var.name.value);
+    set_var_t_insert(self, var);
 }
-sizeof_t; // NEEDS SET.
+
+var_t*
+set_var_t_get(set_var_t* self, str name)
+{
+    set_var_t_node* node = set_var_t_find(self, (var_t) {.name = name});
+    if(!node)
+        quit("'%s' not defined", name.value);
+    return &node->key;
+}
 
 typedef struct
 {
-    str name;
-    str type;
-    fam_t fam;
+    var_t var;
+    set_var_t member; // FOR STRUCTURE.
 }
-id_t;
+tok_t;
 
-id_t
-id_t_reserve(char* name)
+void
+tok_t_print(tok_t* tok)
 {
-    return (id_t)
+    var_t_print(&tok->var, 0);
+    foreach(set_var_t, &tok->member, it,
+        var_t_print(it.ref, 2);
+    )
+}
+
+tok_t
+tok_t_init(var_t var)
+{
+    return (tok_t)
     {
-        str_init(name),
-        str_init(""),
-        RESERVED
+        .var = var,
+        .member = set_var_t_init(var_t_key_compare)
     };
 }
 
-id_t
-id_t_copy(id_t* self)
+tok_t
+tok_t_copy(tok_t* self)
 {
-    return (id_t)
+    return (tok_t)
     {
-        str_copy(&self->type),
-        str_copy(&self->name),
-        self->fam
+        .var = var_t_copy(&self->var),
+        .member = set_var_t_copy(&self->member)
     };
 }
 
 void
-id_t_free(id_t* self)
+tok_t_free(tok_t* self)
 {
-    str_free(&self->name);
+    var_t_free(&self->var);
+    set_var_t_free(&self->member);
+    *self = (tok_t) { 0 };
 }
 
 int
-id_t_key_compare(id_t* a, id_t* b)
+tok_t_key_compare(tok_t* a, tok_t* b)
 {
-    return str_key_compare(&a->name, &b->name);
+    return var_t_key_compare(&a->var, &b->var);
 }
 
-#define T id_t
+tok_t
+tok_t_keyword(str name, bind_t bind)
+{
+    var_t var = var_t_init(str_init(""), name, bind, 0, 0);
+    return tok_t_init(var);
+}
+
+tok_t
+tok_t_keyword_type(str name, bind_t bind, size_t size)
+{
+    tok_t tok = tok_t_keyword(name, bind);
+    tok.var.size = size;
+    return tok;
+}
+
+#define T tok_t
 #include <set.h>
+
+void
+set_tok_t_put(set_tok_t* self, tok_t tok)
+{
+    if(set_tok_t_contains(self, tok))
+        quit("'%s' already defined", tok.var.name.value);
+    set_tok_t_insert(self, tok);
+}
+
+tok_t*
+set_tok_t_get(set_tok_t* self, str name)
+{
+    set_tok_t_node* node = set_tok_t_find(self, (tok_t) {.var = {.name = name}});
+    if(!node)
+        quit("'%s' not defined", name.value);
+    return &node->key;
+}
 
 deq_char
 extract(str* code)
@@ -170,17 +273,6 @@ pop(deq_char* feed)
     deq_char_pop_front(feed);
 }
 
-void
-send_back(deq_char* feed, str* s)
-{
-    while(s->size > 0)
-    {
-        deq_char_push_front(feed, *str_back(s));
-        str_pop_back(s);
-    }
-    str_free(s);
-}
-
 char
 next(deq_char* feed)
 {
@@ -211,53 +303,67 @@ identifier(deq_char* feed)
     return s;
 }
 
-void
-structure(deq_char* feed)
+set_tok_t
+setup_keywords(void)
 {
-    str temp = identifier(feed);
-    if(!str_match(&temp, "struct"))
-        quit("missing keyword 'struct'");
-    str type = identifier(feed);
-    match(feed, '{');
-    while(next(feed) != '}')
+    set_tok_t toks = set_tok_t_init(tok_t_key_compare);
+    char* internals[] = {
+        "if",
+        "else",
+        "while",
+        "def",
+        "struct"
+    };
+    for(size_t i = 0; i < len(internals); i++)
+        set_tok_t_put(&toks, tok_t_keyword(str_init(internals[i]), INTERNAL));
+    struct
     {
-        str type = identifier(feed); // INSERT TO SIZEOF SET
-        str name = identifier(feed);
-        match(feed, ';');
+        char* a;
+        size_t b;
     }
-    match(feed, '}');
-    str_free(&temp);
+    types[] = {
+        { "u8",   1 },
+        { "void", 0 },
+    };
+    for(size_t i = 0; i < len(types); i++)
+        set_tok_t_put(&toks, tok_t_keyword_type(str_init(types[i].a), TYPE, types[i].b));
+    return toks;
 }
 
-set_id_t
-reserve(void)
+void
+structure(deq_char* feed, set_tok_t* toks)
 {
-    set_id_t ids = set_id_t_init(id_t_key_compare);
-    char* reserved[] = {
-        "struct",
-        "u8",
-        "void"
-    };
-    for(size_t i = 0; i < len(reserved); i++)
+    tok_t tok = tok_t_keyword(identifier(feed), STRUCTURE);
+    match(feed, '{');
+    size_t offset = 0;
+    while(next(feed) != '}')
     {
-        id_t id = id_t_reserve(reserved[i]);
-        set_id_t_insert(&ids, id);
+        str type = identifier(feed);
+        str name = identifier(feed);
+        size_t size = set_tok_t_get(toks, type)->var.size;
+        var_t var = var_t_init(type, name, VARIABLE, size, offset);
+        set_var_t_put(&tok.member, var);
+        offset += size;
+        match(feed, ';');
     }
-    return ids;
+    tok.var.size = offset;
+    set_tok_t_put(toks, tok);
+    match(feed, '}');
 }
 
 void
 program(deq_char* feed)
 {
-    set_id_t ids = reserve();
+    set_tok_t toks = setup_keywords();
     str s = identifier(feed);
     if(str_match(&s, "struct"))
-    {
-        send_back(feed, &s);
-        structure(feed);
-    }
-    set_id_t_free(&ids);
+        structure(feed, &toks);
+    else
+    if(str_match(&s, "proc"))
+        procedure(feed, &toks);
     str_free(&s);
+    foreach(set_tok_t, &toks, it, tok_t_print(it.ref);)
+    set_tok_t_free(&toks);
 }
 
 int
@@ -269,6 +375,14 @@ main(void)
         "   {             \n"
         "       u8 a;     \n"
         "       u8 b;     \n"
+        "       u8 c;     \n"
+        "       u8 d;     \n"
+        "       u8 e;     \n"
+        "       u8 f;     \n"
+        "       u8 g;     \n"
+        "   }             \n"
+        "   proc main()   \n"
+        "   {             \n"
         "   }             \n"
     );
     deq_char feed = extract(&code);
