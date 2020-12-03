@@ -52,10 +52,10 @@ is_of_operator(char c)
 int
 is_operator(str* s)
 {
-    return str_match(s, "+")
-        || str_match(s, "-")
-        || str_match(s, "/")
-        || str_match(s, "*");
+    return str_compare(s, "+") == 0
+        || str_compare(s, "-") == 0
+        || str_compare(s, "/") == 0
+        || str_compare(s, "*") == 0;
 }
 
 int

@@ -74,7 +74,7 @@ str_c_str(str* self)
 static inline size_t
 str_find(str* self, const char* s)
 {
-    char* c_str = str_c_str(self);
+    char* c_str = self->value;
     char* found = strstr(c_str, s);
     if(found)
         return found - c_str;
@@ -84,7 +84,7 @@ str_find(str* self, const char* s)
 static inline size_t
 str_rfind(str* self, const char* s)
 {
-    char* c_str = str_c_str(self);
+    char* c_str = self->value;
     for(size_t i = self->size; i != SIZE_MAX; i--)
     {
         char* found = strstr(&c_str[i], s);
@@ -157,25 +157,13 @@ str_substr(str* self, size_t index, size_t size)
 static inline int
 str_compare(str* self, const char* s)
 {
-    return strcmp(str_c_str(self), s);
+    return strcmp(self->value, s);
 }
 
 static inline int
-str_match(str* self, const char* s)
+str_key_compare(str* self, str* s)
 {
-    return str_compare(self, s) == 0;
-}
-
-static inline int
-str_key_compare(str* self, str* b)
-{
-    return str_compare(self, str_c_str(b));
-}
-
-static inline int
-str_equal(str* self, str* b)
-{
-    return str_key_compare(self, b) == 0;
+    return strcmp(self->value, s->value);
 }
 
 #endif

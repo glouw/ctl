@@ -477,18 +477,18 @@ expression(deq_char* feed, set_tok_t* toks)
     while(is_operator(next(feed)))
     {
         str o = operator(feed);
-        if(str_match(&o, "."))
+        if(str_compare(&o, ".") == 0)
         {
             str s = identifier(feed);
             str_free(&s);
             goto skip;
         }
         else
-        if(str_match(&o, "+"))
+        if(str_compare(&o, "+") == 0)
         {
         }
         else
-        if(str_match(&o, "-"))
+        if(str_compare(&o, "-") == 0)
         {
         }
         else
