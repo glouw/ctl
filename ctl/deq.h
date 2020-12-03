@@ -446,6 +446,16 @@ JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
     return 1;
 }
 
+static inline T*
+JOIN(A, find)(A* self, T key, int equal(T*, T*))
+{
+    foreach(A, self, it,
+        if(equal(it.ref, &key))
+            return it.ref;
+    );
+    return NULL;
+}
+
 #undef T
 #undef A
 #undef B

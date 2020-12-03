@@ -1,0 +1,5 @@
+find for all
+test find for all
+return NULL if not found (contary to end of STL)
+at() unique for each (dont reference begin and end, it too clunky, unless its list
+str_append, str_insert_str, str_replace, use str as second arg?
