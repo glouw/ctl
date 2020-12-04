@@ -1,239 +1,116 @@
 //
 // -- SIMPLE 6502 COMPILER --
 //
-// For implementation details:
-//     https://compilers.iecc.com/crenshaw/
 
-#include <stdarg.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <str.h>
+#include <assert.h>
 
 #define P
 #define T char
 #include <deq.h>
 
-#define T str
-#include <vec.h>
+typedef char* charp;
 
-#define POINTER_SIZE (sizeof(uint16_t))
+int
+charp_key_compare(char** a, char** b)
+{
+    return strcmp(*a, *b);
+}
 
-size_t line = 0;
+#define P
+#define T charp
+#include <set.h>
+
+struct
+{
+    int line;
+    int addr;
+}
+global;
 
 void
 quit(char* message, ...)
 {
     va_list args;
+    printf("error: line %d: ", global.line);
     va_start(args, message);
-    printf("error: line %lu: ", line);
-    vprintf(message, args);
-    putchar('\n');
+    vfprintf(stdout, message, args);
     va_end(args);
+    fflush(stdout);
     exit(1);
 }
 
-#define BINDS X(TYPE) X(VARIABLE) X(REFERENCE) X(INTERNAL) X(FUNCTION) X(STRUCTURE) X(RETURN)
-
-typedef enum
-{
-#define X(name) name,
-BINDS
-#undef X
-}
-bind_t;
-
-char*
-printable(bind_t bind)
-{
-    return (char* [])
-    {
-#define X(name) #name,
-BINDS
-#undef X
-    }
-    [bind];
-}
-
 typedef struct
 {
-    bind_t bind;
     str type;
-    str name; // KEY.
+    str name;
     size_t size;
-    size_t offset;
+    size_t addr;
 }
-var_t;
+token;
 
-void
-tab(size_t n)
+token
+token_copy(token* self)
 {
-    while(n--)
-        printf("\t");
-}
-
-void
-var_t_print(var_t* var, size_t tabs)
-{
-    tab(tabs); printf("name : %s\n", var->name.value);
-    tab(tabs); printf("\tbind : %s\n", printable(var->bind));
-    tab(tabs); printf("\ttype : %s\n", var->type.value);
-    tab(tabs); printf("\tsize : %lu\n", var->size);
-    tab(tabs); printf("\toffs : %lu\n", var->offset);
-}
-
-var_t
-var_t_init(str type, str name, bind_t bind, size_t size, size_t offset)
-{
-    return (var_t)
-    {
-        .type = type,
-        .name = name,
-        .bind = bind,
-        .size = size,
-        .offset = offset,
-    };
-}
-
-var_t
-var_t_copy(var_t* self)
-{
-    return (var_t)
-    {
-        .type = str_copy(&self->name),
-        .bind = self->bind,
-        .name = str_copy(&self->type),
-        .size = self->size,
-        .offset = self->offset,
-    };
+    return (token) { str_copy(&self->type), str_copy(&self->name), self->size, self->addr };
 }
 
 void
-var_t_free(var_t* self)
+token_free(token* self)
 {
     str_free(&self->type);
     str_free(&self->name);
-    *self = (var_t) { 0 };
 }
 
 int
-var_t_key_compare(var_t* a, var_t* b)
+token_key_compare(token* a, token* b)
 {
-    return str_key_compare(&a->name, &b->name);
+    return strcmp(a->name.value, b->name.value);
 }
 
-var_t
-var_t_key(str name)
+token
+identifier(char* type, char* name, size_t size, size_t addr)
 {
-    var_t key;
+    return (token) { str_init(type), str_init(name), size, addr };
+}
+
+token
+keyword(char* name, size_t size)
+{
+    return identifier(name, name, size, 0);
+}
+
+#define T token
+#include <set.h>
+
+deq_char feed;
+
+set_token tokens;
+
+token*
+find(const str name)
+{
+    token key;
     key.name = name;
-    return key;
-}
-
-#define T var_t
-#include <set.h>
-
-void
-set_var_t_put(set_var_t* self, var_t var)
-{
-    if(set_var_t_contains(self, var))
-        quit("'%s' already defined", var.name.value);
-    set_var_t_insert(self, var);
-}
-
-var_t*
-set_var_t_get(set_var_t* self, str name)
-{
-    set_var_t_node* node = set_var_t_find(self, var_t_key(name));
-    if(!node)
-        quit("'%s' not defined", name.value);
-    return &node->key;
-}
-
-typedef struct
-{
-    var_t var;
-    set_var_t member; // FOR STRUCTURES.
-}
-tok_t;
-
-void
-tok_t_print(tok_t* tok)
-{
-    var_t_print(&tok->var, 0);
-    foreach(set_var_t, &tok->member, it,
-        var_t_print(it.ref, 2);
-    )
-}
-
-tok_t
-tok_t_init(str type, str name, bind_t bind, size_t size, size_t offset)
-{
-    return (tok_t)
-    {
-        .var = var_t_init(type, name, bind, size, offset),
-        .member = set_var_t_init(var_t_key_compare)
-    };
-}
-
-tok_t
-tok_t_copy(tok_t* self)
-{
-    return (tok_t)
-    {
-        .var = var_t_copy(&self->var),
-        .member = set_var_t_copy(&self->member)
-    };
+    set_token_node* node = set_token_find(&tokens, key);
+    if(node)
+        return &node->key;
+    return NULL;
 }
 
 void
-tok_t_free(tok_t* self)
+insert(token t)
 {
-    var_t_free(&self->var);
-    set_var_t_free(&self->member);
-    *self = (tok_t) { 0 };
+    set_token_insert(&tokens, t);
 }
-
-int
-tok_t_key_compare(tok_t* a, tok_t* b)
-{
-    return var_t_key_compare(&a->var, &b->var);
-}
-
-tok_t
-tok_t_key(str name)
-{
-    tok_t key;
-    key.var = var_t_key(name);
-    return key;
-}
-
-#define T tok_t
-#include <set.h>
 
 void
-set_tok_t_put(set_tok_t* self, tok_t tok)
+queue(str* code)
 {
-    if(set_tok_t_contains(self, tok))
-        quit("'%s' already defined", tok.var.name.value);
-    set_tok_t_insert(self, tok);
-}
-
-tok_t*
-set_tok_t_get(set_tok_t* self, str name)
-{
-    set_tok_t_node* node = set_tok_t_find(self, tok_t_key(name));
-    if(!node)
-        quit("'%s' not defined", name.value);
-    return &node->key;
-}
-
-deq_char
-extract(str* code)
-{
-    deq_char feed = deq_char_init();
-    foreach(str, code, it,
-        deq_char_push_back(&feed, *it.ref);
-    )
-    return feed;
+    for(size_t i = 0; i < code->size; i++)
+        deq_char_push_back(&feed, code->value[i]);
 }
 
 int
@@ -249,514 +126,367 @@ is_digit(char c)
 }
 
 int
-is_operator(char c)
-{
-    return c == '+' || c == '-' || c == '.';
-}
-
-int
 is_alpha(char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
 int
-is_alnum(char c)
+is_operator(char c)
 {
-    return is_alpha(c) || is_digit(c);
+    return !is_space(c) && !is_digit(c) && !is_alpha(c) && c != '(';
+}
+
+int
+valid_operator(str* s)
+{
+    return str_compare(s, "+") == 0
+        || str_compare(s, "-") == 0;
 }
 
 int
 is_ident(char c)
 {
-    return is_alnum(c) || c == '_';
+    return is_digit(c) || is_alpha(c) || c == '_';
+}
+
+void
+pop(void)
+{
+    deq_char_pop_front(&feed);
 }
 
 char
-peek(deq_char* feed)
+front(void)
 {
-    return *deq_char_front(feed);
+    return *deq_char_front(&feed);
 }
 
 void
-pop(deq_char* feed)
+space(void)
 {
-    if(peek(feed) == '\n')
-        line += 1;
-    deq_char_pop_front(feed);
-}
-
-void
-advance(deq_char* feed)
-{
-    while(!deq_char_empty(feed) && is_space(peek(feed)))
-        pop(feed);
+    for(char c; is_space(c = front());)
+    {
+        if(c == '\n')
+            global.line += 1;
+        pop();
+    }
 }
 
 char
-next(deq_char* feed)
+next(void)
 {
-    advance(feed);
-    return peek(feed);
+    space();
+    return front();
 }
 
 void
-match(deq_char* feed, char c)
+match(char c)
 {
-    if(next(feed) != c)
-        quit("expected %c", c);
-    pop(feed);
-}
-
-tok_t
-tok_t_keyword(str name, bind_t bind, size_t size)
-{
-    return tok_t_init(str_init(""), name, bind, size, 0);
+    if(next() != c)
+        quit("expected '%c' but got '%c'\n", c, next());
+    pop();
 }
 
 str
-identifier(deq_char* feed)
+read(int pred(char))
 {
-    if(!is_ident(next(feed)))
-        quit("identfier must start with letter or underscore");
+    space();
     str s = str_init("");
-    while(is_ident(peek(feed)))
+    for(char c; pred(c = front());)
     {
-        str_push_back(&s, peek(feed));
-        pop(feed);
+        str_push_back(&s, c);
+        pop();
     }
     return s;
-}
-
-str
-digit(deq_char* feed)
-{
-    str s = str_init("");
-    while(is_digit(peek(feed)))
-    {
-        str_push_back(&s, peek(feed));
-        pop(feed);
-    }
-    return s;
-}
-
-str
-operator(deq_char* feed)
-{
-    str s = str_init("");
-    while(is_operator(peek(feed)))
-    {
-        str_push_back(&s, peek(feed));
-        pop(feed);
-    }
-    return s;
-}
-
-set_tok_t
-setup_keywords(void)
-{
-    set_tok_t toks = set_tok_t_init(tok_t_key_compare);
-    char* internals[] = {
-        "if",
-        "else",
-        "while",
-    };
-    for(size_t i = 0; i < len(internals); i++)
-    {
-        tok_t tok = tok_t_keyword(str_init(internals[i]), INTERNAL, 0);
-        set_tok_t_put(&toks, tok);
-    }
-    struct
-    {
-        char* a;
-        size_t b;
-    }
-    types[] = {
-        { "u8",   1 },
-        { "void", 0 },
-    };
-    for(size_t i = 0; i < len(types); i++)
-    {
-        tok_t tok = tok_t_keyword(str_init(types[i].a), TYPE, types[i].b);
-        set_tok_t_put(&toks, tok);
-    }
-    struct
-    {
-        char* a;
-        bind_t b;
-    }
-    mixed[] = {
-        { "struct", STRUCTURE },
-        { "return", RETURN    },
-    };
-    for(size_t i = 0; i < len(mixed); i++)
-    {
-        tok_t tok = tok_t_keyword(str_init(mixed[i].a), mixed[i].b, 0);
-        set_tok_t_put(&toks, tok);
-    }
-    return toks;
-}
-
-void
-structure(deq_char* feed, set_tok_t* toks)
-{
-    tok_t tok = tok_t_init(str_init("struct"), identifier(feed), TYPE, 0, 0);
-    match(feed, '{');
-    size_t offset = 0;
-    while(next(feed) != '}')
-    {
-        str type = identifier(feed);
-        str name = identifier(feed);
-        size_t size = set_tok_t_get(toks, type)->var.size;
-        var_t var = var_t_init(type, name, VARIABLE, size, offset);
-        set_var_t_put(&tok.member, var);
-        offset += size;
-        match(feed, ';');
-    }
-    tok.var.size = offset;
-    set_tok_t_put(toks, tok);
-    match(feed, '}');
-}
-
-str
-slide(deq_char* feed, set_tok_t* toks, str name)
-{
-    str full = str_copy(&name);
-    var_t* var = &set_tok_t_get(toks, name)->var;
-    tok_t* tok = set_tok_t_get(toks, var->type);
-    while(next(feed) == '.')
-    {
-        match(feed, '.');
-        str_push_back(&full, '.');
-        tok_t* internal = set_tok_t_get(toks, tok->var.type);
-        if(internal->var.bind != STRUCTURE)
-            quit("dot operator used on element that is not a structure");
-        str n = identifier(feed);
-        str_append(&full, n.value);
-        var_t* sub = set_var_t_get(&tok->member, n);
-        tok = set_tok_t_get(toks, sub->type);
-        str_free(&n);
-    }
-    return full;
-}
-
-void
-expression(deq_char* feed, set_tok_t* toks);
-
-void
-call(deq_char* feed, set_tok_t* toks)
-{
-}
-
-void
-term(deq_char* feed, set_tok_t* toks)
-{
-    if(next(feed) == '(')
-    {
-        match(feed, '(');
-        expression(feed, toks);
-        match(feed, ')');
-    }
-    else
-    if(is_digit(next(feed)))
-    {
-        str s = digit(feed);
-        str_free(&s);
-    }
-    else
-    if(is_ident(next(feed)))
-    {
-        str s = identifier(feed);
-        var_t* var = &set_tok_t_get(toks, s)->var;
-        if(var->bind == FUNCTION)
-        {
-            match(feed, '(');
-            size_t args = 0;
-            while(next(feed) != ')')
-            {
-                expression(feed, toks);
-                args += 1;
-                if(next(feed) == ')')
-                    break;
-                match(feed, ',');
-            }
-            if(args != var->size)
-                quit("argument mismatch");
-            match(feed, ')');
-            call(feed, toks);
-        }
-        else
-        if(var->bind == VARIABLE || var->bind == REFERENCE)
-        {
-            str full = slide(feed, toks, s);
-            str_free(&full);
-        }
-        else
-            quit("unknown token bind '%s'", printable(var->bind));
-        str_free(&s);
-    }
-    else
-        quit("unable to parse expression");
-}
-
-void
-expression(deq_char* feed, set_tok_t* toks)
-{
-    term(feed, toks);
-    while(is_operator(next(feed)))
-    {
-        str o = operator(feed);
-        if(str_compare(&o, "+") == 0)
-        {
-        }
-        else
-        if(str_compare(&o, "-") == 0)
-        {
-        }
-        else
-            quit("unsupported operator");
-        term(feed, toks);
-        str_free(&o);
-    }
-}
-
-void
-local(str* type, str* name, size_t size, set_tok_t* toks, int* sp, vec_str* locals, bind_t bind)
-{
-    tok_t tok = tok_t_init(str_copy(type), str_copy(name), bind, size, *sp);
-    *sp += size;
-    set_tok_t_put(toks, tok);
-    vec_str_push_back(locals, str_copy(name));
-}
-
-void
-ret(deq_char* feed, set_tok_t* toks)
-{
-    expression(feed, toks);
-    match(feed, ';');
 }
 
 int
-tok_t_is_structure(tok_t* tok)
+is_ref(str* t)
 {
-    return tok->member.size > 0;
+    return *str_back(t) == '&';
 }
 
-void
-brace_initializer(deq_char* feed, set_tok_t* toks, tok_t* tok)
+charp
+infer(str* t)
 {
-    match(feed, '{');
-    while(next(feed) != '}')
+    charp type;
+    if(is_digit(t->value[0]))
+        type = "u8";
+    else
     {
-        match(feed, '.');
-        str name = identifier(feed);
-        match(feed, '=');
-        expression(feed, toks);
-        set_var_t_get(&tok->member, name); // JUST TO ENSURE.
-        str_free(&name);
-        if(next(feed) == '}')
-            break;
-        match(feed, ',');
-    }
-    match(feed, '}');
-    match(feed, ';');
-}
-
-void
-backup(deq_char* feed, str* s)
-{
-    while(!str_empty(s))
-    {
-        char c = *str_back(s);
-        deq_char_push_front(feed, c);
-        str_pop_back(s);
-    }
-}
-
-void
-block(deq_char* feed, set_tok_t* toks, int* sp, vec_str* locals)
-{
-    match(feed, '{');
-    while(next(feed) != '}')
-    {
-        if(next(feed) == '(' || is_digit(next(feed)))
+        int ref = is_ref(t);
+        if(ref)
+            str_pop_back(t);
+        token* tok = find(*t);
+        if(tok)
         {
-            expression(feed, toks);
-            match(feed, ';');
-        }
-        else
-        {
-            str ident = identifier(feed);
-            var_t* var = &set_tok_t_get(toks, ident)->var;
-            // INITIALIZE.
-            if(var->bind == TYPE)
+            if(ref)
             {
-                int is_ref = 0;
-                str type = str_copy(&ident);
-                if(next(feed) == '&')
-                {
-                    is_ref = 1;
-                    match(feed, '&');
-                }
-                str name = identifier(feed);
-                if(is_ref)
-                    local(&type, &name, POINTER_SIZE, toks, sp, locals, REFERENCE);
+                str temp = str_copy(&tok->type);
+                str_append(&temp, "&");
+                token* ref_tok = find(temp);
+                if(ref_tok)
+                    type = ref_tok->type.value;
                 else
-                    local(&type, &name, var->size, toks, sp, locals, VARIABLE);
-                match(feed, '=');
-                tok_t* tok = set_tok_t_get(toks, type);
-                // BY REFERENCE.
-                if(is_ref)
-                {
-                    str other = identifier(feed);
-                    var_t* a = &set_tok_t_get(toks, name)->var;
-                    var_t* b = &set_tok_t_get(toks, other)->var;
-                    if(str_key_compare(&a->type, &b->type) != 0)
-                        quit("reference type mismatch (`%s` and `%s`)", a->type.value, b->type.value);
-                    str_free(&other);
-                    match(feed, ';');
-                }
-                // BY STRUCTURE BRACE.
-                else
-                if(tok_t_is_structure(tok))
-                    brace_initializer(feed, toks, tok);
-                // BY EXPRESSION.
-                else
-                {
-                    expression(feed, toks);
-                    match(feed, ';');
-                }
-                str_free(&type);
-                str_free(&name);
-            }
-            else
-            if(var->bind == RETURN)
-                ret(feed, toks);
-            // ASSIGN, OR BACKUP AND EXECUTE EXPRESSION.
-            else
-            {
-                str temp = slide(feed, toks, ident);
-                if(next(feed) == '=')
-                    match(feed, '=');
-                else
-                    backup(feed, &temp);
-                expression(feed, toks);
-                match(feed, ';');
+                    quit("type '%s' not defined; type inference failed", temp.value);
                 str_free(&temp);
             }
-            str_free(&ident);
+            else
+                type = tok->type.value;
         }
+        else
+            quit("type '%s' not defined; type inference failed", t->value);
     }
-    match(feed, '}');
+    return type;
 }
 
-void
-function(deq_char* feed, set_tok_t* toks, int* sp, str ret_type)
+str
+expression(set_charp* types);
+
+str
+term(set_charp* types)
 {
-    vec_str locals = vec_str_init();
-    str fun_name = identifier(feed);
-    match(feed, '(');
-    size_t size = 0;
-    while(next(feed) != ')')
+    if(next() == '(')
     {
-        int is_ref = 0;
-        str type = identifier(feed);
-        var_t* var = &set_tok_t_get(toks, type)->var;
-        if(next(feed) == '&')
+        match('(');
+        str out = expression(types);
+        match(')');
+        return out;
+    }
+    else
+    if(is_digit(next()))
+        return read(is_digit);
+    else
+    if(is_ident(next()))
+        return read(is_ident);
+    else
+    {
+        char unary = next();
+        if(unary == '&')
         {
-            is_ref = 1;
-            match(feed, '&');
+            match('&');
+            str name = read(is_ident);
+            str_append(&name, "&");
+            return name;
         }
         else
-        {
-            tok_t* info = set_tok_t_get(toks, type);
-            tok_t* internal = set_tok_t_get(toks, info->var.type);
-            if(internal->var.bind == STRUCTURE)
-                quit("structures may only be passed to functions as references");
-        }
-        str name = identifier(feed);
-        if(var->bind != TYPE)
-            quit("unknown type '%s'", type.value);
-        size += 1;
-        if(is_ref)
-            local(&type, &name, POINTER_SIZE, toks, sp, &locals, REFERENCE);
-        else
-            local(&type, &name, var->size, toks, sp, &locals, VARIABLE);
-        str_free(&type);
-        str_free(&name);
-        if(next(feed) == ')')
+            quit("unary operator '%c' not supported; term generation failed", unary);
+        return str_init("");
+    }
+}
+
+str
+expression(set_charp* types)
+{
+    str t = term(types);
+    set_charp_insert(types, infer(&t));
+    str_free(&t);
+    while(1)
+    {
+        if(next() == ')')
             break;
-        match(feed, ',');
+        if(next() == ';')
+            break;
+        str o = read(is_operator);
+        if(str_empty(&o))
+            quit("missing operator; expression generation failed");
+        if(!valid_operator(&o))
+            quit("invalid operator '%s; expression generation failed'", o.value);
+        str_free(&o);
+        str u = term(types);
+        set_charp_insert(types, infer(&u));
+        str_free(&u);
+        if(types->size > 1)
+        {
+            size_t i = 0;
+            foreach(set_charp, types, it,
+                printf("%2lu : %s\n", i, *it.ref);
+                i += 1;
+            )
+            quit("type mismatch - expression generation failed - see types above");
+        }
     }
-    match(feed, ')');
-    set_tok_t_put(toks, tok_t_init(ret_type, fun_name, FUNCTION, size, 0));
-    block(feed, toks, sp, &locals);
-    foreach(vec_str, &locals, it,
-        set_tok_t_node* node = set_tok_t_find(toks, tok_t_key(*it.ref));
-        var_t* var = &node->key.var;
-        //var_t_print(var, 0);
-        *sp -= var->size;
-        set_tok_t_erase_node(toks, node);
-    )
-    vec_str_free(&locals);
+    return str_init(types->root->key);
 }
 
 void
-program(deq_char* feed, set_tok_t* toks, int* sp)
+evaluate(const str ident)
 {
-    while(!deq_char_empty(feed))
+    // Ensure expression evaluates to a single type.
+    set_charp types = set_charp_init(charp_key_compare);
+    str type = expression(&types);
+    if(types.size == 0)
+        quit("empty initializer; evaluation failed");
+    set_charp_free(&types);
+    // Ensure type is defined.
+    token* defined = find(type);
+    if(!defined)
+        quit("type '%s' not defined; evaluation failed", type.value);
+    // Do not increment global address If the expression is assigned to an existing identifier.
+    token* exists = find(ident);
+    if(exists)
     {
-        str ident = identifier(feed);
-        var_t* var = &set_tok_t_get(toks, ident)->var;
-        if(var->bind == STRUCTURE)
-            structure(feed, toks);
-        else
-        if(var->bind == TYPE)
-            function(feed, toks, sp, str_copy(&ident));
-        str_free(&ident);
-        advance(feed);
+        if(str_key_compare(&type, &exists->type) != 0)
+            quit("assignment type mismatch; evaluation failed");
     }
+    else
+    {
+        insert(identifier(type.value, ident.value, defined->size, global.addr));
+        global.addr += defined->size;
+    }
+    str_free(&type);
+}
+
+void
+fallback(const str ident)
+{
+    for(size_t i = 0; i < ident.size; i++)
+        deq_char_push_front(&feed, ident.value[i]);
+    set_charp types = set_charp_init(charp_key_compare);
+    str type = expression(&types);
+    if(types.size > 1)
+        quit("type mismatch; expression fallback failed");
+    str_free(&type);
+    set_charp_free(&types);
+}
+
+void
+statement(void)
+{
+    while(1)
+    {
+        str ident = read(is_ident);
+        if(next() == '=')
+        {
+            match('=');
+            evaluate(ident);
+        }
+        else
+            fallback(ident);
+        str_free(&ident);
+        if(next() == ';')
+            match(';');
+        if(next() == '}')
+            break;
+    }
+}
+
+void
+block(void)
+{
+    match('{');
+    statement();
+    match('}');
+}
+
+str
+type(void)
+{
+    str ident = read(is_ident);
+    if(next() == '&')
+    {
+        str_push_back(&ident, '&');
+        pop();
+    }
+    return ident;
+}
+
+void
+function(void)
+{
+    str fn = read(is_ident);
+    match('(');
+    while(1)
+    {
+        if(next() == ')')
+            break;
+        str t = type();
+        str n = read(is_ident);
+        token* tok = find(t);
+        size_t size = tok->size;
+        insert(identifier(t.value, n.value, size, global.addr));
+        global.addr += size;
+        str_free(&t);
+        str_free(&n);
+        if(next() == ',')
+            match(',');
+    }
+    match(')');
+    block();
+    str_free(&fn);
+}
+
+void
+program(void)
+{
+    function();
+}
+
+void
+setup(void)
+{
+    feed = deq_char_init();
+    tokens = set_token_init(token_key_compare);
+    insert(keyword("u8", 1));
+    insert(keyword("u8&", 2));
+}
+
+void
+compile(char* text)
+{
+    global.line = 0;
+    global.addr = 0;
+    setup();
+    str code = str_init(text);
+    queue(&code);
+    program();
+    foreach(set_token, &tokens, it,
+        printf("%8s %8s %3lu %3lu\n",
+            it.ref->name.value, it.ref->type.value, it.ref->size, it.ref->addr);
+    )
+    str_free(&code);
+    deq_char_free(&feed);
+    set_token_free(&tokens);
+}
+
+void
+test_spacing(void)
+{
+    compile(
+        "main()                    \n"
+        "{                         \n"
+        "    a = 0;                \n"
+        "    a  = 1+0+1;           \n"
+        "    a   = 1+(0)+1;        \n"
+        "    a    = 1+(0+0)+1;     \n"
+        "    b =  1 + ( 0+0 ) + 1; \n"
+        "    b =  1 + (  0  ) + 1; \n"
+        "    b =  1 + (0 + 0) + 1; \n"
+        "    0;                    \n"
+        "    1+0+1;                \n"
+        "    1+(0)+1;              \n"
+        "    1+(0+0)+1;            \n"
+        "    1 + ( 0+0 ) + 1;      \n"
+        "    1 + (  0  ) + 1;      \n"
+        "    1 + (0 + 0) + 1;      \n"
+        "}                         \n");
+}
+
+void
+test_pointer_init(void)
+{
+    compile(
+        "main(u8& b)            \n"
+        "{                      \n"
+        "    a = 1;             \n"
+        "    b = &a;            \n"
+        "}                      \n");
 }
 
 int
 main(void)
 {
-    str code = str_init(
-        "   struct point                    \n"
-        "   {                               \n"
-        "       u8 x;                       \n"
-        "       u8 y;                       \n"
-        "   }                               \n"
-        "   void test(u8& a)                \n"
-        "   {                               \n"
-        "   }                               \n"
-        "   void add(point& a, point& b)    \n"
-        "   {                               \n"
-        "       a.x = a.x + b.x;            \n"
-        "       a.y = a.y + b.y;            \n"
-        "   }                               \n"
-        "   u8 one()                        \n"
-        "   {                               \n"
-        "       return 1;                   \n"
-        "   }                               \n"
-        "   u8 main()                       \n"
-        "   {                               \n"
-        "       point a = {.x = 1, .y = 2}; \n"
-        "       point b = {.x = 1, .y = 2}; \n"
-        "       u8 c = 4 - (one() + 3);     \n"
-        "       test(c);                    \n"
-        "       add(a, b);                  \n"
-        "   }                               \n"
-    );
-    int sp = 0;
-    set_tok_t toks = setup_keywords();
-    deq_char feed = extract(&code);
-    program(&feed, &toks, &sp);
-#if 1
-    printf("\n -- FULL DUMP -- \n\n");
-    foreach(set_tok_t, &toks, it, tok_t_print(it.ref);)
-#endif
-    set_tok_t_free(&toks);
-    deq_char_free(&feed);
-    str_free(&code);
+    //test_spacing();
+    test_pointer_init();
 }

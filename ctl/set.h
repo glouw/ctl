@@ -663,11 +663,11 @@ JOIN(A, copy)(A* self)
 }
 
 static inline size_t
-JOIN(A, remove_if)(A* self, int (*match)(T*))
+JOIN(A, remove_if)(A* self, int (*_match)(T*))
 {
     size_t erases = 0;
     foreach(A, self, it,
-        if(match(&it.node->key))
+        if(_match(&it.node->key))
         {
             JOIN(A, erase_node)(self, it.node);
             erases += 1;

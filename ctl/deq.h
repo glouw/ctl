@@ -414,11 +414,11 @@ JOIN(I, each)(A* a)
 }
 
 static inline size_t
-JOIN(A, remove_if)(A* self, int (*match)(T*))
+JOIN(A, remove_if)(A* self, int (*_match)(T*))
 {
     size_t erases = 0;
     foreach(A, self, it,
-        if(match(it.ref))
+        if(_match(it.ref))
         {
             JOIN(A, erase)(self, JOIN(A, begin)(self) + it.index);
             it.index_next = it.index;
