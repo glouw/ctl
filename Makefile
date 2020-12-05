@@ -101,9 +101,9 @@ pqu:
 set:
 	$(call expand,$@,-DT=int -DP)
 
-examples/astar:                		 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
-examples/postfix:              		 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
-examples/6502:                		 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
+examples/astar:                      ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
+examples/postfix:                    ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
+examples/6502:                       ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 tests/func/test_c99:                 ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 tests/func/test_container_composing: ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_deq:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@

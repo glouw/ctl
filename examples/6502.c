@@ -3,27 +3,18 @@
 //
 
 #include <stdio.h>
-#include <stdarg.h>
 #include <str.h>
-#include <assert.h>
+
+typedef char* charp;
 
 #define P
 #define T char
 #include <deq.h>
 
+#define T str
+#include <vec.h>
+
 deq_char feed;
-
-typedef char* charp;
-
-int
-charp_key_compare(char** a, char** b)
-{
-    return strcmp(*a, *b);
-}
-
-#define P
-#define T charp
-#include <set.h>
 
 struct
 {
@@ -33,7 +24,7 @@ struct
 }
 global;
 
-#define quit(message, ...) { printf("error: line %d: "message, global.line, __VA_ARGS__); exit(1); }
+#define quit(message, ...) { printf("error: line %d: "message"\n", global.line, __VA_ARGS__); exit(1); }
 
 typedef struct
 {
@@ -41,7 +32,7 @@ typedef struct
     str name;
     size_t size;
     size_t addr;
-    size_t args; // For functions.
+    vec_str args; // For functions.
 }
 token;
 
@@ -53,7 +44,7 @@ token_copy(token* self)
         str_copy(&self->name),
         self->size,
         self->addr,
-        self->args,
+        vec_str_copy(&self->args),
     };
 }
 
@@ -62,6 +53,7 @@ token_free(token* self)
 {
     str_free(&self->type);
     str_free(&self->name);
+    vec_str_free(&self->args);
 }
 
 int
@@ -71,25 +63,24 @@ token_key_compare(token* a, token* b)
 }
 
 token
-identifier(char* type, char* name, size_t size, size_t addr, size_t args)
+identifier(char* type, char* name, size_t size, size_t addr)
 {
     return (token) {
         str_init(type),
         str_init(name),
         size,
         addr,
-        args,
+        vec_str_init(),
     };
 }
 
 token
 keyword(char* name, size_t size)
 {
-    return identifier(name, name, size, 0, 0);
+    return identifier(name, name, size, 0);
 }
 
-// Table column width.
-#define W "8"
+#define W "12" // Table column width.
 
 void
 token_print(token* self)
@@ -99,7 +90,7 @@ token_print(token* self)
         self->type.value,
         self->size,
         self->addr,
-        self->args);
+        self->args.size);
 }
 
 #define T token
@@ -110,15 +101,15 @@ set_token tokens;
 void
 dump(void)
 {
-    printf("%"W"s %"W"s %"W"s %"W"s %"W"s\n", "NAME", "VALUE", "SIZE", "ADDR", "ARGS");
+    printf("%"W"s %"W"s %"W"s %"W"s %"W"s\n", "NAME", "VALUE", "SIZE", "ADDR", "FN ARGS");
     foreach(set_token, &tokens, it, token_print(it.ref);)
 }
 
 token*
-find(const str name)
+find(str* name)
 {
     token key;
-    key.name = name;
+    key.name = *name;
     set_token_node* node = set_token_find(&tokens, key);
     if(node)
         return &node->key;
@@ -249,14 +240,14 @@ infer(str* t)
         int ref = is_ref(t);
         if(ref)
             str_pop_back(t);
-        token* tok = find(*t);
+        token* tok = find(t);
         if(tok)
         {
             if(ref)
             {
                 str temp = str_copy(&tok->type);
                 str_append(&temp, "&");
-                token* ref_tok = find(temp);
+                token* ref_tok = find(&temp);
                 if(ref_tok)
                     type = ref_tok->type.value;
                 else
@@ -273,15 +264,15 @@ infer(str* t)
 }
 
 str
-expression(set_charp* types);
+expression(void);
 
 str
-term(set_charp* types)
+term(void)
 {
     if(next() == '(')
     {
         match('(');
-        str out = expression(types);
+        str out = expression();
         match(')');
         return out;
     }
@@ -308,10 +299,10 @@ term(set_charp* types)
 }
 
 str
-expression(set_charp* types)
+expression(void)
 {
-    str t = term(types);
-    set_charp_insert(types, infer(&t));
+    str t = term();
+    charp a = infer(&t);
     while(1)
     {
         if(next() == ')')
@@ -324,32 +315,23 @@ expression(set_charp* types)
         if(!valid_operator(&o))
             quit("invalid operator '%s'; expression generation failed", o.value);
         str_free(&o);
-        str u = term(types);
-        set_charp_insert(types, infer(&u));
+        str u = term();
+        charp b = infer(&u);
+        if(strcmp(a, b) != 0)
+            quit("type mismatch - expression generation failed - types are '%s' and '%s'", a, b);
         str_free(&u);
-        if(types->size > 1)
-        {
-            size_t i = 0;
-            foreach(set_charp, types, it,
-                printf("%2lu : %s\n", i, *it.ref);
-                i += 1;
-            )
-            quit("type mismatch - expression generation failed - see types above (size %lu)", types->size);
-        }
     }
     str_free(&t);
-    return str_init(types->root->key);
+    return str_init(a);
 }
 
 void
-evaluate(const str ident)
+evaluate(str* ident)
 {
-    set_charp types = set_charp_init(charp_key_compare);
-    str type = expression(&types);
-    if(types.size == 0)
-        quit("empty initializer - evaluation failed - see identifier '%s'", ident.value);
-    set_charp_free(&types);
-    token* defined = find(type);
+    if(next() == ';')
+        quit("expression may not be empty - assignment evaluation failed - see identifier '%s'", ident->value);
+    str type = expression();
+    token* defined = find(&type);
     if(!defined)
         quit("type '%s' not defined; evaluation failed", type.value);
     token* exists = find(ident);
@@ -360,46 +342,35 @@ evaluate(const str ident)
     }
     else
     {
-        insert(identifier(type.value, ident.value, defined->size, global.addr, 0));
+        insert(identifier(type.value, ident->value, defined->size, global.addr));
         global.addr += defined->size;
     }
     str_free(&type);
 }
 
 void
-fallback(const str ident)
+fallback(str* ident)
 {
-    for(size_t i = 0; i < ident.size; i++)
-        deq_char_push_front(&feed, ident.value[i]);
-    set_charp types = set_charp_init(charp_key_compare);
-    str type = expression(&types);
-    if(types.size > 1)
-    {
-        size_t i = 0;
-        foreach(set_charp, &types, it,
-            printf("%2lu : %s\n", i, *it.ref);
-            i += 1;
-        )
-        quit("type mismatch - expression fallback failed - see types above (size %lu)", types.size);
-    }
+    for(size_t i = 0; i < ident->size; i++)
+        deq_char_push_front(&feed, ident->value[i]);
+    if(next() == ';')
+        quit("expressions may not be empty - fallback expression failed - see identifier '%s'", ident->value);
+    str type = expression();
     str_free(&type);
-    set_charp_free(&types);
 }
 
 void
 ret(void)
 {
-    token* tok = find(global.function);
+    token* tok = find(&global.function);
     if(str_compare(&tok->type, "void") != 0)
     {
         if(next() == ';')
             quit("empty return statement in function '%s' requires type '%s'; return statement failed", global.function.value, tok->type.value);
-        set_charp types = set_charp_init(charp_key_compare);
-        str type = expression(&types);
+        str type = expression();
         if(str_compare(&tok->type, type.value) != 0)
             quit("computed return statement in function '%s' is '%s' but expected '%s'; return statement failed", global.function.value, type.value, tok->type.value);
         str_free(&type);
-        set_charp_free(&types);
     }
     else
     if(next() != ';')
@@ -422,13 +393,13 @@ statement(void)
             match('=');
             if(next() == ';')
                 quit("assignments may not be empty - statement failed - see '%s'", ident.value);
-            evaluate(ident);
+            evaluate(&ident);
         }
         else
         if(str_compare(&ident, "return") == 0)
             ret();
         else
-            fallback(ident);
+            fallback(&ident);
         str_free(&ident);
     }
 }
@@ -453,52 +424,67 @@ type(void)
     return ident;
 }
 
-void
-function(void)
+vec_str
+function_params(void)
 {
-    str fn = read(is_ident);
-    if(find(fn))
-        quit("function '%s' already defined; failed function definition", fn.value);
-    str_free(&global.function);
-    global.function = str_copy(&fn);;
     match('(');
-    size_t args = 0;
+    vec_str args = vec_str_init();
     while(1)
     {
         if(next() == ')')
             break;
         str t = type();
         str n = read(is_ident);
-        if(find(n))
+        if(find(&n))
             quit("function arguments must be unique - failed function definition - see type '%s'", t.value);
-        args += 1;
-        token* tok = find(t);
+        token* tok = find(&t);
         if(!tok)
             quit("unknown type in function paramater list - failed function definition - see type '%s'", t.value);
-        size_t size = tok->size;
-        insert(identifier(t.value, n.value, size, global.addr, 0));
-        global.addr += size;
+        insert(identifier(t.value, n.value, tok->size, global.addr));
+        global.addr += tok->size;
+        vec_str_push_back(&args, str_copy(&t));
         str_free(&t);
         str_free(&n);
         if(next() == ',')
             match(',');
     }
     match(')');
+    return args;
+}
+
+token
+function_sign(void)
+{
+    token sig;
     if(next() == '-')
     {
         match('-');
         match('>');
-        str t = read(is_ident);
-        token* tok = find(t);
+        str t = type();
+        token* tok = find(&t);
         if(!tok)
             quit("unknown function return type; failed function definition - see '%s'", t.value);
-        insert(identifier(t.value, fn.value, tok->size, 0, args));
+        sig = identifier(t.value, global.function.value, tok->size, 0);
         str_free(&t);
     }
     else
-        insert(identifier("void", fn.value, 0, 0, args));
+        sig = identifier("void", global.function.value, 0, 0);
+    return sig;
+}
+
+void
+function(void)
+{
+    str name = read(is_ident);
+    str_swap(&name, &global.function);
+    str_free(&name);
+    if(find(&global.function))
+        quit("function '%s' already defined; failed function definition", global.function.value);
+    vec_str args = function_params();
+    token sig = function_sign();
+    sig.args = args;
+    insert(sig);
     block();
-    str_free(&fn);
 }
 
 void
@@ -521,6 +507,7 @@ setup(void)
     insert(keyword("u8", 1));
     insert(keyword("u8&", 2));
     insert(keyword("void", 0));
+    insert(keyword("return", 0));
     global.line = 0;
     global.addr = 0;
     str_free(&global.function);
@@ -571,10 +558,12 @@ test_pointer_init(void)
         "    a = 1;               \n"
         "    return 1;            \n"
         "}                        \n"
-        "nuf()                    \n"
+        "nuf(u8& test, u8 z)      \n"
         "{                        \n"
         "    a = 1;               \n"
-        "    return 0;            \n"
+        "    b = &a;              \n"
+        "    a + fun;             \n"
+        "    return;              \n"
         "}                        \n"
         "main()                   \n"
         "{                        \n"
