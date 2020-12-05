@@ -11,6 +11,8 @@
 #define T char
 #include <deq.h>
 
+deq_char feed;
+
 typedef char* charp;
 
 int
@@ -27,20 +29,11 @@ struct
 {
     int line;
     int addr;
+    str function;
 }
 global;
 
-void
-quit(char* message, ...)
-{
-    va_list args;
-    printf("error: line %d: ", global.line);
-    va_start(args, message);
-    vfprintf(stdout, message, args);
-    va_end(args);
-    fflush(stdout);
-    exit(1);
-}
+#define quit(message, ...) { printf("error: line %d: "message, global.line, __VA_ARGS__); exit(1); }
 
 typedef struct
 {
@@ -48,13 +41,20 @@ typedef struct
     str name;
     size_t size;
     size_t addr;
+    size_t args; // For functions.
 }
 token;
 
 token
 token_copy(token* self)
 {
-    return (token) { str_copy(&self->type), str_copy(&self->name), self->size, self->addr };
+    return (token) {
+        str_copy(&self->type),
+        str_copy(&self->name),
+        self->size,
+        self->addr,
+        self->args,
+    };
 }
 
 void
@@ -71,23 +71,48 @@ token_key_compare(token* a, token* b)
 }
 
 token
-identifier(char* type, char* name, size_t size, size_t addr)
+identifier(char* type, char* name, size_t size, size_t addr, size_t args)
 {
-    return (token) { str_init(type), str_init(name), size, addr };
+    return (token) {
+        str_init(type),
+        str_init(name),
+        size,
+        addr,
+        args,
+    };
 }
 
 token
 keyword(char* name, size_t size)
 {
-    return identifier(name, name, size, 0);
+    return identifier(name, name, size, 0, 0);
+}
+
+// Table column width.
+#define W "8"
+
+void
+token_print(token* self)
+{
+    printf("%"W"s %"W"s %"W"lu %"W"lu %"W"lu\n",
+        self->name.value,
+        self->type.value,
+        self->size,
+        self->addr,
+        self->args);
 }
 
 #define T token
 #include <set.h>
 
-deq_char feed;
-
 set_token tokens;
+
+void
+dump(void)
+{
+    printf("%"W"s %"W"s %"W"s %"W"s %"W"s\n", "NAME", "VALUE", "SIZE", "ADDR", "ARGS");
+    foreach(set_token, &tokens, it, token_print(it.ref);)
+}
 
 token*
 find(const str name)
@@ -156,6 +181,12 @@ pop(void)
     deq_char_pop_front(&feed);
 }
 
+int
+end(void)
+{
+    return deq_char_empty(&feed);
+}
+
 char
 front(void)
 {
@@ -165,7 +196,7 @@ front(void)
 void
 space(void)
 {
-    for(char c; is_space(c = front());)
+    for(char c; !end() && is_space(c = front());)
     {
         if(c == '\n')
             global.line += 1;
@@ -281,7 +312,6 @@ expression(set_charp* types)
 {
     str t = term(types);
     set_charp_insert(types, infer(&t));
-    str_free(&t);
     while(1)
     {
         if(next() == ')')
@@ -290,9 +320,9 @@ expression(set_charp* types)
             break;
         str o = read(is_operator);
         if(str_empty(&o))
-            quit("missing operator; expression generation failed");
+            quit("missing operator - expression generation failed - previous term was %s", t.value);
         if(!valid_operator(&o))
-            quit("invalid operator '%s; expression generation failed'", o.value);
+            quit("invalid operator '%s'; expression generation failed", o.value);
         str_free(&o);
         str u = term(types);
         set_charp_insert(types, infer(&u));
@@ -304,35 +334,33 @@ expression(set_charp* types)
                 printf("%2lu : %s\n", i, *it.ref);
                 i += 1;
             )
-            quit("type mismatch - expression generation failed - see types above");
+            quit("type mismatch - expression generation failed - see types above (size %lu)", types->size);
         }
     }
+    str_free(&t);
     return str_init(types->root->key);
 }
 
 void
 evaluate(const str ident)
 {
-    // Ensure expression evaluates to a single type.
     set_charp types = set_charp_init(charp_key_compare);
     str type = expression(&types);
     if(types.size == 0)
-        quit("empty initializer; evaluation failed");
+        quit("empty initializer - evaluation failed - see identifier '%s'", ident.value);
     set_charp_free(&types);
-    // Ensure type is defined.
     token* defined = find(type);
     if(!defined)
         quit("type '%s' not defined; evaluation failed", type.value);
-    // Do not increment global address If the expression is assigned to an existing identifier.
     token* exists = find(ident);
     if(exists)
     {
         if(str_key_compare(&type, &exists->type) != 0)
-            quit("assignment type mismatch; evaluation failed");
+            quit("assignment type mismatch - evaluation failed - '%s' and '%s'", type.value, exists->type.value);
     }
     else
     {
-        insert(identifier(type.value, ident.value, defined->size, global.addr));
+        insert(identifier(type.value, ident.value, defined->size, global.addr, 0));
         global.addr += defined->size;
     }
     str_free(&type);
@@ -346,9 +374,37 @@ fallback(const str ident)
     set_charp types = set_charp_init(charp_key_compare);
     str type = expression(&types);
     if(types.size > 1)
-        quit("type mismatch; expression fallback failed");
+    {
+        size_t i = 0;
+        foreach(set_charp, &types, it,
+            printf("%2lu : %s\n", i, *it.ref);
+            i += 1;
+        )
+        quit("type mismatch - expression fallback failed - see types above (size %lu)", types.size);
+    }
     str_free(&type);
     set_charp_free(&types);
+}
+
+void
+ret(void)
+{
+    token* tok = find(global.function);
+    if(str_compare(&tok->type, "void") != 0)
+    {
+        if(next() == ';')
+            quit("empty return statement in function '%s' requires type '%s'; return statement failed", global.function.value, tok->type.value);
+        set_charp types = set_charp_init(charp_key_compare);
+        str type = expression(&types);
+        if(str_compare(&tok->type, type.value) != 0)
+            quit("computed return statement in function '%s' is '%s' but expected '%s'; return statement failed", global.function.value, type.value, tok->type.value);
+        str_free(&type);
+        set_charp_free(&types);
+    }
+    else
+    if(next() != ';')
+        quit("void function '%s' may not compute a return expression; return statement failed", global.function.value);
+    match(';');
 }
 
 void
@@ -356,19 +412,24 @@ statement(void)
 {
     while(1)
     {
-        str ident = read(is_ident);
-        if(next() == '=')
-        {
-            match('=');
-            evaluate(ident);
-        }
-        else
-            fallback(ident);
-        str_free(&ident);
         if(next() == ';')
             match(';');
         if(next() == '}')
             break;
+        str ident = read(is_ident);
+        if(next() == '=')
+        {
+            match('=');
+            if(next() == ';')
+                quit("assignments may not be empty - statement failed - see '%s'", ident.value);
+            evaluate(ident);
+        }
+        else
+        if(str_compare(&ident, "return") == 0)
+            ret();
+        else
+            fallback(ident);
+        str_free(&ident);
     }
 }
 
@@ -396,16 +457,26 @@ void
 function(void)
 {
     str fn = read(is_ident);
+    if(find(fn))
+        quit("function '%s' already defined; failed function definition", fn.value);
+    str_free(&global.function);
+    global.function = str_copy(&fn);;
     match('(');
+    size_t args = 0;
     while(1)
     {
         if(next() == ')')
             break;
         str t = type();
         str n = read(is_ident);
+        if(find(n))
+            quit("function arguments must be unique - failed function definition - see type '%s'", t.value);
+        args += 1;
         token* tok = find(t);
+        if(!tok)
+            quit("unknown type in function paramater list - failed function definition - see type '%s'", t.value);
         size_t size = tok->size;
-        insert(identifier(t.value, n.value, size, global.addr));
+        insert(identifier(t.value, n.value, size, global.addr, 0));
         global.addr += size;
         str_free(&t);
         str_free(&n);
@@ -413,6 +484,19 @@ function(void)
             match(',');
     }
     match(')');
+    if(next() == '-')
+    {
+        match('-');
+        match('>');
+        str t = read(is_ident);
+        token* tok = find(t);
+        if(!tok)
+            quit("unknown function return type; failed function definition - see '%s'", t.value);
+        insert(identifier(t.value, fn.value, tok->size, 0, args));
+        str_free(&t);
+    }
+    else
+        insert(identifier("void", fn.value, 0, 0, args));
     block();
     str_free(&fn);
 }
@@ -420,7 +504,13 @@ function(void)
 void
 program(void)
 {
-    function();
+    while(1)
+    {
+        function();
+        space();
+        if(end())
+            break;
+    }
 }
 
 void
@@ -430,21 +520,20 @@ setup(void)
     tokens = set_token_init(token_key_compare);
     insert(keyword("u8", 1));
     insert(keyword("u8&", 2));
+    insert(keyword("void", 0));
+    global.line = 0;
+    global.addr = 0;
+    str_free(&global.function);
 }
 
 void
 compile(char* text)
 {
-    global.line = 0;
-    global.addr = 0;
     setup();
     str code = str_init(text);
     queue(&code);
     program();
-    foreach(set_token, &tokens, it,
-        printf("%8s %8s %3lu %3lu\n",
-            it.ref->name.value, it.ref->type.value, it.ref->size, it.ref->addr);
-    )
+    dump();
     str_free(&code);
     deq_char_free(&feed);
     set_token_free(&tokens);
@@ -477,16 +566,25 @@ void
 test_pointer_init(void)
 {
     compile(
-        "main(u8& b)            \n"
-        "{                      \n"
-        "    a = 1;             \n"
-        "    b = &a;            \n"
-        "}                      \n");
+        "fun() -> u8              \n"
+        "{                        \n"
+        "    a = 1;               \n"
+        "    return 1;            \n"
+        "}                        \n"
+        "nuf()                    \n"
+        "{                        \n"
+        "    a = 1;               \n"
+        "    return 0;            \n"
+        "}                        \n"
+        "main()                   \n"
+        "{                        \n"
+        "    a = 1;               \n"
+        "}                        \n");
 }
 
 int
 main(void)
 {
-    //test_spacing();
+    test_spacing();
     test_pointer_init();
 }
