@@ -9,27 +9,10 @@
 #define T char
 #include <deq.h>
 
-deq_char feed;
-
 #define T str
 #include <vec.h>
 
 typedef const char* charp;
-
-struct
-{
-    int line;
-    int column;
-    int addr;
-    str function;
-}
-global;
-
-#define quit(message, ...) { \
-    printf("error: line %d: column %d: %s line %d: "message"\n", \
-            global.line, global.column, __FILE__, __LINE__, __VA_ARGS__); \
-    exit(1); \
-}
 
 typedef struct
 {
@@ -37,8 +20,6 @@ typedef struct
     str name;
     size_t size;
     size_t addr;
-
-    // Functions.
     int is_function;
     vec_str args;
 }
@@ -75,17 +56,15 @@ token_key_compare(token* a, token* b)
 token
 identifier(charp type, charp name, size_t size, size_t addr)
 {
-    return (token)
-    {
+    token tok = {
         str_init(type),
         str_init(name),
         size,
         addr,
-
-        // Functions.
         0,
         vec_str_init(),
     };
+    return tok;
 }
 
 token
@@ -110,13 +89,51 @@ token_print(token* self)
 #define T token
 #include <set.h>
 
-set_token tokens;
+struct
+{
+    size_t line;
+    size_t column;
+    size_t addr;
+    str function;
+    vec_str stack;
+    deq_char feed;
+    set_token tokens;
+}
+global;
+
+void
+global_init(void)
+{
+    global.line = 0;
+    global.column = 0;
+    global.addr = 0;
+    global.function = str_init("");
+    global.stack = vec_str_init();
+    global.feed = deq_char_init();
+    global.tokens = set_token_init(token_key_compare);
+}
+
+void
+global_free(void)
+{
+    str_free(&global.function);
+    vec_str_free(&global.stack);
+    deq_char_free(&global.feed);
+    set_token_free(&global.tokens);
+}
+
+
+#define quit(message, ...) { \
+    printf("error: line %lu: column %lu: %s line %d: "message"\n", \
+            global.line, global.column, __FILE__, __LINE__, __VA_ARGS__); \
+    exit(1); \
+}
 
 void
 dump(void)
 {
     printf("%"W"s %"W"s %"W"s %"W"s %"W"s\n", "NAME", "VALUE", "SIZE", "ADDR", "FN ARGS");
-    foreach(set_token, &tokens, it, token_print(it.ref);)
+    foreach(set_token, &global.tokens, it, token_print(it.ref);)
 }
 
 token*
@@ -124,23 +141,24 @@ find(str* name)
 {
     token key;
     key.name = *name;
-    set_token_node* node = set_token_find(&tokens, key);
+    set_token_node* node = set_token_find(&global.tokens, key);
     if(node)
         return &node->key;
     return NULL;
 }
 
 void
-insert(token t)
+erase(str* name)
 {
-    set_token_insert(&tokens, t);
+    token key;
+    key.name = *name;
+    set_token_erase(&global.tokens, key);
 }
 
 void
-queue(str* code)
+insert(token t)
 {
-    for(size_t i = 0; i < code->size; i++)
-        deq_char_push_back(&feed, code->value[i]);
+    set_token_insert(&global.tokens, t);
 }
 
 int
@@ -181,42 +199,42 @@ is_ident(char c)
 }
 
 void
-pop(void)
+pop_feed(void)
 {
     global.column += 1;
-    deq_char_pop_front(&feed);
+    deq_char_pop_front(&global.feed);
 }
 
 void
-push(char c)
+push_feed(char c)
 {
     global.column -= 1;
-    deq_char_push_front(&feed, c);
+    deq_char_push_front(&global.feed, c);
 }
 
 int
-end(void)
+end_feed(void)
 {
-    return deq_char_empty(&feed);
+    return deq_char_empty(&global.feed);
 }
 
 char
-front(void)
+front_feed(void)
 {
-    return *deq_char_front(&feed);
+    return *deq_char_front(&global.feed);
 }
 
 void
 space(void)
 {
-    for(char c; !end() && is_space(c = front());)
+    for(char c; !end_feed() && is_space(c = front_feed());)
     {
         if(c == '\n')
         {
             global.line += 1;
             global.column = 0;
         }
-        pop();
+        pop_feed();
     }
 }
 
@@ -224,7 +242,7 @@ char
 next(void)
 {
     space();
-    return front();
+    return front_feed();
 }
 
 void
@@ -232,7 +250,7 @@ match(char c)
 {
     if(next() != c)
         quit("expected '%c' but got '%c'\n", c, next());
-    pop();
+    pop_feed();
 }
 
 str
@@ -240,10 +258,10 @@ read(int pred(char))
 {
     space();
     str s = str_init("");
-    for(char c; pred(c = front());)
+    for(char c; pred(c = front_feed());)
     {
         str_push_back(&s, c);
-        pop();
+        pop_feed();
     }
     return s;
 }
@@ -255,7 +273,7 @@ type(void)
     if(next() == '&')
     {
         str_push_back(&ident, '&');
-        pop();
+        pop_feed();
     }
     return ident;
 }
@@ -356,6 +374,45 @@ reference(void)
 }
 
 str
+size_of(void)
+{
+    match('@');
+    str out = str_init("");
+    token* tok;
+    if(is_digit(next()))
+    {
+        str d = read(is_digit);
+        str s = str_init("u8");
+        tok = find(&s);
+        str_free(&d);
+        str_free(&s);
+    }
+    else
+    {
+        str n = read(is_ident);
+        tok = find(&n);
+        if(!tok)
+            quit("identifier '%s' not defined", n.value);
+        str_free(&n);
+    }
+    sprintf(out.value, "%lu", tok->size);
+    return out;
+}
+
+str
+unary(void)
+{
+    char u = next();
+    if(u == '&')
+        return reference();
+    else
+    if(u == '@')
+        return size_of();
+    else
+        quit("unary operator '%c' not supported", u);
+}
+
+str
 term(void)
 {
     if(next() == '(')
@@ -380,14 +437,8 @@ term(void)
         return n;
     }
     else
-    {
-        char unary = next();
-        if(unary == '&')
-            return reference();
-        else
-            quit("unary operator '%c' not supported", unary);
-        return str_init("");
-    }
+        return unary();
+    return str_init("");
 }
 
 int
@@ -451,6 +502,7 @@ evaluate(str* ident)
     }
     else
     {
+        vec_str_push_back(&global.stack, str_copy(ident));
         insert(identifier(type.value, ident->value, defined->size, global.addr));
         global.addr += defined->size;
     }
@@ -458,13 +510,19 @@ evaluate(str* ident)
 }
 
 void
-fallback(str* ident)
+reverse(str* ident)
 {
     while(!str_empty(ident))
     {
-        push(*str_back(ident));
+        push_feed(*str_back(ident));
         str_pop_back(ident);
     }
+}
+
+void
+fallback(str* ident)
+{
+    reverse(ident);
     if(next() == ';')
         quit("expressions may not be empty; see identifier '%s'", ident->value);
     str type = expression();
@@ -586,6 +644,12 @@ function(void)
     token sig = function_sign(&args);
     insert(sig);
     block();
+    while(!vec_str_empty(&global.stack))
+    {
+        global.addr -= 1;
+        erase(vec_str_back(&global.stack));
+        vec_str_pop_back(&global.stack);
+    }
 }
 
 void
@@ -595,35 +659,42 @@ program(void)
     {
         function();
         space();
-        if(end())
+        if(end_feed())
             break;
     }
 }
 
 void
-setup(void)
+table(void)
 {
-    feed = deq_char_init();
-    tokens = set_token_init(token_key_compare);
-    insert(keyword("u8", 1));
-    insert(keyword("u8&", 2));
-    insert(keyword("void", 0));
-    insert(keyword("return", 0));
-    global.line = global.addr = global.column = 0;
-    str_free(&global.function);
+    struct { charp name; size_t size; } pair[] = {
+        { "u8",     1 },
+        { "u8&",    2 },
+        { "void",   0 },
+        { "return", 0 },
+    };
+    for(size_t i = 0; i < len(pair); i++)
+        insert(keyword(pair[i].name, pair[i].size));
+}
+
+void
+queue(charp text)
+{
+    str code = str_init(text);
+    for(size_t i = 0; i < code.size; i++)
+        deq_char_push_back(&global.feed, code.value[i]);
+    str_free(&code);
 }
 
 void
 compile(charp text)
 {
-    setup();
-    str code = str_init(text);
-    queue(&code);
+    global_init();
+    table();
+    queue(text);
     program();
     dump();
-    str_free(&code);
-    deq_char_free(&feed);
-    set_token_free(&tokens);
+    global_free();
 }
 
 void
@@ -653,20 +724,28 @@ void
 test_pointer_init(void)
 {
     compile(
-        "A(u8 a, u8 b) -> u8      \n"
-        "{                        \n"
-        "    return a + b;        \n"
-        "}                        \n"
-        "B(u8& c, u8 d)           \n"
-        "{                        \n"
-        "   c = c + d;            \n"
-        "}                        \n"
-        "main()                   \n"
-        "{                        \n"
-        "    x = A(2, 1);         \n"
-        "    y = 2;               \n"
-        "    B(&y, 1);            \n"
-        "}                        \n");
+        "A(u8 a, u8 b) -> u8       \n"
+        "{                         \n"
+        "    return a + b;         \n"
+        "}                         \n"
+        "B(u8& c, u8 d)            \n"
+        "{                         \n"
+        "   c = c + d;             \n"
+        "}                         \n"
+        "C()                       \n"
+        "{                         \n"
+        "}                         \n"
+        "main()                    \n"
+        "{                         \n"
+        "    x = A(2, 1);          \n"
+        "    y = 2;                \n"
+        "    B(&y, 1);             \n"
+        "    AA = 2;               \n"
+        "    BB = 2;               \n"
+        "    CC = &AA + &BB;       \n"
+        "    DD = @1;              \n"
+        "    a = @AA;              \n"
+        "}                         \n");
 }
 
 int
