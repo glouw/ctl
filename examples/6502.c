@@ -2,6 +2,7 @@
 // -- SIMPLE 6502 COMPILER --
 //
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <str.h>
 
@@ -11,6 +12,9 @@
 
 #define T str
 #include <vec.h>
+
+#define T str
+#include <lst.h>
 
 typedef const char* charp;
 
@@ -98,6 +102,7 @@ struct
     vec_str stack;
     deq_char feed;
     set_token tokens;
+    lst_str assem;
 }
 global;
 
@@ -106,11 +111,12 @@ global_init(void)
 {
     global.line = 0;
     global.column = 0;
-    global.addr = 0;
+    global.addr = 0x0;
     global.function = str_init("");
     global.stack = vec_str_init();
     global.feed = deq_char_init();
     global.tokens = set_token_init(token_key_compare);
+    global.assem = lst_str_init();
 }
 
 void
@@ -120,8 +126,8 @@ global_free(void)
     vec_str_free(&global.stack);
     deq_char_free(&global.feed);
     set_token_free(&global.tokens);
+    lst_str_free(&global.assem);
 }
-
 
 #define quit(message, ...) { \
     printf("error: line %lu: column %lu: %s line %d: "message"\n", \
@@ -134,6 +140,59 @@ dump(void)
 {
     printf("%"W"s %"W"s %"W"s %"W"s %"W"s\n", "NAME", "VALUE", "SIZE", "ADDR", "FN ARGS");
     foreach(set_token, &global.tokens, it, token_print(it.ref);)
+    foreach(lst_str, &global.assem, it, puts(it.ref->value);)
+}
+
+void
+write(charp format, ...)
+{
+    va_list args;
+    va_list copy;
+    va_start(args, format);
+    va_copy(copy, args);
+    str s = str_init("");
+    size_t size = vsnprintf(NULL, 0, format, args);
+    str_resize(&s, size + 1, '\0');
+    vsprintf(s.value, format, copy);
+    va_end(args);
+    va_end(copy);
+    lst_str_push_back(&global.assem, s);
+}
+
+void
+label(str* name)
+{
+    write("%s:", name->value);
+}
+
+void
+rts(void)
+{
+    write("\tRTS");
+}
+
+void
+load(charp d)
+{
+    write("\tLDA #%3s", d);
+    write("\tSTA  %3d", global.addr);
+    global.addr += 1;
+}
+
+void
+adc(void)
+{
+    write("\tLDA  %3d", global.addr - 1);
+    write("\tADC  %3d", global.addr - 2);
+    global.addr -= 1;
+}
+
+void
+sbc(void)
+{
+    write("\tLDA  %3d", global.addr - 1);
+    write("\tSBC  %3d", global.addr - 2);
+    global.addr -= 1;
 }
 
 token*
@@ -424,7 +483,11 @@ term(void)
     }
     else
     if(is_digit(next()))
-        return read(is_digit);
+    {
+        str d = read(is_digit);
+        load(d.value);
+        return d;
+    }
     else
     if(is_ident(next()))
     {
@@ -456,6 +519,16 @@ is_compatible(charp tt, charp uu)
     return compatible;
 }
 
+void
+operate(str* o)
+{
+    if(str_compare(o, "+") == 0)
+        adc();
+    else
+    if(str_compare(o, "-") == 0)
+        sbc();
+}
+
 str
 expression(void)
 {
@@ -474,12 +547,13 @@ expression(void)
             quit("missing operator; previous term was %s", t.value);
         if(!valid_operator(&o))
             quit("invalid operator '%s'", o.value);
-        str_free(&o);
         str u = term();
         charp uu = infer_type(&u);
         if(!is_compatible(tt, uu))
             quit("type mismatch; types are '%s' and '%s'", tt, uu);
+        operate(&o);
         str_free(&u);
+        str_free(&o);
     }
     str_free(&t);
     return str_init(tt);
@@ -598,6 +672,7 @@ function_params(void)
         token* tok = find(&t);
         if(!tok)
             quit("unknown type '%s' in function paramater list", t.value);
+        vec_str_push_back(&global.stack, str_copy(&n));
         insert(identifier(t.value, n.value, tok->size, global.addr));
         global.addr += tok->size;
         vec_str_push_back(&args, str_copy(&t));
@@ -636,6 +711,7 @@ void
 function(void)
 {
     str name = read(is_ident);
+    label(&name);
     str_swap(&name, &global.function);
     str_free(&name);
     if(find(&global.function))
@@ -650,6 +726,7 @@ function(void)
         erase(vec_str_back(&global.stack));
         vec_str_pop_back(&global.stack);
     }
+    rts();
 }
 
 void
@@ -698,7 +775,7 @@ compile(charp text)
 }
 
 void
-test_spacing(void)
+test_space_parsing(void)
 {
     compile(
         "main()                    \n"
@@ -721,16 +798,16 @@ test_spacing(void)
 }
 
 void
-test_pointer_init(void)
+test_unary_parsing(void)
 {
     compile(
         "A(u8 a, u8 b) -> u8       \n"
         "{                         \n"
         "    return a + b;         \n"
         "}                         \n"
-        "B(u8& c, u8 d)            \n"
+        "B(u8& a, u8 b)            \n"
         "{                         \n"
-        "   c = c + d;             \n"
+        "   a = a + b;             \n"
         "}                         \n"
         "C()                       \n"
         "{                         \n"
@@ -744,13 +821,26 @@ test_pointer_init(void)
         "    BB = 2;               \n"
         "    CC = &AA + &BB;       \n"
         "    DD = @1;              \n"
-        "    a = @AA;              \n"
+        "    a = @AA + A(1, 1);    \n"
+        "}                         \n");
+}
+
+void
+sample(void)
+{
+    compile(
+        "main()                    \n"
+        "{                         \n"
+        "   1 + 2 - (5 + 5);                 \n"
         "}                         \n");
 }
 
 int
 main(void)
 {
-    test_spacing();
-    test_pointer_init();
+#if 0
+    test_space_parsing();
+    test_unary_parsing();
+#endif
+    sample();
 }
