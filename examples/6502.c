@@ -103,6 +103,7 @@ struct
     deq_char feed;
     set_token tokens;
     lst_str assem;
+    str comment;
 }
 global;
 
@@ -117,6 +118,7 @@ global_init(void)
     global.feed = deq_char_init();
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
+    global.comment = str_init("");
 }
 
 void
@@ -257,10 +259,18 @@ is_ident(char c)
     return is_digit(c) || is_alpha(c) || c == '_';
 }
 
+char
+front_feed(void)
+{
+    return *deq_char_front(&global.feed);
+}
 void
 pop_feed(void)
 {
     global.column += 1;
+    char c = front_feed();
+    if(c !='\n')
+        str_push_back(&global.comment, c);
     deq_char_pop_front(&global.feed);
 }
 
@@ -269,18 +279,13 @@ push_feed(char c)
 {
     global.column -= 1;
     deq_char_push_front(&global.feed, c);
+    str_pop_back(&global.comment);
 }
 
 int
 end_feed(void)
 {
     return deq_char_empty(&global.feed);
-}
-
-char
-front_feed(void)
-{
-    return *deq_char_front(&global.feed);
 }
 
 void
@@ -292,6 +297,8 @@ space(void)
         {
             global.line += 1;
             global.column = 0;
+            write("; %s", global.comment.value);
+            str_clear(&global.comment);
         }
         pop_feed();
     }
@@ -829,10 +836,10 @@ void
 sample(void)
 {
     compile(
-        "main()                    \n"
-        "{                         \n"
-        "   1 + 2 - (5 + 5);                 \n"
-        "}                         \n");
+        "main()                          \n"
+        "{                               \n"
+        "   a = 1 + 2 - (5 + 5 - 3) + 2; \n"
+        "}                               \n");
 }
 
 int
