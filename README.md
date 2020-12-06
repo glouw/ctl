@@ -90,9 +90,17 @@ To run all functional tests, run:
 
     make
 
+To compile examples, run:
+
+    make examples
+
 To generate performance graphs, run:
 
     sh gen_images.sh
+
+To do all of the above in one step, run:
+
+    ./all.sh
 
 Graphing requires python3 and the Plotly family of libraries via pip3.
 
