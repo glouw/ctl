@@ -262,6 +262,13 @@ assign_dereference(token* tok)
 }
 
 void
+push_argument(void)
+{
+    write("\tLDA  %3d", global.addr);
+    write("\tPHA");
+}
+
+void
 adc(void)
 {
     write("\tCLC");
@@ -484,6 +491,7 @@ call_params(token* tok)
         char* uu = infer_type(&tok->args.value[size - 1]);
         if(strcmp(tt, uu) != 0)
             quit("type mismatch; types are '%s' and '%s'", tt, uu);
+        push_argument(); // XXX. NEEDS TO ACCOUNT FOR TYPE SIZE.
         if(next() == ',')
             match(',');
         str_free(&t);
@@ -502,6 +510,7 @@ void
 call(token* tok)
 {
     call_params(tok);
+    write("\tJSR  %s\n", tok->name.value);
 }
 
 str
@@ -539,6 +548,23 @@ unary(void)
         quit("unary operator '%c' not supported", u);
 }
 
+size_t
+infer_offset(str* t)
+{
+    if(is_reference(t))
+        return 1;
+    else
+    {
+        char* tt = infer_type(t);
+        str temp = str_init(tt);
+        token* tok = find(&temp);
+        if(!tok)
+            quit("type %s not defined\n", tt);
+        str_free(&temp);
+        return tok->size;
+    }
+}
+
 str
 term(void)
 {
@@ -574,7 +600,7 @@ term(void)
     }
     else
         out = unary();
-    global.addr += 1;
+    global.addr += infer_offset(&out);
     return out;
 }
 
@@ -604,6 +630,12 @@ operate(str* o)
     global.addr -= 1;
 }
 
+int
+can_operate(char* t)
+{
+    return strcmp(t, "u8") == 0 || strcmp(t, "u8&") == 0;
+}
+
 str
 expression(void)
 {
@@ -619,15 +651,18 @@ expression(void)
             break;
         str o = read(is_operator);
         if(str_empty(&o))
-            quit("missing operator; previous term was %s", t.value);
+            quit("missing operator; previous term was '%s'", t.value);
         if(!valid_operator(&o))
             quit("invalid operator '%s'", o.value);
         str u = term();
         char* uu = infer_type(&u);
         if(!is_compatible(tt, uu))
             quit("type mismatch; types are '%s' and '%s'", tt, uu);
+        // If one operand is a reference, the expression promotes to a reference.
         if(is_reference(&u))
             tt = uu;
+        if(!can_operate(tt)) quit("operator '%s' cannot operate on type '%s'\n", o.value, tt);
+        if(!can_operate(uu)) quit("operator '%s' cannot operate on type '%s'\n", o.value, uu);
         operate(&o);
         str_free(&u);
         str_free(&o);
@@ -656,13 +691,17 @@ evaluate(str* ident)
             assign_dereference(exists);
         }
         else
+        {
+            if(is_reference(&type))
+                quit("existing values may not be casted to references; see '%s'", exists->name.value);
             assign(exists);
+        }
     }
     else
     {
         vec_str_push_back(&global.stack, str_copy(ident));
         insert(identifier(type.value, ident->value, defined->size, global.addr));
-        global.addr += 1;
+        global.addr += infer_offset(&type);
     }
     str_free(&type);
 }
@@ -758,6 +797,7 @@ function_params(void)
             quit("unknown type '%s' in function paramater list", t.value);
         vec_str_push_back(&global.stack, str_copy(&n));
         insert(identifier(t.value, n.value, tok->size, global.addr));
+        global.addr += tok->size;
         vec_str_push_back(&args, str_copy(&t));
         str_free(&t);
         str_free(&n);
@@ -791,8 +831,28 @@ function_sign(vec_str* args)
 }
 
 void
+unpack_params(size_t size)
+{
+    write("\tPLA");
+    write("\tTAX");
+    write("\tPLA");
+    write("\tTAY");
+    while(size > 0)
+    {
+        size -= 1;
+        write("\tPLA");
+        write("\tSTA  %d", size);
+    }
+    write("\tTYA");
+    write("\tPHA");
+    write("\tTXA");
+    write("\tPHA");
+}
+
+void
 function(void)
 {
+    global.addr = 0;
     str name = read(is_ident);
     label(&name);
     str_swap(&name, &global.function);
@@ -802,6 +862,7 @@ function(void)
     vec_str args = function_params();
     token sig = function_sign(&args);
     insert(sig);
+    unpack_params(args.size);
     block();
     stack_info();
     while(!vec_str_empty(&global.stack))
@@ -833,6 +894,7 @@ table(void)
         { "u8",     1 },
         { "u8&",    1 },
         { "return", 0 },
+        { "void",   0 },
     };
     for(size_t i = 0; i < len(pair); i++)
         insert(keyword(pair[i].name, pair[i].size));
@@ -858,26 +920,20 @@ compile(char* text)
     global_free();
 }
 
-void
-sample(void)
-{
-    compile(
-        "zero(u8& ref)             \n"
-        "{                         \n"
-        "}                         \n"
-        "main()                    \n"
-        "{                         \n"
-        "   a = 9;                 \n"
-        "   zero(&a + 1);              \n"
-        "}                         \n");
-}
-
 int
 main(void)
 {
-#if 0
-    test_space_parsing();
-    test_unary_parsing();
-#endif
-    sample();
+    compile(
+        "ref(u8& c)                \n"
+        "{                         \n"
+        "   c = 9;                 \n"
+        "}                         \n"
+        "main()                    \n"
+        "{                         \n"
+        "    a = 4;                \n"
+        "    b = 5;                \n"
+        "    c = 6;                \n"
+        "    d = 7;                \n"
+        "    ref(&a);              \n"
+        "}                         \n");
 }
