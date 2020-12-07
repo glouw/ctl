@@ -16,8 +16,6 @@
 #define T str
 #include <lst.h>
 
-typedef const char* charp;
-
 typedef struct
 {
     str type;
@@ -58,7 +56,7 @@ token_key_compare(token* a, token* b)
 }
 
 token
-identifier(charp type, charp name, size_t size, size_t addr)
+identifier(char* type, char* name, size_t size, size_t addr)
 {
     token tok = {
         str_init(type),
@@ -72,22 +70,9 @@ identifier(charp type, charp name, size_t size, size_t addr)
 }
 
 token
-keyword(charp name, size_t size)
+keyword(char* name, size_t size)
 {
     return identifier(name, name, size, 0);
-}
-
-#define W "12" // Table column width.
-
-void
-token_print(token* self)
-{
-    printf("%"W"s %"W"s %"W"lu %"W"lu %"W"lu\n",
-            self->name.value,
-            self->type.value,
-            self->size,
-            self->addr,
-            self->args.size);
 }
 
 #define T token
@@ -104,11 +89,12 @@ struct
     set_token tokens;
     lst_str assem;
     str comment;
+    FILE* save;
 }
 global;
 
 void
-global_init(void)
+global_init(char* path)
 {
     global.line = 0;
     global.column = 0;
@@ -119,6 +105,7 @@ global_init(void)
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
     global.comment = str_init("");
+    global.save = path ? fopen(path, "w") : stdout;
 }
 
 void
@@ -129,6 +116,8 @@ global_free(void)
     deq_char_free(&global.feed);
     set_token_free(&global.tokens);
     lst_str_free(&global.assem);
+    str_free(&global.comment);
+    fclose(global.save);
 }
 
 #define quit(message, ...) { \
@@ -138,15 +127,7 @@ global_free(void)
 }
 
 void
-dump(void)
-{
-    printf("%"W"s %"W"s %"W"s %"W"s %"W"s\n", "NAME", "VALUE", "SIZE", "ADDR", "FN ARGS");
-    foreach(set_token, &global.tokens, it, token_print(it.ref);)
-    foreach(lst_str, &global.assem, it, puts(it.ref->value);)
-}
-
-void
-write(charp format, ...)
+write(char* format, ...)
 {
     va_list args;
     va_list copy;
@@ -159,6 +140,69 @@ write(charp format, ...)
     va_end(args);
     va_end(copy);
     lst_str_push_back(&global.assem, s);
+}
+
+token*
+find(str* name)
+{
+    token key;
+    key.name = *name;
+    set_token_node* node = set_token_find(&global.tokens, key);
+    if(node)
+        return &node->key;
+    return NULL;
+}
+
+#define W "12"
+
+void
+info_header(void)
+{
+    write("; %"W"s %"W"s %"W"s %"W"s %"W"s%"W"s", "NAME", "VALUE", "SIZE", "ADDR", "IS FN", "FN ARGS");
+}
+
+void
+global_info(void)
+{
+    write("; GLOBAL INFO");
+    info_header();
+    foreach(set_token, &global.tokens, it,
+        write("; %"W"s %"W"s %"W"lu %"W"lu %"W"lu%"W"lu",
+                it.ref->name.value,
+                it.ref->type.value,
+                it.ref->size,
+                it.ref->addr,
+                it.ref->is_function,
+                it.ref->args.size);
+    )
+}
+
+void
+stack_info(void)
+{
+    if(!vec_str_empty(&global.stack))
+    {
+        write("; STACK INFO");
+        info_header();
+        foreach(vec_str, &global.stack, it,
+        {
+            token* tok = find(it.ref);
+            write("; %"W"s %"W"s %"W"lu %"W"lu %"W"lu%"W"lu",
+                    tok->name.value,
+                    tok->type.value,
+                    tok->size,
+                    tok->addr,
+                    tok->is_function,
+                    tok->args.size);
+        })
+    }
+}
+
+void
+dump(void)
+{
+    foreach(lst_str, &global.assem, it,
+        fprintf(global.save, "%s\n", it.ref->value);)
 }
 
 void
@@ -174,38 +218,65 @@ rts(void)
 }
 
 void
-load(charp d)
+load_digit(char* d)
 {
     write("\tLDA #%3s", d);
     write("\tSTA  %3d", global.addr);
-    global.addr += 1;
+}
+
+void
+load_ident(token* tok)
+{
+    write("\tLDA  %3d", tok->addr);
+    write("\tSTA  %3d", global.addr);
+}
+
+void
+load_dereference(token* tok)
+{
+    write("\tLDX  %3d", tok->addr);
+    write("\tLDA  $0,X");
+    write("\tSTA  %3d", global.addr);
+}
+
+void
+load_addr(token* tok)
+{
+    write("\tLDA #%3d", tok->addr);
+    write("\tSTA  %3d", global.addr);
+}
+
+void
+assign(token* tok)
+{
+    write("\tLDA  %3d", global.addr);
+    write("\tSTA  %3d", tok->addr);
+}
+
+void
+assign_dereference(token* tok)
+{
+    write("\tLDA  %3d", global.addr);
+    write("\tLDX  %3d", tok->addr);
+    write("\tSTA  $0,X");
 }
 
 void
 adc(void)
 {
+    write("\tCLC");
     write("\tLDA  %3d", global.addr - 1);
     write("\tADC  %3d", global.addr - 2);
-    global.addr -= 1;
+    write("\tSTA  %3d", global.addr - 2);
 }
 
 void
 sbc(void)
 {
-    write("\tLDA  %3d", global.addr - 1);
-    write("\tSBC  %3d", global.addr - 2);
-    global.addr -= 1;
-}
-
-token*
-find(str* name)
-{
-    token key;
-    key.name = *name;
-    set_token_node* node = set_token_find(&global.tokens, key);
-    if(node)
-        return &node->key;
-    return NULL;
+    write("\tSEC");
+    write("\tLDA  %3d", global.addr - 2);
+    write("\tSBC  %3d", global.addr - 1);
+    write("\tSTA  %3d", global.addr - 2);
 }
 
 void
@@ -297,6 +368,13 @@ space(void)
         {
             global.line += 1;
             global.column = 0;
+            while(!str_empty(&global.comment))
+            {
+                char back = *str_back(&global.comment);
+                if(!is_space(back))
+                    break;
+                str_pop_back(&global.comment);
+            }
             write("; %s", global.comment.value);
             str_clear(&global.comment);
         }
@@ -350,18 +428,20 @@ is_reference(str* t)
     return *str_back(t) == '&';
 }
 
-charp
+char*
 infer_type(str* t)
 {
-    charp type;
+    char* type;
     if(is_digit(t->value[0]))
         type = "u8";
     else
     {
-        int ref = is_reference(t);
+        str copy = str_copy(t);
+        int ref = is_reference(&copy);
         if(ref)
-            str_pop_back(t);
-        token* tok = find(t);
+            str_pop_back(&copy);
+        token* tok = find(&copy);
+        str_free(&copy);
         if(tok)
         {
             if(ref)
@@ -400,8 +480,8 @@ call_params(token* tok)
         if(size > tok->args.size)
             break;
         str t = expression();
-        charp tt = infer_type(&t);
-        charp uu = infer_type(&tok->args.value[size - 1]);
+        char* tt = infer_type(&t);
+        char* uu = infer_type(&tok->args.value[size - 1]);
         if(strcmp(tt, uu) != 0)
             quit("type mismatch; types are '%s' and '%s'", tt, uu);
         if(next() == ',')
@@ -434,35 +514,19 @@ reference(void)
         quit("digit '%s' may not be referenced; only identifiers may be referenced", d.value);
         str_free(&d);
     }
-    str ref = read(is_ident);
-    str_append(&ref, "&");
-    return ref;
-}
-
-str
-size_of(void)
-{
-    match('@');
-    str out = str_init("");
-    token* tok;
-    if(is_digit(next()))
+    else
+    if(is_ident(next()))
     {
-        str d = read(is_digit);
-        str s = str_init("u8");
-        tok = find(&s);
-        str_free(&d);
-        str_free(&s);
+        str ref = read(is_ident);
+        token* tok = find(&ref);
+        if(!tok)
+            quit("identifier '%s' not defined with attempted reference", ref.value);
+        load_addr(tok);
+        str_append(&ref, "&");
+        return ref;
     }
     else
-    {
-        str n = read(is_ident);
-        tok = find(&n);
-        if(!tok)
-            quit("identifier '%s' not defined", n.value);
-        str_free(&n);
-    }
-    sprintf(out.value, "%lu", tok->size);
-    return out;
+        quit("character '%c' cannot follow reference operator; an identifier must be supplied", next());
 }
 
 str
@@ -472,47 +536,50 @@ unary(void)
     if(u == '&')
         return reference();
     else
-    if(u == '@')
-        return size_of();
-    else
         quit("unary operator '%c' not supported", u);
 }
 
 str
 term(void)
 {
+    str out;
     if(next() == '(')
     {
         match('(');
-        str t = expression();
+        out = expression();
         match(')');
-        return t;
     }
     else
     if(is_digit(next()))
     {
-        str d = read(is_digit);
-        load(d.value);
-        return d;
+        out = read(is_digit);
+        load_digit(out.value);
     }
     else
     if(is_ident(next()))
     {
-        str n = read(is_ident);
-        token* tok = find(&n);
+        out = read(is_ident);
+        token* tok = find(&out);
         if(!tok)
-            quit("identifier '%s' not defined", n.value);
+            quit("identifier '%s' not defined", out.value);
         if(tok->is_function)
             call(tok);
-        return n;
+        else
+        {
+            if(is_reference(&tok->type))
+                load_dereference(tok);
+            else
+                load_ident(tok);
+        }
     }
     else
-        return unary();
-    return str_init("");
+        out = unary();
+    global.addr += 1;
+    return out;
 }
 
 int
-is_compatible(charp tt, charp uu)
+is_compatible(char* tt, char* uu)
 {
     str t = str_init(tt);
     str u = str_init(uu);
@@ -534,13 +601,14 @@ operate(str* o)
     else
     if(str_compare(o, "-") == 0)
         sbc();
+    global.addr -= 1;
 }
 
 str
 expression(void)
 {
     str t = term();
-    charp tt = infer_type(&t);
+    char* tt = infer_type(&t);
     while(1)
     {
         if(next() == ')')
@@ -555,14 +623,17 @@ expression(void)
         if(!valid_operator(&o))
             quit("invalid operator '%s'", o.value);
         str u = term();
-        charp uu = infer_type(&u);
+        char* uu = infer_type(&u);
         if(!is_compatible(tt, uu))
             quit("type mismatch; types are '%s' and '%s'", tt, uu);
+        if(is_reference(&u))
+            tt = uu;
         operate(&o);
         str_free(&u);
         str_free(&o);
     }
     str_free(&t);
+    global.addr -= 1;
     return str_init(tt);
 }
 
@@ -578,14 +649,20 @@ evaluate(str* ident)
     token* exists = find(ident);
     if(exists)
     {
-        if(str_key_compare(&type, &exists->type) != 0)
-            quit("assignment type mismatch; types are '%s' and '%s'", type.value, exists->type.value);
+        if(is_reference(&exists->type))
+        {
+            if(is_reference(&type))
+                quit("existing references may not be assigned a new reference; see '%s'", exists->name.value);
+            assign_dereference(exists);
+        }
+        else
+            assign(exists);
     }
     else
     {
         vec_str_push_back(&global.stack, str_copy(ident));
         insert(identifier(type.value, ident->value, defined->size, global.addr));
-        global.addr += defined->size;
+        global.addr += 1;
     }
     str_free(&type);
 }
@@ -681,7 +758,6 @@ function_params(void)
             quit("unknown type '%s' in function paramater list", t.value);
         vec_str_push_back(&global.stack, str_copy(&n));
         insert(identifier(t.value, n.value, tok->size, global.addr));
-        global.addr += tok->size;
         vec_str_push_back(&args, str_copy(&t));
         str_free(&t);
         str_free(&n);
@@ -727,9 +803,9 @@ function(void)
     token sig = function_sign(&args);
     insert(sig);
     block();
+    stack_info();
     while(!vec_str_empty(&global.stack))
     {
-        global.addr -= 1;
         erase(vec_str_back(&global.stack));
         vec_str_pop_back(&global.stack);
     }
@@ -739,6 +815,7 @@ function(void)
 void
 program(void)
 {
+    write("JMP main");
     while(1)
     {
         function();
@@ -746,15 +823,15 @@ program(void)
         if(end_feed())
             break;
     }
+    global_info();
 }
 
 void
 table(void)
 {
-    struct { charp name; size_t size; } pair[] = {
+    struct { char* name; size_t size; } pair[] = {
         { "u8",     1 },
-        { "u8&",    2 },
-        { "void",   0 },
+        { "u8&",    1 },
         { "return", 0 },
     };
     for(size_t i = 0; i < len(pair); i++)
@@ -762,7 +839,7 @@ table(void)
 }
 
 void
-queue(charp text)
+queue(char* text)
 {
     str code = str_init(text);
     for(size_t i = 0; i < code.size; i++)
@@ -771,9 +848,9 @@ queue(charp text)
 }
 
 void
-compile(charp text)
+compile(char* text)
 {
-    global_init();
+    global_init("out.asm");
     table();
     queue(text);
     program();
@@ -782,64 +859,17 @@ compile(charp text)
 }
 
 void
-test_space_parsing(void)
-{
-    compile(
-        "main()                    \n"
-        "{                         \n"
-        "    a = 0;                \n"
-        "    a  = 1+0+1;           \n"
-        "    a   = 1+(0)+1;        \n"
-        "    a    = 1+(0+0)+1;     \n"
-        "    b =  1 + ( 0+0 ) + 1; \n"
-        "    b =  1 + (  0  ) + 1; \n"
-        "    b =  1 + (0 + 0) + 1; \n"
-        "    0;                    \n"
-        "    1+0+1;                \n"
-        "    1+(0)+1;              \n"
-        "    1+(0+0)+1;            \n"
-        "    1 + ( 0+0 ) + 1;      \n"
-        "    1 + (  0  ) + 1;      \n"
-        "    1 + (0 + 0) + 1;      \n"
-        "}                         \n");
-}
-
-void
-test_unary_parsing(void)
-{
-    compile(
-        "A(u8 a, u8 b) -> u8       \n"
-        "{                         \n"
-        "    return a + b;         \n"
-        "}                         \n"
-        "B(u8& a, u8 b)            \n"
-        "{                         \n"
-        "   a = a + b;             \n"
-        "}                         \n"
-        "C()                       \n"
-        "{                         \n"
-        "}                         \n"
-        "main()                    \n"
-        "{                         \n"
-        "    x = A(2, 1);          \n"
-        "    y = 2;                \n"
-        "    B(&y, 1);             \n"
-        "    AA = 2;               \n"
-        "    BB = 2;               \n"
-        "    CC = &AA + &BB;       \n"
-        "    DD = @1;              \n"
-        "    a = @AA + A(1, 1);    \n"
-        "}                         \n");
-}
-
-void
 sample(void)
 {
     compile(
-        "main()                          \n"
-        "{                               \n"
-        "   a = 1 + 2 - (5 + 5 - 3) + 2; \n"
-        "}                               \n");
+        "zero(u8& ref)             \n"
+        "{                         \n"
+        "}                         \n"
+        "main()                    \n"
+        "{                         \n"
+        "   a = 9;                 \n"
+        "   zero(&a + 1);              \n"
+        "}                         \n");
 }
 
 int
