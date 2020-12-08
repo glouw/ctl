@@ -584,8 +584,8 @@ operate(str* o)
     if(str_compare(o, "+") == 0)
     {
         write("\tCLC");
-        write("\tLDA %d", global.addr - 1);
-        write("\tADC %d", global.addr - 2);
+        write("\tLDA %d", global.addr - 2);
+        write("\tADC %d", global.addr - 1);
         write("\tSTA %d", global.addr - 2);
     }
     else
@@ -842,30 +842,48 @@ int
 main(void)
 {
     str text = str_init(
-        " C(u8* p)        \n"
-        " {               \n"
-        "     *p = 1;     \n"
-        " }               \n"
-        " B(u8* p)        \n"
-        " {               \n"
-        "     C(p);       \n"
-        " }               \n"
-        " A(u8* p)        \n"
-        " {               \n"
-        "     B(p);       \n"
-        " }               \n"
-        " main()          \n"
-        " {               \n"
-        "     u8 a = 255; \n"
-        "     u8 b = 255; \n"
-        "     u8 c = 255; \n"
-        "     u8 e = 255; \n"
-        "     u8 f = 255; \n"
-        "     u8 g = 255; \n"
-        "     A(&b);      \n"
-        " }               \n"
-        "                 \n"
-        "                 \n");
+        " D(u8* p)                    \n"
+        " {                           \n"
+        "     u8 temp = 4;            \n"
+        "     *p = *p - temp;         \n"
+        " }                           \n"
+        " C(u8* p)                    \n"
+        " {                           \n"
+        "     u8 temp = 3;            \n"
+        "     *p = *p + temp;         \n"
+        "     D(p);                   \n"
+        " }                           \n"
+        " B(u8* p)                    \n"
+        " {                           \n"
+        "     u8 a = 0;               \n"
+        "     u8 b = 0;               \n"
+        "     u8 c = 0;               \n"
+        "     u8 d = 0;               \n"
+        "     u8 temp = 2;            \n"
+        "     u8 e = 0;               \n"
+        "     u8 f = 0;               \n"
+        "     *p = *p + temp;         \n"
+        "     C(p);                   \n"
+        " }                           \n"
+        " A(u8* p)                    \n"
+        " {                           \n"
+        "     u8 temp = 1;            \n"
+        "     *p = *p + temp;         \n"
+        "     B(p);                   \n"
+        " }                           \n"
+        " main()                      \n"
+        " {                           \n"
+        "     u8 a = 255;             \n"
+        "     u8 b = 255;             \n"
+        "     u8 c = 255;             \n"
+        "     u8 e = 255;             \n"
+        "     u8 f = 255;             \n"
+        "     u8 g = 255;             \n"
+        "     u8* p = &b;             \n"
+        "     *p = (1 + 1) - (1 + 1); \n"
+        "     A(p);                   \n"
+        " }                           \n"
+        "                             \n");
     if(text.size != 0)
         compile(&text);
     str_free(&text);
