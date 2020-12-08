@@ -85,6 +85,7 @@ struct
     vec_str local_stack;
     str line;
     size_t addr;
+    size_t label;
 }
 global;
 
@@ -97,6 +98,7 @@ global_init(void)
     global.local_stack = vec_str_init();
     global.line = str_init("");
     global.addr = 0;
+    global.label = 0;
 }
 
 void
@@ -365,10 +367,65 @@ str
 expression(void);
 
 void
+copy(size_t to, size_t from, size_t size)
+{
+    for(size_t i = 0; i < size; i++)
+    {
+        write("\tLDA %d", from + i);
+        write("\tSTA %d", to + i);
+    }
+}
+
+token*
+get_token(str* name)
+{
+    if(str_empty(name))
+        quit("<<< INTERNAL COMPILER ERROR >>> name '%s' empty with token lookup\n", name->value);
+    token* tok = find(*name);
+    if(!tok)
+        quit("token '%s' is not a valid identifier or type\n", name->value);
+    return tok;
+}
+
+size_t
+get_size(str* type)
+{
+    return get_token(type)->size;
+}
+
+void
+label(void)
+{
+    write("L%lu:", global.label);
+    global.label += 1;
+}
+
+void
+readdress_zero_page_pointer(void)
+{
+    size_t lsb = global.addr + 0;
+    size_t msb = global.addr + 1;
+    write("; re-addressing zero page pointer");
+    write("\tLDA %d", msb);
+    write("\tBNE L%lu", global.label);
+    write("; 1. MSB = 1");
+    write("\tLDA #1");
+    write("\tSTA %d", msb);
+    write("; 2. LSB = X - LSB ");
+    write("\tTXA");
+    write("\tSEC");
+    write("\tSBC %d", lsb);
+    write("\tSTA %d", lsb);
+    write("; finished re-addressing zero page pointer");
+    label();
+}
+
+void
 call_params(token* fun_tok)
 {
     match('(');
     size_t index = 0;
+    size_t bytes = 0;
     while(1)
     {
         if(next() == ')')
@@ -380,6 +437,12 @@ call_params(token* fun_tok)
         str* expected_type = &fun_tok->params.value[index - 1];
         if(str_key_compare(&type_computed, expected_type) != 0)
             quit("argument type '%s' does not match computed type '%s'", expected_type->value, type_computed.value);
+        size_t size = get_size(expected_type);
+        // UPDATE POINTERS TO THAT OF STACK.
+        if(is_pointer(expected_type))
+            readdress_zero_page_pointer();
+        copy(bytes, global.addr, size);
+        bytes += size;
         str_free(&type_computed);
         if(next() == ',')
             match(',');
@@ -389,23 +452,12 @@ call_params(token* fun_tok)
     match(')');
 }
 
-token*
-get_token(str* name)
-{
-    if(str_empty(name))
-        quit("<<< INTERNAL COMPILER ERROR >>> name '%s' empty with token lookup\n", name->value);
-    token* tok = find(*name);
-    if(!tok)
-        quit("type '%s' not defined\n", name->value);
-    return tok;
-}
-
 void
 push_stack(size_t size)
 {
     for(size_t i = 0; i < size; i++)
     {
-        write("\tLDA  %3d", i);
+        write("\tLDA %d", i);
         write("\tPHA");
     }
 }
@@ -416,8 +468,20 @@ pop_stack(size_t size)
     for(size_t i = 0; i < size; i++)
     {
         write("\tPLA");
-        write("\tSTA  %3d", size - i - 1);
+        write("\tSTA %d", size - i - 1);
     }
+}
+
+void
+jsr(char* name)
+{
+    write("\tJSR %s", name);
+}
+
+void
+rts(void)
+{
+    write("\tRTS");
 }
 
 void
@@ -426,9 +490,10 @@ call(void)
     str name = ident();
     token* fun_tok = get_token(&name);
     size_t size = global.addr;
+    write("\tTSX");
     push_stack(size);
     call_params(fun_tok);
-    write("\tJSR %s", name.value);
+    jsr(name.value);
     pop_stack(size);
     str_free(&name);
 }
@@ -444,10 +509,10 @@ unary(void)
         token* tok = get_token(&name);
         str type = str_copy(&tok->type);
         str_append(&type, "*");
-        write("\tLDA #%3d", (tok->addr >> 0) & 0xFF);
-        write("\tSTA  %3d", global.addr + 0);
-        write("\tLDA #%3d", (tok->addr >> 8) & 0xFF);
-        write("\tSTA  %3d", global.addr + 1);
+        write("\tLDA #%d", (tok->addr >> 0) & 0xFF);
+        write("\tSTA %d", global.addr + 0);
+        write("\tLDA #%d", (tok->addr >> 8) & 0xFF);
+        write("\tSTA %d", global.addr + 1);
         str_free(&name);
         return type;
     }
@@ -457,20 +522,14 @@ unary(void)
         pop();
         str name = ident();
         token* tok = get_token(&name);
-        write("\tLDY #%3d", 0);
+        write("\tLDY #%d", 0);
         write("\tLDA ($%02X),Y", tok->addr);
-        write("\tSTA  %3d", global.addr);
+        write("\tSTA %d", global.addr);
         str_free(&name);
         return str_init("u8");
     }
     else
         quit("unary operator '%c' not supported\n", n);
-}
-
-size_t
-get_size(str* type)
-{
-    return get_token(type)->size;
 }
 
 str // Returns decal string for type information.
@@ -490,8 +549,8 @@ term(void)
     if(is_digit(next()))
     {
         str d = digit();
-        write("\tLDA #%3s", d.value);
-        write("\tSTA  %3d", global.addr);
+        write("\tLDA #%s", d.value);
+        write("\tSTA %d", global.addr);
         str_free(&d);
         type = str_init("u8");
     }
@@ -500,11 +559,7 @@ term(void)
     {
         str n = ident();
         token* tok = get_token(&n);
-        for(size_t i = 0; i < tok->size; i++)
-        {
-            write("\tLDA  %3d", tok->addr + i);
-            write("\tSTA  %3d", global.addr + i);
-        }
+        copy(global.addr, tok->addr, tok->size);
         str_free(&n);
         type = str_copy(&tok->type);
     }
@@ -529,17 +584,17 @@ operate(str* o)
     if(str_compare(o, "+") == 0)
     {
         write("\tCLC");
-        write("\tLDA  %3d", global.addr - 1);
-        write("\tADC  %3d", global.addr - 2);
-        write("\tSTA  %3d", global.addr - 2);
+        write("\tLDA %d", global.addr - 1);
+        write("\tADC %d", global.addr - 2);
+        write("\tSTA %d", global.addr - 2);
     }
     else
     if(str_compare(o, "-") == 0)
     {
         write("\tSEC");
-        write("\tLDA  %3d", global.addr - 2);
-        write("\tSBC  %3d", global.addr - 1);
-        write("\tSTA  %3d", global.addr - 2);
+        write("\tLDA %d", global.addr - 2);
+        write("\tSBC %d", global.addr - 1);
+        write("\tSTA %d", global.addr - 2);
     }
     else
         quit("operator '%s' not supported", o->value);
@@ -570,7 +625,7 @@ str
 decal(void)
 {
     str type = ident();
-    if(next() == '*')
+    while(next() == '*')
     {
         pop();
         str_append(&type, "*");
@@ -622,14 +677,14 @@ assign(void)
         quit("initializing type '%s' with computed type '%s'", type.value, type_computed.value);
     if(deref)
     {
-        write("\tLDA  %3d", global.addr);
-        write("\tLDY #%3d", 0);
+        write("\tLDA %d", global.addr);
+        write("\tLDY #%d", 0);
         write("\tSTA ($%02X),Y", name_tok->addr);
     }
     else
     {
-        write("\tLDA  %3d", global.addr);
-        write("\tSTA  %3d", name_tok->addr);
+        write("\tLDA %d", global.addr);
+        write("\tSTA %d", name_tok->addr);
     }
     str_free(&name);
     str_free(&type);
@@ -732,7 +787,7 @@ function(void)
     fun_tok.is_function = 1;
     insert(fun_tok);
     block();
-    write("\tRTS");
+    rts();
     stack_info(name.value);
     stack_clear();
     str_free(&name);
@@ -787,19 +842,30 @@ int
 main(void)
 {
     str text = str_init(
-        " main()                          \n"
-        " {                               \n"
-        "     u8 a = 3;                   \n"
-        "     u8 b = 4;                   \n"
-        "     u8 c = 5;                   \n"
-        "     u8 d = 6;                   \n"
-        "     u8 e = 7;                   \n"
-        "     u8* A = &c;                   \n"
-        "     u8* B = A;                   \n"
-        "     B = &e;                     \n"
-        " }                               \n"
-        "                                 \n"
-        "                                 \n");
+        " C(u8* p)        \n"
+        " {               \n"
+        "     *p = 1;     \n"
+        " }               \n"
+        " B(u8* p)        \n"
+        " {               \n"
+        "     C(p);       \n"
+        " }               \n"
+        " A(u8* p)        \n"
+        " {               \n"
+        "     B(p);       \n"
+        " }               \n"
+        " main()          \n"
+        " {               \n"
+        "     u8 a = 255; \n"
+        "     u8 b = 255; \n"
+        "     u8 c = 255; \n"
+        "     u8 e = 255; \n"
+        "     u8 f = 255; \n"
+        "     u8 g = 255; \n"
+        "     A(&b);      \n"
+        " }               \n"
+        "                 \n"
+        "                 \n");
     if(text.size != 0)
         compile(&text);
     str_free(&text);

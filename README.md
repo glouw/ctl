@@ -102,6 +102,17 @@ To do all of the above in one step, run:
 
     ./all.sh
 
+For debugging purposes, a container templated to type `int` can be
+outputted to `stdout` by running make on the container name, eg:
+
+    make set
+
+    make vec
+
+    make lst
+
+    etc.
+
 Graphing requires python3 and the Plotly family of libraries via pip3.
 
 ## Acknowledgements
