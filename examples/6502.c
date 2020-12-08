@@ -25,6 +25,7 @@ typedef struct
     size_t addr;
     vec_str params;
     int is_function;
+    int is_type;
 }
 token;
 
@@ -38,6 +39,7 @@ token_init(char* type, char* name, size_t size, size_t addr)
         addr,
         vec_str_init(),
         .is_function = 0,
+        .is_type = 0,
     };
 }
 
@@ -51,6 +53,7 @@ token_copy(token* self)
         self->addr,
         vec_str_copy(&self->params),
         self->is_function,
+        self->is_type,
     };
 }
 
@@ -66,12 +69,6 @@ int
 token_key_compare(token* a, token* b)
 {
     return str_key_compare(&a->name, &b->name);
-}
-
-int
-token_is_type(token* self)
-{
-    return self->size > 0;
 }
 
 #define T token
@@ -160,14 +157,15 @@ token_write(token* tok)
     size_t size = tok->size;
     size_t addr = tok->addr;
     size_t params_size = tok->params.size;
-    int function = tok->is_function;
-    write("; %12s %12s %4lu %4lu %4lu %4d", type, name, size, addr, params_size, function);
+    int is_function = tok->is_function;
+    int is_type = tok->is_type;
+    write("; %12s %12s %4lu %4lu %4lu %4d %4d", type, name, size, addr, params_size, is_function, is_type);
 }
 
 void
 info_header()
 {
-    write("; %12s %12s %4s %4s %4s %4s", "T", "N", "S", "A", "P", "F");
+    write("; %12s %12s %4s %4s %4s %4s %4s", "T", "N", "S", "A", "P", "F?", "T?");
 }
 
 void
@@ -394,6 +392,8 @@ call_params(token* fun_tok)
 token*
 get_token(str* name)
 {
+    if(str_empty(name))
+        quit("<<< INTERNAL COMPILER ERROR >>> name '%s' empty with token lookup\n", name->value);
     token* tok = find(*name);
     if(!tok)
         quit("type '%s' not defined\n", name->value);
@@ -401,11 +401,35 @@ get_token(str* name)
 }
 
 void
+push_stack(size_t size)
+{
+    for(size_t i = 0; i < size; i++)
+    {
+        write("\tLDA  %3d", i);
+        write("\tPHA");
+    }
+}
+
+void
+pop_stack(size_t size)
+{
+    for(size_t i = 0; i < size; i++)
+    {
+        write("\tPLA");
+        write("\tSTA  %3d", size - i - 1);
+    }
+}
+
+void
 call(void)
 {
     str name = ident();
     token* fun_tok = get_token(&name);
+    size_t size = global.addr;
+    push_stack(size);
     call_params(fun_tok);
+    write("\tJSR %s", name.value);
+    pop_stack(size);
     str_free(&name);
 }
 
@@ -476,8 +500,11 @@ term(void)
     {
         str n = ident();
         token* tok = get_token(&n);
-        write("\tLDA  %3d", tok->addr);
-        write("\tSTA  %3d", global.addr);
+        for(size_t i = 0; i < tok->size; i++)
+        {
+            write("\tLDA  %3d", tok->addr + i);
+            write("\tSTA  %3d", global.addr + i);
+        }
         str_free(&n);
         type = str_copy(&tok->type);
     }
@@ -578,13 +605,34 @@ function_params(token* fun_tok)
 void
 assign(void)
 {
+    int deref = 0;
+    if(next() == '*')
+    {
+        deref = 1;
+        pop();
+    }
     str name = ident();
     token* name_tok = get_token(&name);
     match('=');
     str type_computed = expression();
-    if(str_key_compare(&type_computed, &name_tok->type) != 0)
-        quit("initializing type '%s' with computed type '%s'", name_tok->type.value, type_computed.value);
+    str type = str_copy(&name_tok->type);
+    if(deref)
+        str_pop_back(&type);
+    if(str_key_compare(&type_computed, &type) != 0)
+        quit("initializing type '%s' with computed type '%s'", type.value, type_computed.value);
+    if(deref)
+    {
+        write("\tLDA  %3d", global.addr);
+        write("\tLDY #%3d", 0);
+        write("\tSTA ($%02X),Y", name_tok->addr);
+    }
+    else
+    {
+        write("\tLDA  %3d", global.addr);
+        write("\tSTA  %3d", name_tok->addr);
+    }
     str_free(&name);
+    str_free(&type);
     str_free(&type_computed);
 }
 
@@ -617,45 +665,55 @@ block(void)
     {
         if(next() == '}')
             break;
-        // 1
-        if(is_digit(next()) || next() == '(')
+        int deref = 0;
+        if(next() == '*')
+        {
+            deref = 1;
+            pop();
+        }
+        str name = ident();
+        token* tok = get_token(&name);
+        char n = next();
+        str_append(&name, " ");
+        prime(&name);
+        if(deref)
+        {
+            str temp = str_init("*");
+            prime(&temp);
+            str_free(&temp);
+        }
+        // a()
+        if(n == '(')
+        {
+            if(!tok->is_function)
+                quit("token '%s' is not a function", tok->name.value);
+            call();
+        }
+        // a + 1
+        else
+        if(is_operator(n))
         {
             str type = expression();
             str_free(&type);
         }
+        // a = 1
+        else
+        if(n == '=')
+            assign();
+        // u8 a = 1
+        else
+        if(tok->is_type)
+            initialize();
+        // *a;
+        // 1;
+        // (1);
+        // (a);
         else
         {
-            str name = ident();
-            token* tok = get_token(&name);
-            char n = next();
-            str_append(&name, " ");
-            prime(&name);
-            // a()
-            if(n == '(')
-            {
-                if(!tok->is_function)
-                    quit("token '%s' is not a function", tok->name.value);
-                call();
-            }
-            // a + 1
-            else
-            if(is_operator(n))
-            {
-                str type = expression();
-                str_free(&type);
-            }
-            // a = 1
-            else
-            if(n == '=')
-                assign();
-            // u8 a = 1
-            else
-            if(token_is_type(tok))
-                initialize();
-            else
-                quit("unknown '%s' in block statement", name.value);
-            str_free(&name);
+            str type = expression();
+            str_free(&type);
         }
+        str_free(&name);
         match(';');
     }
     match('}');
@@ -683,7 +741,7 @@ function(void)
 void
 program(void)
 {
-    write("; JSR main");
+    write("JMP main");
     while(1)
     {
         function();
@@ -696,9 +754,22 @@ program(void)
 void
 init_keywords(void)
 {
-    insert(token_init("u8",   "u8",   1, 0));
-    insert(token_init("u8*",  "u8*",  2, 0));
-    insert(token_init("void", "void", 0, 0));
+    struct
+    {
+        char* type;
+        size_t size;
+    }
+    types[] = {
+        { "u8",   1 },
+        { "u8*",  2 },
+        { "void", 0 },
+    };
+    for(size_t i = 0; i < len(types); i++)
+    {
+        token tok = token_init(types[i].type, types[i].type, types[i].size, 0);
+        tok.is_type = 1;
+        insert(tok);
+    }
 }
 
 void
@@ -718,13 +789,14 @@ main(void)
     str text = str_init(
         " main()                          \n"
         " {                               \n"
-        "     u8 a = 1;                   \n"
-        "     u8 b = 2;                   \n"
-        "     u8 c = 3;                   \n"
-        "     u8* d = &c;                 \n"
-        "     u8 e = 255;                 \n"
-        "     u8 f = 4 + *d;              \n"
-        "     u8 g = 255;                 \n"
+        "     u8 a = 3;                   \n"
+        "     u8 b = 4;                   \n"
+        "     u8 c = 5;                   \n"
+        "     u8 d = 6;                   \n"
+        "     u8 e = 7;                   \n"
+        "     u8* A = &c;                   \n"
+        "     u8* B = A;                   \n"
+        "     B = &e;                     \n"
         " }                               \n"
         "                                 \n"
         "                                 \n");
