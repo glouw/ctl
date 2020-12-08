@@ -262,7 +262,7 @@ main(void)
                 {
                     const size_t index = TEST_RAND(a.size);
                     b.erase(b.begin() + index);
-                    str_erase(&a, str_begin(&a) + index);
+                    str_erase(&a, index);
                     CHECK(a, b);
                     break;
                 }
@@ -274,7 +274,7 @@ main(void)
                         const char value = TEST_RAND(ALPHA_LETTERS);
                         const size_t index = TEST_RAND(a.size);
                         b.insert(b.begin() + index, value);
-                        str_insert(&a, str_begin(&a) + index, value);
+                        str_insert(&a, index, value);
                     }
                     CHECK(a, b);
                     break;

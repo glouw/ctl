@@ -228,11 +228,10 @@ JOIN(A, data)(A* self)
 }
 
 static inline void
-JOIN(A, insert)(A* self, T* position, T value)
+JOIN(A, insert)(A* self, size_t index, T value)
 {
     if(self->size > 0)
     {
-        size_t index = position - JOIN(A, begin)(self);
         JOIN(A, push_back)(self, *JOIN(A, back)(self));
         for(size_t i = self->size - 2; i > index; i--)
             self->value[i] = self->value[i - 1];
@@ -243,10 +242,9 @@ JOIN(A, insert)(A* self, T* position, T value)
 }
 
 static inline void
-JOIN(A, erase)(A* self, T* position)
+JOIN(A, erase)(A* self, size_t index)
 {
     static T zero;
-    size_t index = position - JOIN(A, begin)(self);
     JOIN(A, set)(self, index, zero);
     for(size_t i = index; i < self->size - 1; i++)
     {
@@ -347,7 +345,8 @@ JOIN(A, remove_if)(A* self, int (*_match)(T*))
     foreach(A, self, it,
         if(_match(it.ref))
         {
-            JOIN(A, erase)(self, it.ref);
+            size_t index = it.ref - JOIN(A, begin)(self);
+            JOIN(A, erase)(self, index);
             it.end = JOIN(A, end)(self);
             it.next = it.ref;
             erases += 1;

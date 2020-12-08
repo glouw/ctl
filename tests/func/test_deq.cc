@@ -189,7 +189,7 @@ main(void)
                     {
                         const size_t index = TEST_RAND(a.size);
                         b.erase(b.begin() + index);
-                        deq_digi_erase(&a, deq_digi_begin(&a) + index);
+                        deq_digi_erase(&a, index);
                     }
                     CHECK(a, b);
                     break;
@@ -239,7 +239,7 @@ main(void)
                         const int value = TEST_RAND(INT_MAX);
                         const size_t index = TEST_RAND(a.size);
                         b.insert(b.begin() + index, DIGI{value});
-                        deq_digi_insert(&a, deq_digi_begin(&a) + index, digi_init(value));
+                        deq_digi_insert(&a, index, digi_init(value));
                     }
                     CHECK(a, b);
                     break;

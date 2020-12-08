@@ -171,7 +171,7 @@ JOIN(A, find)(A* self, T key)
         else
             node = node->r;
     }
-    return node;
+    return NULL;
 }
 
 static inline int

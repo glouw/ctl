@@ -52,7 +52,7 @@ str_insert_str(str* self, size_t index, const char* s)
     while(len != 0)
     {
         len -= 1;
-        str_insert(self, str_begin(self) + index, s[len]);
+        str_insert(self, index, s[len]);
     }
 }
 
@@ -63,7 +63,7 @@ str_replace(str* self, size_t index, size_t size, const char* s)
     if(end >= self->size)
         end = self->size;
     for(size_t i = index; i < end; i++)
-        str_erase(self, str_begin(self) + index);
+        str_erase(self, index);
     str_insert_str(self, index, s);
 }
 

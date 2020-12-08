@@ -129,7 +129,7 @@ main(void)
         deq_int a = deq_int_init();
         for(size_t i = 0; i < size; i++) deq_int_push_back(&a, i);
         for(size_t i = 0; i < size; i++) deq_int_push_front(&a, i);
-        deq_int_insert(&a, deq_int_begin(&a) + 1, 99);
+        deq_int_insert(&a, 1, 99);
         deq_int_sort(&a, int_compare);
         deq_int_free(&a);
     }{

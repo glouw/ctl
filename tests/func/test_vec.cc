@@ -115,7 +115,7 @@ main(void)
                     {
                         const size_t index = TEST_RAND(a.size);
                         b.erase(b.begin() + index);
-                        vec_digi_erase(&a, vec_digi_begin(&a) + index);
+                        vec_digi_erase(&a, index);
                     }
                     CHECK(a, b);
                     break;
@@ -128,7 +128,7 @@ main(void)
                         const int value = TEST_RAND(INT_MAX);
                         const size_t index = TEST_RAND(a.size);
                         b.insert(b.begin() + index, DIGI{value});
-                        vec_digi_insert(&a, vec_digi_begin(&a) + index, digi_init(value));
+                        vec_digi_insert(&a, index, digi_init(value));
                     }
                     CHECK(a, b);
                     break;

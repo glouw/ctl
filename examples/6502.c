@@ -291,7 +291,7 @@ trim(str* s)
     while(!str_empty(s) && is_space(*str_back(s)))
         str_pop_back(s);
     while(!str_empty(s) && is_space(*str_front(s)))
-        str_erase(s, str_begin(s));
+        str_erase(s, 0);
 }
 
 int
@@ -418,6 +418,12 @@ readdress_zero_page_pointer(void)
     write("\tSTA %d", lsb);
     write("; finished re-addressing zero page pointer");
     label();
+}
+
+int
+is_pointer(str* s)
+{
+    return *str_back(s) == '*';
 }
 
 void
@@ -570,12 +576,6 @@ term(void)
     }
     global.addr += get_size(&type);
     return type;
-}
-
-int
-is_pointer(str* s)
-{
-    return *str_back(s) == '*';
 }
 
 void
@@ -879,7 +879,7 @@ main(void)
         "     u8 e = 255;             \n"
         "     u8 f = 255;             \n"
         "     u8 g = 255;             \n"
-        "     u8* p = &b;             \n"
+        "     u8* p = &c;             \n"
         "     *p = (1 + 1) - (1 + 1); \n"
         "     A(p);                   \n"
         " }                           \n"
