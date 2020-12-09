@@ -363,9 +363,6 @@ match(char c)
     pop();
 }
 
-str
-expression(void);
-
 void
 copy(size_t to, size_t from, size_t size)
 {
@@ -412,9 +409,11 @@ readdress_zero_page_pointer(void)
     write("\tLDA #1");
     write("\tSTA %d", msb);
     write("; 2. LSB = X - LSB ");
+    write("\tTSX");
     write("\tTXA");
-    write("\tSEC");
-    write("\tSBC %d", lsb);
+    write("\tCLC");
+    write("\tADC #1");
+    write("\tADC %d", lsb);
     write("\tSTA %d", lsb);
     write("; finished re-addressing zero page pointer");
     label();
@@ -425,6 +424,9 @@ is_pointer(str* s)
 {
     return *str_back(s) == '*';
 }
+
+str
+expression(void);
 
 void
 call_params(token* fun_tok)
@@ -444,7 +446,6 @@ call_params(token* fun_tok)
         if(str_key_compare(&type_computed, expected_type) != 0)
             quit("argument type '%s' does not match computed type '%s'", expected_type->value, type_computed.value);
         size_t size = get_size(expected_type);
-        // UPDATE POINTERS TO THAT OF STACK.
         if(is_pointer(expected_type))
             readdress_zero_page_pointer();
         copy(bytes, global.addr, size);
@@ -461,9 +462,10 @@ call_params(token* fun_tok)
 void
 push_stack(size_t size)
 {
-    for(size_t i = 0; i < size; i++)
+    while(size)
     {
-        write("\tLDA %d", i);
+        size -= 1;
+        write("\tLDA %d", size);
         write("\tPHA");
     }
 }
@@ -474,7 +476,7 @@ pop_stack(size_t size)
     for(size_t i = 0; i < size; i++)
     {
         write("\tPLA");
-        write("\tSTA %d", size - i - 1);
+        write("\tSTA %d", i);
     }
 }
 
@@ -496,7 +498,6 @@ call(void)
     str name = ident();
     token* fun_tok = get_token(&name);
     size_t size = global.addr;
-    write("\tTSX");
     push_stack(size);
     call_params(fun_tok);
     jsr(name.value);
@@ -510,12 +511,12 @@ unary(void)
     char n = next();
     if(n == '&')
     {
-        pop();
+        match('&');
         str name = ident();
         token* tok = get_token(&name);
         str type = str_copy(&tok->type);
         str_append(&type, "*");
-        write("\tLDA #%d", (tok->addr >> 0) & 0xFF);
+        write("\tLDA #%d", tok->addr & 0xFF);
         write("\tSTA %d", global.addr + 0);
         write("\tLDA #%d", (tok->addr >> 8) & 0xFF);
         write("\tSTA %d", global.addr + 1);
@@ -525,10 +526,27 @@ unary(void)
     else
     if(n == '*')
     {
-        pop();
-        str name = ident();
+        match('*');
+        str name;
+        if(next() == '(')
+        {
+            match('(');
+            name = ident();
+            match('+');
+            str type = expression();
+            if(str_compare(&type, "u8") != 0)
+                quit("pointers may only be indexed by type 'u8'; got type '%s'", type.value);
+            write("\tLDA %d", global.addr);
+            str_free(&type);
+            match(')');
+        }
+        else
+        {
+            write("\tLDA #0");
+            name = ident();
+        }
+        write("\tTAY");
         token* tok = get_token(&name);
-        write("\tLDY #%d", 0);
         write("\tLDA ($%02X),Y", tok->addr);
         write("\tSTA %d", global.addr);
         str_free(&name);
@@ -658,14 +676,62 @@ function_params(token* fun_tok)
 }
 
 void
-assign(void)
+deref_assign(void)
 {
-    int deref = 0;
-    if(next() == '*')
+    str name;
+    str index_type = str_init("u8");
+    if(next() == '(')
     {
-        deref = 1;
-        pop();
+        match('(');
+        name = ident();
+        match('+');
+        str type = expression();
+        if(str_key_compare(&type, &index_type) != 0)
+            quit("pointers may only be indexed by type '%s'; got type '%s'", index_type.value, type.value);
+        str_free(&type);
+        match(')');
     }
+    else
+    {
+        write("\tLDA #0");
+        name = ident();
+    }
+    token* name_tok = get_token(&name);
+    str type = str_copy(&name_tok->type);
+    str_pop_back(&type); // TYPE DEREF.
+    size_t index_size = get_size(&index_type);
+    if(next() == '=')
+    {
+        global.addr += index_size;
+        match('=');
+        str type_computed = expression();
+        if(str_key_compare(&type_computed, &type) != 0)
+            quit("initializing type '%s' with computed type '%s'", type.value, type_computed.value);
+        size_t addr = name_tok->addr;
+        write("\tLDA %d", global.addr - index_size);
+        write("\tTAY");
+        write("\tLDA %d", global.addr);
+        write("\tSTA ($%02X),Y", addr);
+        str_free(&type_computed);
+        global.addr -= index_size;
+    }
+    else
+    if(is_operator(next()))
+    {
+        pop();
+        str type_computed = expression();
+        if(str_key_compare(&type_computed, &type) != 0)
+            quit("incompatible type '%s' with computed type '%s'", type.value, type_computed.value);
+        str_free(&type_computed);
+    }
+    str_free(&type);
+    str_free(&name);
+    str_free(&index_type);
+}
+
+void
+assign(int deref)
+{
     str name = ident();
     token* name_tok = get_token(&name);
     match('=');
@@ -712,6 +778,17 @@ initialize(void)
     str_free(&name);
 }
 
+int
+star_deref(void)
+{
+    if(next() == '*')
+    {
+        match('*');
+        return 1;
+    }
+    return 0;
+}
+
 void
 block(void)
 {
@@ -720,55 +797,41 @@ block(void)
     {
         if(next() == '}')
             break;
-        int deref = 0;
-        if(next() == '*')
-        {
-            deref = 1;
-            pop();
-        }
-        str name = ident();
-        token* tok = get_token(&name);
-        char n = next();
-        str_append(&name, " ");
-        prime(&name);
-        if(deref)
-        {
-            str temp = str_init("*");
-            prime(&temp);
-            str_free(&temp);
-        }
-        // a()
-        if(n == '(')
-        {
-            if(!tok->is_function)
-                quit("token '%s' is not a function", tok->name.value);
-            call();
-        }
-        // a + 1
-        else
-        if(is_operator(n))
-        {
-            str type = expression();
-            str_free(&type);
-        }
-        // a = 1
-        else
-        if(n == '=')
-            assign();
-        // u8 a = 1
-        else
-        if(tok->is_type)
-            initialize();
-        // *a;
-        // 1;
-        // (1);
-        // (a);
+        int deref = star_deref();
+        if(deref && next() == '(')
+            deref_assign();
         else
         {
-            str type = expression();
-            str_free(&type);
+            str name = ident();
+            token* tok = get_token(&name);
+            char n = next();
+            str_append(&name, " ");
+            prime(&name);
+            // eg: a()
+            // Note: Fuctions purposely have no return values, and therefor are not terms.
+            if(n == '(')
+            {
+                if(!tok->is_function)
+                    quit("token '%s' is not a function", tok->name.value);
+                call();
+            }
+            // eg: a = 1
+            // eg: *a = 1
+            else
+            if(n == '=')
+                assign(deref);
+            // eg: u8 a = 1
+            else
+            if(tok->is_type)
+                initialize();
+            // eg: *a; 1; (1); (a); a + 1
+            else
+            {
+                str type = expression();
+                str_free(&type);
+            }
+            str_free(&name);
         }
-        str_free(&name);
         match(';');
     }
     match('}');
@@ -842,48 +905,20 @@ int
 main(void)
 {
     str text = str_init(
-        " D(u8* p)                    \n"
-        " {                           \n"
-        "     u8 temp = 4;            \n"
-        "     *p = *p - temp;         \n"
-        " }                           \n"
-        " C(u8* p)                    \n"
-        " {                           \n"
-        "     u8 temp = 3;            \n"
-        "     *p = *p + temp;         \n"
-        "     D(p);                   \n"
-        " }                           \n"
-        " B(u8* p)                    \n"
-        " {                           \n"
-        "     u8 a = 0;               \n"
-        "     u8 b = 0;               \n"
-        "     u8 c = 0;               \n"
-        "     u8 d = 0;               \n"
-        "     u8 temp = 2;            \n"
-        "     u8 e = 0;               \n"
-        "     u8 f = 0;               \n"
-        "     *p = *p + temp;         \n"
-        "     C(p);                   \n"
-        " }                           \n"
-        " A(u8* p)                    \n"
-        " {                           \n"
-        "     u8 temp = 1;            \n"
-        "     *p = *p + temp;         \n"
-        "     B(p);                   \n"
-        " }                           \n"
-        " main()                      \n"
-        " {                           \n"
-        "     u8 a = 255;             \n"
-        "     u8 b = 255;             \n"
-        "     u8 c = 255;             \n"
-        "     u8 e = 255;             \n"
-        "     u8 f = 255;             \n"
-        "     u8 g = 255;             \n"
-        "     u8* p = &c;             \n"
-        "     *p = (1 + 1) - (1 + 1); \n"
-        "     A(p);                   \n"
-        " }                           \n"
-        "                             \n");
+        " set(u8* p)                   \n"
+        " {                            \n"
+        "     *(p + 3) = 0;            \n"
+        " }                            \n"
+        " main()                       \n"
+        " {                            \n"
+        "     u8 a = 251;              \n"
+        "     u8 b = 252;              \n"
+        "     u8 c = 253;              \n"
+        "     u8 d = 254;              \n"
+        "     u8 e = 255;              \n"
+        "     set(&b);                 \n"
+        " }                            \n"
+        "                              \n");
     if(text.size != 0)
         compile(&text);
     str_free(&text);
