@@ -556,7 +556,7 @@ unary(void)
         quit("unary operator '%c' not supported\n", n);
 }
 
-str // Returns decal string for type information.
+str
 term(void)
 {
     str type;
@@ -640,7 +640,7 @@ expression(void)
 }
 
 str
-decal(void)
+type_decal(void)
 {
     str type = ident();
     while(next() == '*')
@@ -660,7 +660,7 @@ function_params(token* fun_tok)
     {
         if(next() == ')')
             break;
-        str type = decal();
+        str type = type_decal();
         str name = ident();
         vec_str_push_back(&global.local_stack, str_copy(&name));
         vec_str_push_back(&fun_tok->params, str_copy(&type));
@@ -694,6 +694,7 @@ deref_assign(void)
     else
     {
         write("\tLDA #0");
+        write("\tSTA %d", global.addr);
         name = ident();
     }
     token* name_tok = get_token(&name);
@@ -730,28 +731,17 @@ deref_assign(void)
 }
 
 void
-assign(int deref)
+value_assign(void)
 {
     str name = ident();
     token* name_tok = get_token(&name);
     match('=');
     str type_computed = expression();
     str type = str_copy(&name_tok->type);
-    if(deref)
-        str_pop_back(&type);
     if(str_key_compare(&type_computed, &type) != 0)
         quit("initializing type '%s' with computed type '%s'", type.value, type_computed.value);
-    if(deref)
-    {
-        write("\tLDA %d", global.addr);
-        write("\tLDY #%d", 0);
-        write("\tSTA ($%02X),Y", name_tok->addr);
-    }
-    else
-    {
-        write("\tLDA %d", global.addr);
-        write("\tSTA %d", name_tok->addr);
-    }
+    write("\tLDA %d", global.addr);
+    write("\tSTA %d", name_tok->addr);
     str_free(&name);
     str_free(&type);
     str_free(&type_computed);
@@ -760,7 +750,7 @@ assign(int deref)
 void
 initialize(void)
 {
-    str type = decal();
+    str type = type_decal();
     token* type_tok = get_token(&type);
     str name = ident();
     token* name_tok = find(name);
@@ -815,11 +805,15 @@ block(void)
                     quit("token '%s' is not a function", tok->name.value);
                 call();
             }
-            // eg: a = 1
-            // eg: *a = 1
+            // eg: a = 1; *a = 1
             else
             if(n == '=')
-                assign(deref);
+            {
+                if(deref)
+                    deref_assign();
+                else
+                    value_assign();
+            }
             // eg: u8 a = 1
             else
             if(tok->is_type)
@@ -907,7 +901,7 @@ main(void)
     str text = str_init(
         " set(u8* p)                   \n"
         " {                            \n"
-        "     *(p + 3) = 0;            \n"
+        "     *p = 0;                  \n"
         " }                            \n"
         " main()                       \n"
         " {                            \n"
