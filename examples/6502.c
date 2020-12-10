@@ -12,7 +12,7 @@ size_t line = 1;
 
 #define P
 #define T char
-#include <deq.h>
+#include <stk.h>
 
 #define T str
 #include <vec.h>
@@ -22,24 +22,26 @@ typedef struct
     str type;
     str name;
     size_t size;
+    size_t width;
     size_t addr;
     vec_str params;
-    int is_function;
+    int is_fun;
     int is_type;
 }
 token;
 
 token
-token_init(char* type, char* name, size_t size, size_t addr)
+token_init(char* type, char* name, size_t size, size_t width, size_t addr, int is_fun, int is_type)
 {
     return (token) {
         str_init(type),
         str_init(name),
         size,
+        width,
         addr,
         vec_str_init(),
-        .is_function = 0,
-        .is_type = 0,
+        is_fun,
+        is_type,
     };
 }
 
@@ -50,9 +52,10 @@ token_copy(token* self)
         str_copy(&self->type),
         str_copy(&self->name),
         self->size,
+        self->width,
         self->addr,
         vec_str_copy(&self->params),
-        self->is_function,
+        self->is_fun,
         self->is_type,
     };
 }
@@ -79,10 +82,10 @@ token_key_compare(token* a, token* b)
 
 struct
 {
-    deq_char feed;
+    stk_char feed;
     set_token tokens;
     lst_str assem;
-    vec_str local_stack;
+    vec_str var_stack;
     str line;
     size_t addr;
     size_t label;
@@ -92,10 +95,10 @@ global;
 void
 global_init(void)
 {
-    global.feed = deq_char_init();
+    global.feed = stk_char_init();
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
-    global.local_stack = vec_str_init();
+    global.var_stack = vec_str_init();
     global.line = str_init("");
     global.addr = 0;
     global.label = 0;
@@ -104,10 +107,10 @@ global_init(void)
 void
 global_free(void)
 {
-    deq_char_free(&global.feed);
+    stk_char_free(&global.feed);
     set_token_free(&global.tokens);
     lst_str_free(&global.assem);
-    vec_str_free(&global.local_stack);
+    vec_str_free(&global.var_stack);
 }
 
 token*
@@ -125,6 +128,20 @@ void
 insert(token tok)
 {
     set_token_insert(&global.tokens, tok);
+}
+
+void
+var(token tok)
+{
+    insert(tok);
+    vec_str_push_back(&global.var_stack, str_copy(&tok.name));
+}
+
+void
+param(token* fun_tok, token tok)
+{
+    var(tok);
+    vec_str_push_back(&fun_tok->params, str_copy(&tok.type));
 }
 
 void
@@ -157,52 +174,36 @@ token_write(token* tok)
     char* type = tok->type.value;
     char* name = tok->name.value;
     size_t size = tok->size;
+    size_t width = tok->width;
     size_t addr = tok->addr;
     size_t params_size = tok->params.size;
-    int is_function = tok->is_function;
+    int is_fun = tok->is_fun;
     int is_type = tok->is_type;
-    write("; %12s %12s %4lu %4lu %4lu %4d %4d", type, name, size, addr, params_size, is_function, is_type);
+    write("; %12s %12s %4lu %4lu %4lu %4lu %4d %4d", type, name, size, width, addr, params_size, is_fun, is_type);
 }
 
 void
-info_header()
+var_stack_pop(size_t count)
 {
-    write("; %12s %12s %4s %4s %4s %4s %4s", "T", "N", "S", "A", "P", "F?", "T?");
-}
-
-void
-global_info(void)
-{
-    write("; -- end of program --");
-    write("; global info");
-    info_header();
-    foreach(set_token, &global.tokens, it,
-        token_write(it.ref);
-    )
-}
-
-void
-stack_info(char* name)
-{
-    if(global.local_stack.size > 0)
+    if(count > 0)
     {
-        write("; '%s' stack info", name);
-        info_header();
-        foreach(vec_str, &global.local_stack, it,
+        write("; %12s %12s %4s %4s %4s %4s %4s %4s", "T", "N", "S", "W", "A", "P", "F?", "T?");
+        lst_str reversed = lst_str_init();
+        // Reverses stack pop and erase / prints in order.
+        while(count)
+        {
+            str* name = vec_str_back(&global.var_stack);
+            lst_str_push_front(&reversed, str_copy(name));
+            vec_str_pop_back(&global.var_stack);
+            count -= 1;
+        }
+        foreach(lst_str, &reversed, it,
             token* found = find(*it.ref);
             token_write(found);
+            erase(*it.ref);
         )
+        lst_str_free(&reversed);
     }
-}
-
-void
-stack_clear(void)
-{
-    foreach(vec_str, &global.local_stack, it,
-        token* found = find(*it.ref);
-        erase(found->name);
-    )
-    vec_str_clear(&global.local_stack);
 }
 
 void
@@ -222,11 +223,17 @@ prime(str* text)
     while(text->size)
     {
         char c = *str_back(text);
-        deq_char_push_front(&global.feed, c);
+        stk_char_push(&global.feed, c);
         if(!str_empty(&global.line))
             str_pop_back(&global.line);
         str_pop_back(text);
     }
+}
+
+int
+is_pointer(str* s)
+{
+    return *str_back(s) == '*';
 }
 
 int
@@ -257,6 +264,7 @@ is_unary(char c)
 {
     return c == '&'
         || c == '*'
+        || c == '$'
         || c == '-'
         || c == '+';
 }
@@ -273,7 +281,7 @@ is_space(char c)
 char
 peek(void)
 {
-    return *deq_char_front(&global.feed);
+    return *stk_char_top(&global.feed);
 }
 
 void
@@ -282,7 +290,7 @@ pop(void)
     char c;
     if((c = peek()) != '\n')
         str_push_back(&global.line, c);
-    deq_char_pop_front(&global.feed);
+    stk_char_pop(&global.feed);
 }
 
 void
@@ -308,7 +316,7 @@ next(void)
             str_clear(&global.line);
         }
         pop();
-        if(deq_char_empty(&global.feed))
+        if(stk_char_empty(&global.feed))
             return EOF;
     }
     return c;
@@ -331,19 +339,23 @@ read(int clause(char c))
 str
 ident(void)
 {
+    char c = next();
+    if(is_digit(c))
+        quit("identifier may not start with digit; received '%c'", c);
     str s = read(is_ident);
-    if(is_digit(s.value[0]))
-        quit("identifier '%s' may not start with a digit", s.value);
     return s;
 }
 
 str
 digit(void)
 {
+    char c = next();
+    if(!is_digit(c))
+        quit("digit must start with a number; received '%c'", c);
     str d = read(is_digit);
     int value = atoi(d.value);
     if(value > 255)
-        quit("value '%s' too large", d.value);
+        quit("value '%s' exceeds max 'u8' value of '255'", d.value);
     return d;
 }
 
@@ -359,7 +371,7 @@ match(char c)
 {
     char n;
     if((n = next()) != c)
-        quit("expected '%c', got '%c'", c, n);
+        quit("expected '%c' but received '%c'", c, n);
     pop();
 }
 
@@ -419,18 +431,13 @@ readdress_zero_page_pointer(void)
     label();
 }
 
-int
-is_pointer(str* s)
-{
-    return *str_back(s) == '*';
-}
-
 str
 expression(void);
 
 void
 call_params(token* fun_tok)
 {
+    write("; setting up function arguments");
     match('(');
     size_t index = 0;
     size_t bytes = 0;
@@ -438,21 +445,22 @@ call_params(token* fun_tok)
     {
         if(next() == ')')
             break;
-        index += 1;
-        if(index > fun_tok->params.size)
-            break;
         str type_computed = expression();
-        str* expected_type = &fun_tok->params.value[index - 1];
-        if(str_key_compare(&type_computed, expected_type) != 0)
-            quit("argument type '%s' does not match computed type '%s'", expected_type->value, type_computed.value);
-        size_t size = get_size(expected_type);
-        if(is_pointer(expected_type))
-            readdress_zero_page_pointer();
-        copy(bytes, global.addr, size);
-        bytes += size;
-        str_free(&type_computed);
+        if(index < fun_tok->params.size)
+        {
+            str* expected_type = &fun_tok->params.value[index];
+            if(str_key_compare(&type_computed, expected_type) != 0)
+                quit("argument type '%s' does not match computed type '%s'", expected_type->value, type_computed.value);
+            size_t size = get_size(expected_type);
+            if(is_pointer(expected_type))
+                readdress_zero_page_pointer();
+            copy(bytes, global.addr, size);
+            bytes += size;
+        }
         if(next() == ',')
             match(',');
+        index += 1;
+        str_free(&type_computed);
     }
     if(index != fun_tok->params.size)
         quit("function '%s' expected '%lu' arguments but received '%lu' arguments", fun_tok->name.value, fun_tok->params.size, index);
@@ -462,6 +470,7 @@ call_params(token* fun_tok)
 void
 push_stack(size_t size)
 {
+    write("; pushing stack frame");
     while(size)
     {
         size -= 1;
@@ -473,6 +482,7 @@ push_stack(size_t size)
 void
 pop_stack(size_t size)
 {
+    write("; popping stack frame");
     for(size_t i = 0; i < size; i++)
     {
         write("\tPLA");
@@ -483,12 +493,14 @@ pop_stack(size_t size)
 void
 jsr(char* name)
 {
+    write("; call '%s'", name);
     write("\tJSR %s", name);
 }
 
 void
 rts(void)
 {
+    write("; function end");
     write("\tRTS");
 }
 
@@ -506,12 +518,36 @@ call(void)
 }
 
 str
+deref_decal(str* pointer)
+{
+    str type = str_copy(pointer);
+    if(*str_back(&type) == '*')
+        str_pop_back(&type);
+    else
+        quit("unable to dereference '%s'\n", type.value);
+    return type;
+}
+
+str
+type_decal(void)
+{
+    str type = ident();
+    while(next() == '*')
+    {
+        match('*');
+        str_append(&type, "*");
+    }
+    get_token(&type);
+    return type;
+}
+
+str
 unary(void)
 {
     char n = next();
     if(n == '&')
     {
-        match('&');
+        match(n);
         str name = ident();
         token* tok = get_token(&name);
         str type = str_copy(&tok->type);
@@ -524,32 +560,52 @@ unary(void)
         return type;
     }
     else
+    if(n == '$')
+    {
+        match(n);
+        str name = ident();
+        write("\tLDA #%d", get_token(&name)->width);
+        write("\tSTA %d", global.addr);
+        str_free(&name);
+        return str_init("u8");
+    }
+    else
     if(n == '*')
     {
-        match('*');
-        str name;
+        match(n);
+        str pointer_name;
+        token* pointer_tok;
         if(next() == '(')
         {
             match('(');
-            name = ident();
+            pointer_name = ident();
+            pointer_tok = get_token(&pointer_name);
             match('+');
             str type = expression();
             if(str_compare(&type, "u8") != 0)
-                quit("pointers may only be indexed by type 'u8'; got type '%s'", type.value);
-            write("\tLDA %d", global.addr);
+                quit("pointers may only be indexed by type 'u8' but received type '%s'", type.value);
+            write("\tLDA #0");
+            str deref_type = deref_decal(&pointer_tok->type);
+            token* deref_tok = get_token(&deref_type);
+            // Implicit size offseting.
+            for(size_t i = 0; i < deref_tok->size; i++)
+            {
+                write("\tCLC");
+                write("\tADC %d", global.addr);
+            }
             str_free(&type);
             match(')');
         }
         else
         {
             write("\tLDA #0");
-            name = ident();
+            pointer_name = ident();
+            pointer_tok = get_token(&pointer_name);
         }
         write("\tTAY");
-        token* tok = get_token(&name);
-        write("\tLDA ($%02X),Y", tok->addr);
+        write("\tLDA ($%02X),Y", pointer_tok->addr);
         write("\tSTA %d", global.addr);
-        str_free(&name);
+        str_free(&pointer_name);
         return str_init("u8");
     }
     else
@@ -639,19 +695,6 @@ expression(void)
     return type_a;
 }
 
-str
-type_decal(void)
-{
-    str type = ident();
-    while(next() == '*')
-    {
-        pop();
-        str_append(&type, "*");
-    }
-    get_token(&type);
-    return type;
-}
-
 void
 function_params(token* fun_tok)
 {
@@ -662,11 +705,9 @@ function_params(token* fun_tok)
             break;
         str type = type_decal();
         str name = ident();
-        vec_str_push_back(&global.local_stack, str_copy(&name));
-        vec_str_push_back(&fun_tok->params, str_copy(&type));
-        token* type_tok = get_token(&type);
-        insert(token_init(type.value, name.value, type_tok->size, global.addr));
-        global.addr += type_tok->size;
+        size_t size = get_size(&type);
+        param(fun_tok, token_init(type.value, name.value, size, size, global.addr, 0, 0));
+        global.addr += size;
         str_free(&type);
         str_free(&name);
         if(next() == ',')
@@ -676,10 +717,12 @@ function_params(token* fun_tok)
 }
 
 void
-deref_assign(void)
+deref(void)
 {
     str name;
     str index_type = str_init("u8");
+    size_t index_size = get_size(&index_type);
+    // eg. *(p + 1);
     if(next() == '(')
     {
         match('(');
@@ -687,45 +730,53 @@ deref_assign(void)
         match('+');
         str type = expression();
         if(str_key_compare(&type, &index_type) != 0)
-            quit("pointers may only be indexed by type '%s'; got type '%s'", index_type.value, type.value);
+            quit("pointers may only be indexed by type '%s' but received type '%s'", index_type.value, type.value);
         str_free(&type);
         match(')');
     }
+    // eg. *p;
     else
     {
         write("\tLDA #0");
         write("\tSTA %d", global.addr);
         name = ident();
     }
-    token* name_tok = get_token(&name);
-    str type = str_copy(&name_tok->type);
-    str_pop_back(&type); // TYPE DEREF.
-    size_t index_size = get_size(&index_type);
+    token* pointer_tok = get_token(&name);
+    str deref_type = deref_decal(&pointer_tok->type);
+    token* deref_tok = get_token(&deref_type);
+    // eg. *(p + 1) = expression; or *p = expression;
     if(next() == '=')
     {
         global.addr += index_size;
         match('=');
         str type_computed = expression();
-        if(str_key_compare(&type_computed, &type) != 0)
-            quit("initializing type '%s' with computed type '%s'", type.value, type_computed.value);
-        size_t addr = name_tok->addr;
-        write("\tLDA %d", global.addr - index_size);
+        if(str_key_compare(&type_computed, &deref_type) != 0)
+            quit("initializing type '%s' with computed type '%s'", deref_type.value, type_computed.value);
+        size_t addr = pointer_tok->addr;
+        write("\tLDA #0");
+        // Implicit size offseting.
+        for(size_t i = 0; i < deref_tok->size; i++)
+        {
+            write("\tCLC");
+            write("\tADC %d", global.addr - index_size);
+        }
         write("\tTAY");
         write("\tLDA %d", global.addr);
         write("\tSTA ($%02X),Y", addr);
         str_free(&type_computed);
         global.addr -= index_size;
     }
+    // eg. *(p + 1) + expression; or *p + expression;
     else
     if(is_operator(next()))
     {
         pop();
         str type_computed = expression();
-        if(str_key_compare(&type_computed, &type) != 0)
-            quit("incompatible type '%s' with computed type '%s'", type.value, type_computed.value);
+        if(str_key_compare(&type_computed, &deref_type) != 0)
+            quit("incompatible type '%s' with computed type '%s'", deref_type.value, type_computed.value);
         str_free(&type_computed);
     }
-    str_free(&type);
+    str_free(&deref_type);
     str_free(&name);
     str_free(&index_type);
 }
@@ -748,23 +799,117 @@ value_assign(void)
 }
 
 void
+value_initialize(str* type, size_t type_size)
+{
+    str type_computed = expression();
+    if(str_key_compare(&type_computed, type) != 0)
+        quit("initializing type '%s' with computed type '%s'", type->value, type_computed.value);
+    global.addr += type_size;
+    str_free(&type_computed);
+}
+
+size_t
+block_initialize(str* type, size_t type_size)
+{
+    if(is_pointer(type))
+        quit("pointer arrays (see type '%s') are impossible to dereference", type->value);
+    size_t width = 0;
+    match('{');
+    if(next() == '[')
+    {
+        match('[');
+        str d = digit();
+        width = atoi(d.value);
+        for(size_t i = 0; i < width; i++)
+        {
+            write("\tLDA #0");
+            write("\tSTA %d", global.addr);
+            global.addr += type_size;
+        }
+        str_free(&d);
+        match(']');
+    }
+    else
+    while(1)
+    {
+        if(next() == '}')
+            break;
+        value_initialize(type, type_size);
+        width += 1;
+        if(next() == '}')
+            break;
+        match(',');
+    }
+    if(width == 0)
+        quit("block initialization of type '%s' has width of '0'", type->value);
+    match('}');
+    return width;
+}
+
+void
 initialize(void)
 {
     str type = type_decal();
-    token* type_tok = get_token(&type);
+    size_t type_size = get_size(&type);
     str name = ident();
     token* name_tok = find(name);
     if(name_tok)
-        quit("'%s' already defined", name.value);
+        quit("'%s' already defined: type: '%s', name '%s'", name.value, name_tok->type.value, name_tok->name.value);
     match('=');
-    str type_computed = expression();
-    if(str_key_compare(&type_computed, &type) != 0)
-        quit("initializing type '%s' with computed type '%s'", type.value, type_computed.value);
-    vec_str_push_back(&global.local_stack, str_copy(&name));
-    insert(token_init(type.value, name.value, type_tok->size, global.addr));
-    global.addr += type_tok->size;
-    str_free(&type_computed);
+    size_t addr = global.addr;
+    size_t width = 0;
+    if(next() == '{')
+        width = block_initialize(&type, type_size);
+    else
+    {
+        value_initialize(&type, type_size);
+        width = 1;
+    }
+    var(token_init(type.value, name.value, type_size, width, addr, 0, 0));
     str_free(&type);
+    str_free(&name);
+}
+
+void
+general(void)
+{
+    str name = ident();
+    int read = name.size > 0;
+    if(read)
+    {
+        token* tok = get_token(&name);
+        char n = next();
+        str_append(&name, " ");
+        prime(&name);
+        // eg: a();
+        // Note: Fuctions purposely have no return values, and therefore functions are not terms.
+        if(n == '(')
+        {
+            if(!tok->is_fun)
+                quit("token '%s' is not a function", tok->name.value);
+            call();
+        }
+        // eg: a = expression;
+        else
+        if(n == '=')
+            value_assign();
+        // eg: u8 a = expression;
+        else
+        if(tok->is_type)
+            initialize();
+        // eg. a + expression;
+        else
+        {
+            str type = expression();
+            str_free(&type);
+        }
+    }
+    // eg: expression;
+    else
+    {
+        str type = expression();
+        str_free(&type);
+    }
     str_free(&name);
 }
 
@@ -780,55 +925,29 @@ star_deref(void)
 }
 
 void
+statement(void)
+{
+    if(star_deref())
+        deref();
+    else
+        general();
+}
+
+void
 block(void)
 {
+    size_t start = global.var_stack.size;
     match('{');
     while(1)
     {
         if(next() == '}')
             break;
-        int deref = star_deref();
-        if(deref && next() == '(')
-            deref_assign();
-        else
-        {
-            str name = ident();
-            token* tok = get_token(&name);
-            char n = next();
-            str_append(&name, " ");
-            prime(&name);
-            // eg: a()
-            // Note: Fuctions purposely have no return values, and therefor are not terms.
-            if(n == '(')
-            {
-                if(!tok->is_function)
-                    quit("token '%s' is not a function", tok->name.value);
-                call();
-            }
-            // eg: a = 1; *a = 1
-            else
-            if(n == '=')
-            {
-                if(deref)
-                    deref_assign();
-                else
-                    value_assign();
-            }
-            // eg: u8 a = 1
-            else
-            if(tok->is_type)
-                initialize();
-            // eg: *a; 1; (1); (a); a + 1
-            else
-            {
-                str type = expression();
-                str_free(&type);
-            }
-            str_free(&name);
-        }
+        statement();
         match(';');
     }
     match('}');
+    size_t end = global.var_stack.size;
+    var_stack_pop(end - start);
 }
 
 void
@@ -839,14 +958,14 @@ function(void)
     if(find(name))
         quit("function '%s' already defined", name.value);
     write("%s:", name.value);
-    token fun_tok = token_init("void", name.value, 0, 0);
-    function_params(&fun_tok);
-    fun_tok.is_function = 1;
-    insert(fun_tok);
+    var(token_init("void", name.value, 0, 0, 0, 1, 0));
+    token* found = find(name);
+    size_t start = global.var_stack.size;
+    function_params(found);
+    size_t end = global.var_stack.size;
     block();
     rts();
-    stack_info(name.value);
-    stack_clear();
+    var_stack_pop(end - start);
     str_free(&name);
 }
 
@@ -860,7 +979,7 @@ program(void)
         if(next() == EOF)
             break;
     }
-    global_info();
+    var_stack_pop(global.var_stack.size);
 }
 
 void
@@ -877,11 +996,7 @@ init_keywords(void)
         { "void", 0 },
     };
     for(size_t i = 0; i < len(types); i++)
-    {
-        token tok = token_init(types[i].type, types[i].type, types[i].size, 0);
-        tok.is_type = 1;
-        insert(tok);
-    }
+        var(token_init(types[i].type, types[i].type, types[i].size, types[i].size, 0, 0, 1));
 }
 
 void
@@ -899,20 +1014,44 @@ int
 main(void)
 {
     str text = str_init(
-        " set(u8* p)                   \n"
-        " {                            \n"
-        "     *p = 0;                  \n"
-        " }                            \n"
-        " main()                       \n"
-        " {                            \n"
-        "     u8 a = 251;              \n"
-        "     u8 b = 252;              \n"
-        "     u8 c = 253;              \n"
-        "     u8 d = 254;              \n"
-        "     u8 e = 255;              \n"
-        "     set(&b);                 \n"
-        " }                            \n"
-        "                              \n");
+        " C(u8* p, u8 index, u8 value)    \n"
+        " {                               \n"
+        "     u8 a = 255;                 \n"
+        "     u8 b = 255;                 \n"
+        "     u8 c = 255;                 \n"
+        "     *(p + index) = value;       \n"
+        " }                               \n"
+        " B(u8* p, u8 index, u8 value)    \n"
+        " {                               \n"
+        "     C(p, index, value);         \n"
+        " }                               \n"
+        " A(u8* p, u8 index, u8 value)    \n"
+        " {                               \n"
+        "     B(p, index, value);         \n"
+        " }                               \n"
+        " set(u8* p, u8 index, u8 value)  \n"
+        " {                               \n"
+        "     A(p, index, value);         \n"
+        " }                               \n"
+        " recurse()                       \n"
+        " {                               \n"
+        "     recurse();                  \n"
+        " }                               \n"
+        " main()                          \n"
+        " {                               \n"
+        "     u8 a  = 254;                \n"
+        "     u8 b  = 254;                \n"
+        "     u8 c  = 254;                \n"
+        "     u8 d  = 254;                \n"
+        "     u8 e = {                    \n"
+        "         a + 1,                  \n"
+        "         b + 1,                  \n"
+        "         c + 1,                  \n"
+        "     };                          \n"
+        "     u8 f  = 255;                \n"
+        "     set(&e, 1, 1);              \n"
+        " }                               \n"
+        "                                 \n");
     if(text.size != 0)
         compile(&text);
     str_free(&text);

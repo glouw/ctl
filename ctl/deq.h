@@ -155,11 +155,11 @@ JOIN(A, alloc)(A* self, size_t capacity, size_t shift_from)
 static inline void
 JOIN(A, push_front)(A* self, T value)
 {
-    if(self->capacity == 0)
+    if(self->mark_b - self->mark_a == 0)
     {
-        JOIN(A, alloc)(self, 1, 0);
         self->mark_a = 0;
         self->mark_b = 1;
+        JOIN(A, alloc)(self, 1, 0);
         *JOIN(A, last)(self) = JOIN(B, init)(DEQ_BUCKET_SIZE);
     }
     else
@@ -180,13 +180,31 @@ JOIN(A, push_front)(A* self, T value)
 }
 
 static inline void
+JOIN(A, pop_front)(A* self)
+{
+    B* page = *JOIN(A, first)(self);
+    if(self->free)
+    {
+        T* ref = &page->value[page->a];
+        self->free(ref);
+    }
+    page->a += 1;
+    self->size -= 1;
+    if(page->a == page->b)
+    {
+        free(page);
+        self->mark_a += 1;
+    }
+}
+
+static inline void
 JOIN(A, push_back)(A* self, T value)
 {
-    if(self->capacity == 0)
+    if(self->mark_b - self->mark_a == 0)
     {
-        JOIN(A, alloc)(self, 1, 0);
         self->mark_a = 0;
         self->mark_b = 1;
+        JOIN(A, alloc)(self, 1, 0);
         *JOIN(A, last)(self) = JOIN(B, init)(0);
     }
     else
@@ -221,26 +239,6 @@ JOIN(A, pop_back)(A* self)
     {
         free(page);
         self->mark_b -= 1;
-        self->capacity -= 1;
-    }
-}
-
-static inline void
-JOIN(A, pop_front)(A* self)
-{
-    B* page = *JOIN(A, first)(self);
-    if(self->free)
-    {
-        T* ref = &page->value[page->a];
-        self->free(ref);
-    }
-    page->a += 1;
-    self->size -= 1;
-    if(page->a == page->b)
-    {
-        free(page);
-        self->mark_a += 1;
-        self->capacity -= 1;
     }
 }
 

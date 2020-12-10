@@ -34,51 +34,51 @@
 //     DEQUE SIZE 1 CAUSED HEAP USE AFTER FREE ISSUES.
 
 void
-test_zero_capacity_edge_case(void)
+test_capacity_edge_case(void)
 {
     {
         deq_digi a = deq_digi_init();
         deq_digi_push_back(&a, digi_init(1));
         assert(a.capacity == 1);
         deq_digi_pop_back(&a);
-        assert(a.capacity == 0);
+        assert(a.capacity == 1);
         deq_digi_push_back(&a, digi_init(1));
         assert(a.capacity == 1);
         deq_digi_pop_back(&a);
-        assert(a.capacity == 0);
+        assert(a.capacity == 1);
         deq_digi_free(&a);
     }{
         deq_digi a = deq_digi_init();
         deq_digi_push_back(&a, digi_init(1));
         assert(a.capacity == 1);
         deq_digi_pop_front(&a);
-        assert(a.capacity == 0);
+        assert(a.capacity == 1);
         deq_digi_push_back(&a, digi_init(1));
         assert(a.capacity == 1);
         deq_digi_pop_front(&a);
-        assert(a.capacity == 0);
+        assert(a.capacity == 1);
         deq_digi_free(&a);
     }{
         deq_digi a = deq_digi_init();
         deq_digi_push_front(&a, digi_init(1));
         assert(a.capacity == 1);
         deq_digi_pop_front(&a);
-        assert(a.capacity == 0);
+        assert(a.capacity == 1);
         deq_digi_push_front(&a, digi_init(1));
         assert(a.capacity == 1);
         deq_digi_pop_front(&a);
-        assert(a.capacity == 0);
+        assert(a.capacity == 1);
         deq_digi_free(&a);
     }{
         deq_digi a = deq_digi_init();
         deq_digi_push_front(&a, digi_init(1));
         assert(a.capacity == 1);
         deq_digi_pop_back(&a);
-        assert(a.capacity == 0);
+        assert(a.capacity == 1);
         deq_digi_push_front(&a, digi_init(1));
         assert(a.capacity == 1);
         deq_digi_pop_back(&a);
-        assert(a.capacity == 0);
+        assert(a.capacity == 1);
         deq_digi_free(&a);
     }
 }
@@ -86,7 +86,7 @@ test_zero_capacity_edge_case(void)
 int
 main(void)
 {
-    test_zero_capacity_edge_case();
+    test_capacity_edge_case();
 #ifdef SRAND
     srand(time(NULL));
 #endif
