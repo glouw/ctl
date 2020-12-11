@@ -84,6 +84,16 @@ str_find(str* self, const char* s)
 }
 
 static inline size_t
+str_count(str* self, char c)
+{
+    size_t count = 0;
+    for(size_t i = 0; i < self->size; i++)
+        if(self->value[i] == c)
+            count += 1;
+    return count;
+}
+
+static inline size_t
 str_rfind(str* self, const char* s)
 {
     char* c_str = self->value;

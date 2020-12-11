@@ -1,26 +1,12 @@
 //
-// -- A 6502 COMPILER --
+// -- A 6502 compiler specalizing in zero page 16-bit integer math and loop unroling --
 //
-
-// LDA  immediate     LDA #oper     A9    2     2
-//      zeropage      LDA oper      A5    2     3
-//      absolute      LDA oper      AD    3     4
-//
-// STA  zeropage      STA oper      85    2     3
-//      absolute      STA oper      8D    3     4
-//
-// 1. All functions inline (macros)
-// 2. Addresses must resolved at compile time.
-//
-// ASM keyword.
 
 #include <str.h>
 #include <stdio.h>
 #include <stdarg.h>
 
-size_t line = 1;
-
-#define quit(msg, ...) { printf("error: line %lu: internal line %d: "msg, line, __LINE__, __VA_ARGS__); exit(1); }
+#define quit(msg, ...) { printf("error: internal %d: "msg, __LINE__, __VA_ARGS__); exit(1); }
 
 #define P
 #define T char
@@ -93,6 +79,9 @@ struct
     lst_str assem;
     lst_str variables;
     size_t addr;
+    // Scoped brace matching.
+    int l;
+    int r;
 }
 global;
 
@@ -104,6 +93,7 @@ global_init(void)
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
     global.variables = lst_str_init();
+    global.addr = global.l = global.r = 0;
 }
 
 void
@@ -226,7 +216,16 @@ is_space(char c)
 int
 is_scoped(char c)
 {
-    return c != '}';
+    int diff = global.l - global.r;
+    if(c == '}' && diff == 0)
+    {
+        global.l = 0;
+        global.r = 0;
+        return 0;
+    }
+    if(c == '{') global.l += 1;
+    if(c == '}') global.r += 1;
+    return 1;
 }
 
 void
@@ -236,10 +235,18 @@ tidy(str* s)
         str_pop_back(s);
 }
 
+char
+top(void)
+{
+    if(stk_char_empty(&global.feed))
+        quit("<< INTERNAL COMPILER ERROR >> Accessed global feed of size '%lu'", global.feed.size);
+    return *stk_char_top(&global.feed);
+}
+
 void
 pop(void)
 {
-    char c = *stk_char_top(&global.feed);
+    char c = top();
     if(c == '\n')
     {
         tidy(&global.comment);
@@ -256,7 +263,7 @@ int
 next(void)
 {
     char c;
-    while(is_space(c = *stk_char_top(&global.feed)))
+    while(is_space(c = top()))
     {
         pop();
         if(stk_char_empty(&global.feed))
@@ -270,7 +277,7 @@ buffer(int clause(char c))
 {
     str s = str_init("");
     char c;
-    while(clause(c = *stk_char_top(&global.feed)))
+    while(clause(c = top()))
     {
         str_push_back(&s, c);
         pop();
@@ -400,19 +407,17 @@ token
 resolve(token* tok)
 {
     token copy = token_copy(tok);
-    while(next() == '[') // dot operator too
+    if(next() == '[')
     {
-        if(next() == '[')
-        {
-            token* type = find(&tok->type);
-            match('[');
-            str d = digit();
-            int index = atoi(d.value);
-            copy.size = type->size;
-            copy.addr += index * type->size;
-            match(']');
-            str_free(&d);
-        }
+        token* type = find(&tok->type);
+        match('[');
+        str d = digit();
+        int index = atoi(d.value);
+        copy.size = type->size;
+        copy.is_array = type->is_array;
+        copy.addr += index * type->size;
+        match(']');
+        str_free(&d);
     }
     return copy;
 }
@@ -437,10 +442,16 @@ term(void)
     {
         str n = ident();
         token* tok = get(&n);
-        token resolved = resolve(tok);
-        load_value(&resolved);
+        token res = resolve(tok);
+        if(res.is_type)
+            quit("type '%s' cannot be loaded", res.name.value);
+        if(res.is_fun)
+            quit("function '%s' cannot be loaded", res.name.value);
+        if(res.is_array)
+            quit("array '%s' cannot be loaded", res.name.value);
+        load_value(&res);
         str_free(&n);
-        token_free(&resolved);
+        token_free(&res);
     }
     else
         quit("unknown character in term '%c'\n", next());
@@ -516,7 +527,10 @@ index(token* tok)
         assign(&res);
     else
     if(is_operator(next()))
-        terms();
+    {
+        pop();
+        expression();
+    }
     token_free(&res);
 }
 
@@ -528,7 +542,7 @@ general(str* lead)
         declarations(tok);
     else
     {
-        if(next() == '[') // or . operator for structs?
+        if(next() == '[')
             index(tok);
         else
         if(next() == '=')
@@ -553,10 +567,28 @@ prime(str* text)
 }
 
 void
-inline_for(void)
+replace(str* s, str* macro, str* with)
+{
+    size_t index = 0;
+    while((index = str_find(s, macro->value)) != SIZE_MAX)
+        str_replace(s, index, macro->size, with->value);
+}
+
+void
+unroll_for(void)
 {
     match('(');
-    str macro = macro_token();
+    str reftok = macro_token();
+    str enumtok = str_init("");
+    int enumming = 0;
+    if(next() == ',')
+    {
+        enumming = 1;
+        match(',');
+        str temp = macro_token();
+        str_swap(&enumtok, &temp);
+        str_free(&temp);
+    }
     match(':');
     str array = ident();
     token* tok = get(&array);
@@ -565,17 +597,22 @@ inline_for(void)
     match(')');
     match('{');
     str meta = buffer(is_scoped);
+    puts(meta.value);
     lst_str expanded = lst_str_init();
     for(size_t i = 0; i < size; i++)
     {
-        str indexer = format("%s[%d]", array.value, i);
         str temp = str_copy(&meta);
-        size_t index = 0;
-        while((index = str_find(&temp, macro.value)) != SIZE_MAX)
-            str_replace(&temp, index, macro.size, indexer.value);
+        if(enumming)
+        {
+            str enumer = format("%d", i);
+            replace(&temp, &enumtok, &enumer);
+            str_free(&enumer);
+        }
+        str reffer = format("%s[%d]", array.value, i);
+        replace(&temp, &reftok, &reffer);
         lst_str_push_front(&expanded, str_copy(&temp));
+        str_free(&reffer);
         str_free(&temp);
-        str_free(&indexer);
     }
     match('}');
     foreach(lst_str, &expanded, it,
@@ -583,7 +620,8 @@ inline_for(void)
     )
     lst_str_free(&expanded);
     str_free(&meta);
-    str_free(&macro);
+    str_free(&reftok);
+    str_free(&enumtok);
     str_free(&array);
 }
 
@@ -606,7 +644,7 @@ statement(void)
     {
         str lead = ident();
         if(str_compare(&lead, "for") == 0)
-            inline_for();
+            unroll_for();
         else
         if(str_compare(&lead, "asm") == 0)
             inline_asm();
@@ -664,8 +702,6 @@ function(void)
     declare("void", name.value, 0, 1, 0);
     write("%s:", name.value);
     str_free(&name);
-    match('(');
-    match(')');
     block();
     write("\tRTS");
 }
@@ -701,27 +737,16 @@ int
 main(void)
 {
     compile(
-        "main()                  \n"
-        "{                       \n"
-        "    int out;            \n"
-        "    int arr[32];        \n"
-        "    for($a:arr)         \n"
-        "    {                   \n"
-        "        $a = 1;         \n"
-        "    }                   \n"
-        "    for($a:arr)         \n"
-        "    {                   \n"
-        "        $a = 2;         \n"
-        "    }                   \n"
-        "    for($a:arr)         \n"
-        "    {                   \n"
-        "        $a = 3;         \n"
-        "    }                   \n"
-        "    out = 0;            \n"
-        "    for($a:arr)         \n"
-        "    {                   \n"
-        "        out = out + $a; \n"
-        "    }                   \n"
-        "}                       \n"
+        "main                       \n"
+        "{                          \n"
+        "    int  x[8];             \n"
+        "    int  y[8];             \n"
+        "    int vx[8];             \n"
+        "    int vy[8];             \n"
+        "    for($a, $i : x)        \n"
+        "    {                      \n"
+        "        $a = 1;            \n"
+        "    }                      \n"
+        "}                          \n"
     );
 }
