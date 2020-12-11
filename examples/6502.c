@@ -704,7 +704,7 @@ main(void)
         "main()                  \n"
         "{                       \n"
         "    int out;            \n"
-        "    int arr[32];         \n"
+        "    int arr[32];        \n"
         "    for($a:arr)         \n"
         "    {                   \n"
         "        $a = 1;         \n"
