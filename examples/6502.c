@@ -553,7 +553,7 @@ prime(str* text)
 }
 
 void
-inline_foreach(void)
+inline_for(void)
 {
     match('(');
     str macro = macro_token();
@@ -605,8 +605,8 @@ statement(void)
     else
     {
         str lead = ident();
-        if(str_compare(&lead, "foreach") == 0)
-            inline_foreach();
+        if(str_compare(&lead, "for") == 0)
+            inline_for();
         else
         if(str_compare(&lead, "asm") == 0)
             inline_asm();
@@ -704,17 +704,21 @@ main(void)
         "main()                  \n"
         "{                       \n"
         "    int out;            \n"
-        "    int arr[8];         \n"
-        "    arr[0] = 1;         \n"
-        "    arr[1] = 1;         \n"
-        "    arr[2] = 1;         \n"
-        "    arr[3] = 1;         \n"
-        "    arr[4] = 1;         \n"
-        "    arr[5] = 1;         \n"
-        "    arr[6] = 1;         \n"
-        "    arr[7] = 1;         \n"
+        "    int arr[32];         \n"
+        "    for($a:arr)         \n"
+        "    {                   \n"
+        "        $a = 1;         \n"
+        "    }                   \n"
+        "    for($a:arr)         \n"
+        "    {                   \n"
+        "        $a = 2;         \n"
+        "    }                   \n"
+        "    for($a:arr)         \n"
+        "    {                   \n"
+        "        $a = 3;         \n"
+        "    }                   \n"
         "    out = 0;            \n"
-        "    foreach($a : arr)   \n"
+        "    for($a:arr)         \n"
         "    {                   \n"
         "        out = out + $a; \n"
         "    }                   \n"
