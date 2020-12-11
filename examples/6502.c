@@ -2,9 +2,21 @@
 // -- A 6502 COMPILER --
 //
 
+// LDA  immediate     LDA #oper     A9    2     2
+//      zeropage      LDA oper      A5    2     3
+//      absolute      LDA oper      AD    3     4
+//
+// STA  zeropage      STA oper      85    2     3
+//      absolute      STA oper      8D    3     4
+//
+// 1. All functions inline (macros)
+// 2. Addresses must resolved at compile time.
+//
+// ASM keyword.
+
+#include <str.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <str.h>
 
 size_t line = 1;
 
@@ -15,49 +27,46 @@ size_t line = 1;
 #include <stk.h>
 
 #define T str
-#include <vec.h>
+#include <lst.h>
 
 typedef struct
 {
     str type;
     str name;
     size_t size;
-    size_t width;
     size_t addr;
-    vec_str params;
-    int is_fun;
     int is_type;
+    int is_fun;
+    int is_array;
 }
 token;
 
 token
-token_init(char* type, char* name, size_t size, size_t width, size_t addr, int is_fun, int is_type)
+token_init(char* type, char* name, size_t size, size_t addr, int is_type, int is_fun, int is_array)
 {
-    return (token) {
+    return (token)
+    {
         str_init(type),
         str_init(name),
         size,
-        width,
         addr,
-        vec_str_init(),
-        is_fun,
         is_type,
+        is_fun,
+        is_array,
     };
 }
 
 token
 token_copy(token* self)
 {
-    return (token) {
-        str_copy(&self->type),
-        str_copy(&self->name),
-        self->size,
-        self->width,
-        self->addr,
-        vec_str_copy(&self->params),
-        self->is_fun,
-        self->is_type,
-    };
+    return token_init(
+            self->type.value,
+            self->name.value,
+            self->size,
+            self->addr,
+            self->is_type,
+            self->is_fun,
+            self->is_array);
 }
 
 void
@@ -65,7 +74,6 @@ token_free(token* self)
 {
     str_free(&self->type);
     str_free(&self->name);
-    vec_str_free(&self->params);
 }
 
 int
@@ -77,51 +85,55 @@ token_key_compare(token* a, token* b)
 #define T token
 #include <set.h>
 
-#define T str
-#include <lst.h>
-
 struct
 {
+    str comment;
     stk_char feed;
     set_token tokens;
     lst_str assem;
-    vec_str var_stack;
-    str line;
+    lst_str variables;
     size_t addr;
-    size_t label;
 }
 global;
 
 void
 global_init(void)
 {
+    global.comment = str_init("");
     global.feed = stk_char_init();
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
-    global.var_stack = vec_str_init();
-    global.line = str_init("");
-    global.addr = 0;
-    global.label = 0;
+    global.variables = lst_str_init();
 }
 
 void
 global_free(void)
 {
+    str_free(&global.comment);
     stk_char_free(&global.feed);
     set_token_free(&global.tokens);
     lst_str_free(&global.assem);
-    vec_str_free(&global.var_stack);
+    lst_str_free(&global.variables);
 }
 
 token*
-find(str name)
+find(str* name)
 {
     token key;
-    key.name = name;
+    key.name = *name;
     set_token_node* node;
     if((node = set_token_find(&global.tokens, key)))
         return &node->key;
     return NULL;
+}
+
+token*
+get(str* name)
+{
+    token* tok = find(name);
+    if(!tok)
+        quit("token '%s' not defined", name->value);
+    return tok;
 }
 
 void
@@ -130,80 +142,37 @@ insert(token tok)
     set_token_insert(&global.tokens, tok);
 }
 
-void
-var(token tok)
+str
+stringify(char* fmt, va_list args)
 {
-    insert(tok);
-    vec_str_push_back(&global.var_stack, str_copy(&tok.name));
-}
-
-void
-param(token* fun_tok, token tok)
-{
-    var(tok);
-    vec_str_push_back(&fun_tok->params, str_copy(&tok.type));
-}
-
-void
-erase(str name)
-{
-    token key;
-    key.name = name;
-    set_token_erase(&global.tokens, key);
-}
-
-void
-write(char* format, ...)
-{
-    va_list args;
     va_list copy;
-    va_start(args, format);
     va_copy(copy, args);
     str s = str_init("");
-    size_t size = vsnprintf(NULL, 0, format, args);
+    size_t size = vsnprintf(NULL, 0, fmt, args);
     str_resize(&s, size + 1, '\0');
-    vsprintf(s.value, format, copy);
-    va_end(args);
+    vsprintf(s.value, fmt, copy);
     va_end(copy);
+    return s;
+}
+
+str
+format(char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    str s = stringify(fmt, args);
+    va_end(args);
+    return s;
+}
+
+void
+write(char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    str s = stringify(fmt, args);
+    va_end(args);
     lst_str_push_back(&global.assem, s);
-}
-
-void
-token_write(token* tok)
-{
-    char* type = tok->type.value;
-    char* name = tok->name.value;
-    size_t size = tok->size;
-    size_t width = tok->width;
-    size_t addr = tok->addr;
-    size_t params_size = tok->params.size;
-    int is_fun = tok->is_fun;
-    int is_type = tok->is_type;
-    write("; %12s %12s %4lu %4lu %4lu %4lu %4d %4d", type, name, size, width, addr, params_size, is_fun, is_type);
-}
-
-void
-var_stack_pop(size_t count)
-{
-    if(count > 0)
-    {
-        write("; %12s %12s %4s %4s %4s %4s %4s %4s", "T", "N", "S", "W", "A", "P", "F?", "T?");
-        lst_str reversed = lst_str_init();
-        // Reverses stack pop and erase / prints in order.
-        while(count)
-        {
-            str* name = vec_str_back(&global.var_stack);
-            lst_str_push_front(&reversed, str_copy(name));
-            vec_str_pop_back(&global.var_stack);
-            count -= 1;
-        }
-        foreach(lst_str, &reversed, it,
-            token* found = find(*it.ref);
-            token_write(found);
-            erase(*it.ref);
-        )
-        lst_str_free(&reversed);
-    }
 }
 
 void
@@ -217,104 +186,78 @@ save(void)
     fclose(out);
 }
 
-void
-prime(str* text)
-{
-    while(text->size)
-    {
-        char c = *str_back(text);
-        stk_char_push(&global.feed, c);
-        if(!str_empty(&global.line))
-            str_pop_back(&global.line);
-        str_pop_back(text);
-    }
-}
-
-int
-is_pointer(str* s)
-{
-    return *str_back(s) == '*';
-}
-
 int
 is_digit(char c)
 {
-    return c >= '0' && c <= '9';
+    return (c >= '0' && c <= '9') || c == '-' || c == '+';
 }
 
 int
 is_operator(char c)
 {
-    return c == '+'
-        || c == '-'
-        || c == '&';
+    return c == '+' || c == '-';
+}
+
+int
+is_valid_operator(str* s)
+{
+    return str_compare(s, "+")
+        || str_compare(s, "-");
 }
 
 int
 is_ident(char c)
 {
-    return (c >= 'a' && c <= 'z')
-        || (c >= 'A' && c <= 'Z')
-        || (c == '_')
-        || is_digit(c);
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || is_digit(c);
 }
 
 int
-is_unary(char c)
+is_macro_token(char c)
 {
-    return c == '&'
-        || c == '*'
-        || c == '$'
-        || c == '-'
-        || c == '+';
+    return c == '$' || is_ident(c);
 }
 
 int
 is_space(char c)
 {
-    return c == ' '
-        || c == '\t'
-        || c == '\n'
-        || c == '\r';
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-char
-peek(void)
+int
+is_scoped(char c)
 {
-    return *stk_char_top(&global.feed);
+    return c != '}';
+}
+
+void
+tidy(str* s)
+{
+    while(!str_empty(s) && is_space(*str_back(s)))
+        str_pop_back(s);
 }
 
 void
 pop(void)
 {
-    char c;
-    if((c = peek()) != '\n')
-        str_push_back(&global.line, c);
+    char c = *stk_char_top(&global.feed);
+    if(c == '\n')
+    {
+        tidy(&global.comment);
+        if(!str_empty(&global.comment))
+            write("; %s", global.comment.value);
+        str_clear(&global.comment);
+    }
+    else
+        str_push_back(&global.comment, c);
     stk_char_pop(&global.feed);
-}
-
-void
-trim(str* s)
-{
-    while(!str_empty(s) && is_space(*str_back(s)))
-        str_pop_back(s);
-    while(!str_empty(s) && is_space(*str_front(s)))
-        str_erase(s, 0);
 }
 
 int
 next(void)
 {
     char c;
-    while(is_space(c = peek()))
+    while(is_space(c = *stk_char_top(&global.feed)))
     {
-        if(c == '\n')
-        {
-            line += 1;
-            trim(&global.line);
-            write("; %s", global.line.value);
-            str_clear(&global.line);
-        }
         pop();
         if(stk_char_empty(&global.feed))
             return EOF;
@@ -323,12 +266,11 @@ next(void)
 }
 
 str
-read(int clause(char c))
+buffer(int clause(char c))
 {
-    next();
     str s = str_init("");
     char c;
-    while(clause(c = peek()))
+    while(clause(c = *stk_char_top(&global.feed)))
     {
         str_push_back(&s, c);
         pop();
@@ -337,722 +279,445 @@ read(int clause(char c))
 }
 
 str
-ident(void)
+read(int clause(char c))
 {
-    char c = next();
-    if(is_digit(c))
-        quit("identifier may not start with digit; received '%c'", c);
-    str s = read(is_ident);
-    return s;
+    next();
+    return buffer(clause);
 }
 
 str
 digit(void)
 {
-    char c = next();
-    if(!is_digit(c))
-        quit("digit must start with a number; received '%c'", c);
-    str d = read(is_digit);
-    int value = atoi(d.value);
-    if(value > 255)
-        quit("value '%s' exceeds max 'u8' value of '255'", d.value);
-    return d;
+    if(!is_digit(next()))
+        quit("expected digit; received '%c'", next());
+    return read(is_digit);
+}
+
+str
+ident(void)
+{
+    if(is_digit(next()))
+        quit("expected identifier; received '%c'", next());
+    return read(is_ident);
+}
+
+str
+macro_token(void)
+{
+    if(next() != '$')
+        quit("expected identifier; received '%c'", next());
+    return read(is_macro_token);
 }
 
 str
 operator(void)
 {
-    str o = read(is_operator);
-    return o;
+    if(!is_operator(next()))
+        quit("expected operator; received '%c'", next());
+    return read(is_operator);
 }
 
 void
 match(char c)
 {
-    char n;
-    if((n = next()) != c)
-        quit("expected '%c' but received '%c'", c, n);
+    if(next() != c)
+        quit("expected '%c' but received '%c'", c, next());
     pop();
 }
 
 void
-copy(size_t to, size_t from, size_t size)
+declare(char* type, char* name, size_t size, int is_fun, int is_array)
+{
+    size_t addr = is_fun ? 0 : global.addr;
+    insert(token_init(type, name, size, addr, 0, is_fun, is_array));
+    lst_str_push_back(&global.variables, str_init(name));
+    if(!is_fun)
+        global.addr += size;
+}
+
+void
+keyword(char* name, size_t size, int is_type)
+{
+    insert(token_init(name, name, size, 0, is_type, 0, 0));
+    lst_str_push_back(&global.variables, str_init(name));
+}
+
+void
+copy(size_t from, size_t to, size_t size)
 {
     for(size_t i = 0; i < size; i++)
     {
-        write("\tLDA %d", from + i);
-        write("\tSTA %d", to + i);
+        write("\tLDA %d", i + from);
+        write("\tSTA %d", i + to);
     }
 }
 
-token*
-get_token(str* name)
+void
+load_value(token* tok)
 {
-    if(str_empty(name))
-        quit("<<< INTERNAL COMPILER ERROR >>> name '%s' empty with token lookup\n", name->value);
-    token* tok = find(*name);
-    if(!tok)
-        quit("token '%s' is not a valid identifier or type\n", name->value);
-    return tok;
-}
-
-size_t
-get_size(str* type)
-{
-    return get_token(type)->size;
+    copy(tok->addr, global.addr, tok->size);
+    global.addr += tok->size;
 }
 
 void
-label(void)
+load_digit(void)
 {
-    write("L%lu:", global.label);
-    global.label += 1;
+    str d = digit();
+    int value = atoi(d.value);
+    write("\tLDA #%d", (value >> 0) & 0xFF), write("\tSTA %d", global.addr + 0);
+    write("\tLDA #%d", (value >> 8) & 0xFF), write("\tSTA %d", global.addr + 1);
+    str_free(&d);
+    global.addr += 2;
 }
 
 void
-readdress_zero_page_pointer(void)
+add(void)
 {
-    size_t lsb = global.addr + 0;
-    size_t msb = global.addr + 1;
-    write("; re-addressing zero page pointer");
-    write("\tLDA %d", msb);
-    write("\tBNE L%lu", global.label);
-    write("; 1. MSB = 1");
-    write("\tLDA #1");
-    write("\tSTA %d", msb);
-    write("; 2. LSB = X - LSB ");
-    write("\tTSX");
-    write("\tTXA");
+    global.addr -= 2;
     write("\tCLC");
-    write("\tADC #1");
-    write("\tADC %d", lsb);
-    write("\tSTA %d", lsb);
-    write("; finished re-addressing zero page pointer");
-    label();
+    write("\tLDA %d", global.addr - 2);
+    write("\tADC %d", global.addr - 0);
+    write("\tSTA %d", global.addr - 2);
+    write("\tLDA %d", global.addr - 1);
+    write("\tADC %d", global.addr + 1);
+    write("\tSTA %d", global.addr - 1);
 }
 
-str
+void
+sub(void)
+{
+    global.addr -= 2;
+    write("\tSEC");
+    write("\tLDA %d", global.addr - 2);
+    write("\tSBC %d", global.addr - 0);
+    write("\tSTA %d", global.addr - 2);
+    write("\tLDA %d", global.addr - 1);
+    write("\tSBC %d", global.addr + 1);
+    write("\tSTA %d", global.addr - 1);
+}
+
+token
+resolve(token* tok)
+{
+    token copy = token_copy(tok);
+    while(next() == '[') // dot operator too
+    {
+        if(next() == '[')
+        {
+            token* type = find(&tok->type);
+            match('[');
+            str d = digit();
+            int index = atoi(d.value);
+            copy.size = type->size;
+            copy.addr += index * type->size;
+            match(']');
+            str_free(&d);
+        }
+    }
+    return copy;
+}
+
+void
 expression(void);
 
 void
-call_params(token* fun_tok)
-{
-    write("; setting up function arguments");
-    match('(');
-    size_t index = 0;
-    size_t bytes = 0;
-    while(1)
-    {
-        if(next() == ')')
-            break;
-        str type_computed = expression();
-        if(index < fun_tok->params.size)
-        {
-            str* expected_type = &fun_tok->params.value[index];
-            if(str_key_compare(&type_computed, expected_type) != 0)
-                quit("argument type '%s' does not match computed type '%s'", expected_type->value, type_computed.value);
-            size_t size = get_size(expected_type);
-            if(is_pointer(expected_type))
-                readdress_zero_page_pointer();
-            copy(bytes, global.addr, size);
-            bytes += size;
-        }
-        if(next() == ',')
-            match(',');
-        index += 1;
-        str_free(&type_computed);
-    }
-    if(index != fun_tok->params.size)
-        quit("function '%s' expected '%lu' arguments but received '%lu' arguments", fun_tok->name.value, fun_tok->params.size, index);
-    match(')');
-}
-
-void
-push_stack(size_t size)
-{
-    write("; pushing stack frame");
-    while(size)
-    {
-        size -= 1;
-        write("\tLDA %d", size);
-        write("\tPHA");
-    }
-}
-
-void
-pop_stack(size_t size)
-{
-    write("; popping stack frame");
-    for(size_t i = 0; i < size; i++)
-    {
-        write("\tPLA");
-        write("\tSTA %d", i);
-    }
-}
-
-void
-jsr(char* name)
-{
-    write("; call '%s'", name);
-    write("\tJSR %s", name);
-}
-
-void
-rts(void)
-{
-    write("; function end");
-    write("\tRTS");
-}
-
-void
-call(void)
-{
-    str name = ident();
-    token* fun_tok = get_token(&name);
-    size_t size = global.addr;
-    push_stack(size);
-    call_params(fun_tok);
-    jsr(name.value);
-    pop_stack(size);
-    str_free(&name);
-}
-
-str
-deref_decal(str* pointer)
-{
-    str type = str_copy(pointer);
-    if(*str_back(&type) == '*')
-        str_pop_back(&type);
-    else
-        quit("unable to dereference '%s'\n", type.value);
-    return type;
-}
-
-str
-type_decal(void)
-{
-    str type = ident();
-    while(next() == '*')
-    {
-        match('*');
-        str_append(&type, "*");
-    }
-    get_token(&type);
-    return type;
-}
-
-str
-unary(void)
-{
-    char n = next();
-    if(n == '&')
-    {
-        match(n);
-        str name = ident();
-        token* tok = get_token(&name);
-        str type = str_copy(&tok->type);
-        str_append(&type, "*");
-        write("\tLDA #%d", tok->addr & 0xFF);
-        write("\tSTA %d", global.addr + 0);
-        write("\tLDA #%d", (tok->addr >> 8) & 0xFF);
-        write("\tSTA %d", global.addr + 1);
-        str_free(&name);
-        return type;
-    }
-    else
-    if(n == '$')
-    {
-        match(n);
-        str name = ident();
-        write("\tLDA #%d", get_token(&name)->width);
-        write("\tSTA %d", global.addr);
-        str_free(&name);
-        return str_init("u8");
-    }
-    else
-    if(n == '*')
-    {
-        match(n);
-        str pointer_name;
-        token* pointer_tok;
-        if(next() == '(')
-        {
-            match('(');
-            pointer_name = ident();
-            pointer_tok = get_token(&pointer_name);
-            match('+');
-            str type = expression();
-            if(str_compare(&type, "u8") != 0)
-                quit("pointers may only be indexed by type 'u8' but received type '%s'", type.value);
-            write("\tLDA #0");
-            str deref_type = deref_decal(&pointer_tok->type);
-            token* deref_tok = get_token(&deref_type);
-            // Implicit size offseting.
-            for(size_t i = 0; i < deref_tok->size; i++)
-            {
-                write("\tCLC");
-                write("\tADC %d", global.addr);
-            }
-            str_free(&type);
-            match(')');
-        }
-        else
-        {
-            write("\tLDA #0");
-            pointer_name = ident();
-            pointer_tok = get_token(&pointer_name);
-        }
-        write("\tTAY");
-        write("\tLDA ($%02X),Y", pointer_tok->addr);
-        write("\tSTA %d", global.addr);
-        str_free(&pointer_name);
-        return str_init("u8");
-    }
-    else
-        quit("unary operator '%c' not supported\n", n);
-}
-
-str
 term(void)
 {
-    str type;
     if(next() == '(')
     {
         match('(');
-        type = expression();
+        expression();
         match(')');
     }
     else
-    if(is_unary(next()))
-        type = unary();
-    else
     if(is_digit(next()))
-    {
-        str d = digit();
-        write("\tLDA #%s", d.value);
-        write("\tSTA %d", global.addr);
-        str_free(&d);
-        type = str_init("u8");
-    }
+        load_digit();
     else
     if(is_ident(next()))
     {
         str n = ident();
-        token* tok = get_token(&n);
-        copy(global.addr, tok->addr, tok->size);
+        token* tok = get(&n);
+        token resolved = resolve(tok);
+        load_value(&resolved);
         str_free(&n);
-        type = str_copy(&tok->type);
+        token_free(&resolved);
     }
     else
-    {
-        type = str_init("");
-        quit("unknown term; char was '%c'", next());
-    }
-    global.addr += get_size(&type);
-    return type;
-}
-
-void
-operate(str* o)
-{
-    if(str_compare(o, "+") == 0)
-    {
-        write("\tCLC");
-        write("\tLDA %d", global.addr - 2);
-        write("\tADC %d", global.addr - 1);
-        write("\tSTA %d", global.addr - 2);
-    }
-    else
-    if(str_compare(o, "-") == 0)
-    {
-        write("\tSEC");
-        write("\tLDA %d", global.addr - 2);
-        write("\tSBC %d", global.addr - 1);
-        write("\tSTA %d", global.addr - 2);
-    }
-    else
-        quit("operator '%s' not supported", o->value);
-}
-
-str
-expression(void)
-{
-    str type_a = term();
-    while(is_operator(next()))
-    {
-        str o = operator();
-        str type_b = term();
-        if(str_key_compare(&type_a, &type_b) != 0)
-            quit("operator '%s' cannot operate on types '%s' and '%s'", o.value, type_a.value, type_b.value);
-        if(is_pointer(&type_a) && is_pointer(&type_b))
-            quit("operator '%s' cannot operate on two pointer types '%s' and '%s'", o.value, type_a.value, type_b.value);
-        operate(&o);
-        global.addr -= get_size(&type_b);
-        str_free(&o);
-        str_free(&type_b);
-    }
-    global.addr -= get_size(&type_a);
-    return type_a;
-}
-
-void
-function_params(token* fun_tok)
-{
-    match('(');
-    while(1)
-    {
-        if(next() == ')')
-            break;
-        str type = type_decal();
-        str name = ident();
-        size_t size = get_size(&type);
-        param(fun_tok, token_init(type.value, name.value, size, size, global.addr, 0, 0));
-        global.addr += size;
-        str_free(&type);
-        str_free(&name);
-        if(next() == ',')
-            match(',');
-    }
-    match(')');
-}
-
-void
-deref(void)
-{
-    str name;
-    str index_type = str_init("u8");
-    size_t index_size = get_size(&index_type);
-    // eg. *(p + 1);
-    if(next() == '(')
-    {
-        match('(');
-        name = ident();
-        match('+');
-        str type = expression();
-        if(str_key_compare(&type, &index_type) != 0)
-            quit("pointers may only be indexed by type '%s' but received type '%s'", index_type.value, type.value);
-        str_free(&type);
-        match(')');
-    }
-    // eg. *p;
-    else
-    {
-        write("\tLDA #0");
-        write("\tSTA %d", global.addr);
-        name = ident();
-    }
-    token* pointer_tok = get_token(&name);
-    str deref_type = deref_decal(&pointer_tok->type);
-    token* deref_tok = get_token(&deref_type);
-    // eg. *(p + 1) = expression; or *p = expression;
-    if(next() == '=')
-    {
-        global.addr += index_size;
-        match('=');
-        str type_computed = expression();
-        if(str_key_compare(&type_computed, &deref_type) != 0)
-            quit("initializing type '%s' with computed type '%s'", deref_type.value, type_computed.value);
-        size_t addr = pointer_tok->addr;
-        write("\tLDA #0");
-        // Implicit size offseting.
-        for(size_t i = 0; i < deref_tok->size; i++)
-        {
-            write("\tCLC");
-            write("\tADC %d", global.addr - index_size);
-        }
-        write("\tTAY");
-        write("\tLDA %d", global.addr);
-        write("\tSTA ($%02X),Y", addr);
-        str_free(&type_computed);
-        global.addr -= index_size;
-    }
-    // eg. *(p + 1) + expression; or *p + expression;
-    else
-    if(is_operator(next()))
-    {
-        pop();
-        str type_computed = expression();
-        if(str_key_compare(&type_computed, &deref_type) != 0)
-            quit("incompatible type '%s' with computed type '%s'", deref_type.value, type_computed.value);
-        str_free(&type_computed);
-    }
-    str_free(&deref_type);
-    str_free(&name);
-    str_free(&index_type);
-}
-
-void
-value_assign(void)
-{
-    str name = ident();
-    token* name_tok = get_token(&name);
-    match('=');
-    str type_computed = expression();
-    str type = str_copy(&name_tok->type);
-    if(str_key_compare(&type_computed, &type) != 0)
-        quit("initializing type '%s' with computed type '%s'", type.value, type_computed.value);
-    write("\tLDA %d", global.addr);
-    write("\tSTA %d", name_tok->addr);
-    str_free(&name);
-    str_free(&type);
-    str_free(&type_computed);
-}
-
-void
-value_initialize(str* type, size_t type_size)
-{
-    str type_computed = expression();
-    if(str_key_compare(&type_computed, type) != 0)
-        quit("initializing type '%s' with computed type '%s'", type->value, type_computed.value);
-    global.addr += type_size;
-    str_free(&type_computed);
-}
-
-size_t
-block_initialize(str* type, size_t type_size)
-{
-    if(is_pointer(type))
-        quit("pointer arrays (see type '%s') are impossible to dereference", type->value);
-    size_t width = 0;
-    match('{');
-    if(next() == '[')
-    {
-        match('[');
-        str d = digit();
-        width = atoi(d.value);
-        for(size_t i = 0; i < width; i++)
-        {
-            write("\tLDA #0");
-            write("\tSTA %d", global.addr);
-            global.addr += type_size;
-        }
-        str_free(&d);
-        match(']');
-    }
-    else
-    while(1)
-    {
-        if(next() == '}')
-            break;
-        value_initialize(type, type_size);
-        width += 1;
-        if(next() == '}')
-            break;
-        match(',');
-    }
-    if(width == 0)
-        quit("block initialization of type '%s' has width of '0'", type->value);
-    match('}');
-    return width;
-}
-
-void
-initialize(void)
-{
-    str type = type_decal();
-    size_t type_size = get_size(&type);
-    str name = ident();
-    token* name_tok = find(name);
-    if(name_tok)
-        quit("'%s' already defined: type: '%s', name '%s'", name.value, name_tok->type.value, name_tok->name.value);
-    match('=');
-    size_t addr = global.addr;
-    size_t width = 0;
-    if(next() == '{')
-        width = block_initialize(&type, type_size);
-    else
-    {
-        value_initialize(&type, type_size);
-        width = 1;
-    }
-    var(token_init(type.value, name.value, type_size, width, addr, 0, 0));
-    str_free(&type);
-    str_free(&name);
-}
-
-void
-general(void)
-{
-    str name = ident();
-    int read = name.size > 0;
-    if(read)
-    {
-        token* tok = get_token(&name);
-        char n = next();
-        str_append(&name, " ");
-        prime(&name);
-        // eg: a();
-        // Note: Fuctions purposely have no return values, and therefore functions are not terms.
-        if(n == '(')
-        {
-            if(!tok->is_fun)
-                quit("token '%s' is not a function", tok->name.value);
-            call();
-        }
-        // eg: a = expression;
-        else
-        if(n == '=')
-            value_assign();
-        // eg: u8 a = expression;
-        else
-        if(tok->is_type)
-            initialize();
-        // eg. a + expression;
-        else
-        {
-            str type = expression();
-            str_free(&type);
-        }
-    }
-    // eg: expression;
-    else
-    {
-        str type = expression();
-        str_free(&type);
-    }
-    str_free(&name);
+        quit("unknown character in term '%c'\n", next());
 }
 
 int
-star_deref(void)
+end_of_expression(char c)
 {
-    if(next() == '*')
+    return c == ';' || c == ')';
+}
+
+void
+terms(void)
+{
+    while(!end_of_expression(next()))
     {
-        match('*');
-        return 1;
+        str o = operator();
+        term();
+        if(str_compare(&o, "+") == 0)
+            add();
+        else
+        if(str_compare(&o, "-") == 0)
+            sub();
+        else
+            quit("unknown operator '%s'", o.value);
+        str_free(&o);
     }
-    return 0;
+}
+
+void
+expression(void)
+{
+    term();
+    terms();
+}
+
+void
+assign(token* tok)
+{
+    match('=');
+    expression();
+    global.addr -= tok->size;
+    copy(global.addr, tok->addr, tok->size);
+}
+
+void
+declare_array(char* type, char* name, size_t size)
+{
+    match('[');
+    str d = digit();
+    size_t width = atoi(d.value);
+    str_free(&d);
+    match(']');
+    declare(type, name, width * size, 0, 1);
+}
+
+void
+declarations(token* tok)
+{
+    str name = ident();
+    if(next() == '[')
+        declare_array(tok->type.value, name.value, tok->size);
+    else
+        declare(tok->type.value, name.value, tok->size, 0, 0);
+    str_free(&name);
+}
+
+void
+index(token* tok)
+{
+    token res = resolve(tok);
+    if(next() == '=')
+        assign(&res);
+    else
+    if(is_operator(next()))
+        terms();
+    token_free(&res);
+}
+
+void
+general(str* lead)
+{
+    token* tok = get(lead);
+    if(tok->is_type)
+        declarations(tok);
+    else
+    {
+        if(next() == '[') // or . operator for structs?
+            index(tok);
+        else
+        if(next() == '=')
+            assign(tok);
+        else
+        {
+            load_value(tok);
+            terms();
+        }
+    }
+}
+
+void
+prime(str* text)
+{
+    while(text->size)
+    {
+        char c = *str_back(text);
+        stk_char_push(&global.feed, c);
+        str_pop_back(text);
+    }
+}
+
+void
+inline_foreach(void)
+{
+    match('(');
+    str macro = macro_token();
+    match(':');
+    str array = ident();
+    token* tok = get(&array);
+    token* type = get(&tok->type);
+    size_t size = tok->size / type->size;
+    match(')');
+    match('{');
+    str meta = buffer(is_scoped);
+    lst_str expanded = lst_str_init();
+    for(size_t i = 0; i < size; i++)
+    {
+        str indexer = format("%s[%d]", array.value, i);
+        str temp = str_copy(&meta);
+        size_t index = 0;
+        while((index = str_find(&temp, macro.value)) != SIZE_MAX)
+            str_replace(&temp, index, macro.size, indexer.value);
+        lst_str_push_front(&expanded, str_copy(&temp));
+        str_free(&temp);
+        str_free(&indexer);
+    }
+    match('}');
+    foreach(lst_str, &expanded, it,
+        prime(it.ref);
+    )
+    lst_str_free(&expanded);
+    str_free(&meta);
+    str_free(&macro);
+    str_free(&array);
+}
+
+void
+inline_asm(void)
+{
+    match('{');
+    str assem = buffer(is_scoped);
+    write("%s", assem.value);
+    match('}');
+    str_free(&assem);
 }
 
 void
 statement(void)
 {
-    if(star_deref())
-        deref();
+    if(is_digit(next()) || next() == '(')
+        expression();
     else
-        general();
+    {
+        str lead = ident();
+        if(str_compare(&lead, "foreach") == 0)
+            inline_foreach();
+        else
+        if(str_compare(&lead, "asm") == 0)
+            inline_asm();
+        else
+        {
+            general(&lead);
+            match(';');
+        }
+        str_free(&lead);
+    }
+}
+
+void
+pop_locals(size_t size)
+{
+    lst_str reversed = lst_str_init();
+    while(size)
+    {
+        str* local = lst_str_back(&global.variables);
+        lst_str_push_front(&reversed, str_copy(local));
+        lst_str_pop_back(&global.variables);
+        size -= 1;
+    }
+    write("; %8s %8s %6s %6s %6s %6s %6s", "TYPE", "NAME", "SIZE", "ADDR", "T?", "F?", "A?");
+    foreach(lst_str, &reversed, it,
+        token* tok = get(it.ref);
+        write("; %8s %8s %6d %6d %6d %6d %6d",
+            tok->type.value, tok->name.value, tok->size, tok->addr, tok->is_type, tok->is_fun, tok->is_array);
+        global.addr -= tok->size;
+    )
+    lst_str_free(&reversed);
 }
 
 void
 block(void)
 {
-    size_t start = global.var_stack.size;
     match('{');
-    while(1)
+    size_t v0 = global.variables.size;
+    while(next() != '}')
     {
-        if(next() == '}')
-            break;
-        statement();
-        match(';');
+        if(next() == '{')
+            block();
+        else
+            statement();
     }
+    size_t v1 = global.variables.size;
+    pop_locals(v1 - v0);
     match('}');
-    size_t end = global.var_stack.size;
-    var_stack_pop(end - start);
 }
 
 void
 function(void)
 {
-    global.addr = 0;
     str name = ident();
-    if(find(name))
-        quit("function '%s' already defined", name.value);
+    declare("void", name.value, 0, 1, 0);
     write("%s:", name.value);
-    var(token_init("void", name.value, 0, 0, 0, 1, 0));
-    token* found = find(name);
-    size_t start = global.var_stack.size;
-    function_params(found);
-    size_t end = global.var_stack.size;
-    block();
-    rts();
-    var_stack_pop(end - start);
     str_free(&name);
+    match('(');
+    match(')');
+    block();
+    write("\tRTS");
 }
 
 void
 program(void)
 {
     write("JMP main");
-    while(1)
-    {
-        function();
-        if(next() == EOF)
-            break;
-    }
-    var_stack_pop(global.var_stack.size);
+    function();
+    pop_locals(global.variables.size);
 }
 
 void
-init_keywords(void)
+setup(void)
 {
-    struct
-    {
-        char* type;
-        size_t size;
-    }
-    types[] = {
-        { "u8",   1 },
-        { "u8*",  2 },
-        { "void", 0 },
-    };
-    for(size_t i = 0; i < len(types); i++)
-        var(token_init(types[i].type, types[i].type, types[i].size, types[i].size, 0, 0, 1));
+    keyword("int", 2, 1);
 }
 
 void
-compile(str* text)
+compile(char* code)
 {
     global_init();
-    init_keywords();
-    prime(text);
+    setup();
+    str text = str_init(code);
+    prime(&text);
     program();
     save();
+    str_free(&text);
     global_free();
 }
 
 int
 main(void)
 {
-    str text = str_init(
-        " C(u8* p, u8 index, u8 value)    \n"
-        " {                               \n"
-        "     u8 a = 255;                 \n"
-        "     u8 b = 255;                 \n"
-        "     u8 c = 255;                 \n"
-        "     *(p + index) = value;       \n"
-        " }                               \n"
-        " B(u8* p, u8 index, u8 value)    \n"
-        " {                               \n"
-        "     C(p, index, value);         \n"
-        " }                               \n"
-        " A(u8* p, u8 index, u8 value)    \n"
-        " {                               \n"
-        "     B(p, index, value);         \n"
-        " }                               \n"
-        " set(u8* p, u8 index, u8 value)  \n"
-        " {                               \n"
-        "     A(p, index, value);         \n"
-        " }                               \n"
-        " recurse()                       \n"
-        " {                               \n"
-        "     recurse();                  \n"
-        " }                               \n"
-        " main()                          \n"
-        " {                               \n"
-        "     u8 a  = 254;                \n"
-        "     u8 b  = 254;                \n"
-        "     u8 c  = 254;                \n"
-        "     u8 d  = 254;                \n"
-        "     u8 e = {                    \n"
-        "         a + 1,                  \n"
-        "         b + 1,                  \n"
-        "         c + 1,                  \n"
-        "     };                          \n"
-        "     u8 f  = 255;                \n"
-        "     set(&e, 1, 1);              \n"
-        " }                               \n"
-        "                                 \n");
-    if(text.size != 0)
-        compile(&text);
-    str_free(&text);
+    compile(
+        "main()                  \n"
+        "{                       \n"
+        "    int out;            \n"
+        "    int arr[8];         \n"
+        "    arr[0] = 1;         \n"
+        "    arr[1] = 1;         \n"
+        "    arr[2] = 1;         \n"
+        "    arr[3] = 1;         \n"
+        "    arr[4] = 1;         \n"
+        "    arr[5] = 1;         \n"
+        "    arr[6] = 1;         \n"
+        "    arr[7] = 1;         \n"
+        "    out = 0;            \n"
+        "    foreach($a : arr)   \n"
+        "    {                   \n"
+        "        out = out + $a; \n"
+        "    }                   \n"
+        "}                       \n"
+    );
 }
