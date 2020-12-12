@@ -8,6 +8,8 @@
 
 #define quit(msg, ...) { printf("error: internal %d: "msg, __LINE__, __VA_ARGS__); exit(1); }
 
+#define WORD_SIZE (2)
+
 #define P
 #define T char
 #include <stk.h>
@@ -79,6 +81,7 @@ struct
     lst_str assem;
     lst_str variables;
     size_t addr;
+    size_t label;
     // Scoped brace matching.
     int l;
     int r;
@@ -93,7 +96,7 @@ global_init(void)
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
     global.variables = lst_str_init();
-    global.addr = global.l = global.r = 0;
+    global.addr = global.label = global.l = global.r = 0;
 }
 
 void
@@ -117,12 +120,16 @@ find(str* name)
     return NULL;
 }
 
+token* last;
+
 token*
 get(str* name)
 {
     token* tok = find(name);
     if(!tok)
         quit("token '%s' not defined", name->value);
+    last = tok;
+    puts(last->name.value);
     return tok;
 }
 
@@ -130,6 +137,7 @@ void
 insert(token tok)
 {
     set_token_insert(&global.tokens, tok);
+    lst_str_push_back(&global.variables, str_copy(&tok.name));
 }
 
 str
@@ -177,6 +185,12 @@ save(void)
 }
 
 int
+is_unary(char c)
+{
+    return c == '!';
+}
+
+int
 is_digit(char c)
 {
     return (c >= '0' && c <= '9') || c == '-' || c == '+';
@@ -185,14 +199,7 @@ is_digit(char c)
 int
 is_operator(char c)
 {
-    return c == '+' || c == '-';
-}
-
-int
-is_valid_operator(str* s)
-{
-    return str_compare(s, "+")
-        || str_compare(s, "-");
+    return c == '+' || c == '-' || c == '=' || c == '!';
 }
 
 int
@@ -333,20 +340,22 @@ match(char c)
 }
 
 void
-declare(char* type, char* name, size_t size, int is_fun, int is_array)
+declare(char* type, char* name, size_t size, int is_array)
 {
-    size_t addr = is_fun ? 0 : global.addr;
-    insert(token_init(type, name, size, addr, 0, is_fun, is_array));
-    lst_str_push_back(&global.variables, str_init(name));
-    if(!is_fun)
-        global.addr += size;
+    insert(token_init(type, name, size, global.addr, 0, 0, is_array));
+    global.addr += size;
+}
+
+void
+def_fun(char* type, char* name)
+{
+    insert(token_init(type, name, 0, 0, 0, 1, 0));
 }
 
 void
 keyword(char* name, size_t size, int is_type)
 {
     insert(token_init(name, name, size, 0, is_type, 0, 0));
-    lst_str_push_back(&global.variables, str_init(name));
 }
 
 void
@@ -367,40 +376,55 @@ load_value(token* tok)
 }
 
 void
+set(size_t addr, int n)
+{
+    write("\tLDA #%d", (n >> 0) & 0xFF), write("\tSTA %d", addr + 0);
+    write("\tLDA #%d", (n >> 8) & 0xFF), write("\tSTA %d", addr + 1);
+}
+
+void
 load_digit(void)
 {
+    str integer = str_init("int");
+    get(&integer);
+    str_free(&integer);
     str d = digit();
     int value = atoi(d.value);
-    write("\tLDA #%d", (value >> 0) & 0xFF), write("\tSTA %d", global.addr + 0);
-    write("\tLDA #%d", (value >> 8) & 0xFF), write("\tSTA %d", global.addr + 1);
+    set(global.addr, value);
     str_free(&d);
-    global.addr += 2;
+    global.addr += WORD_SIZE;
 }
 
 void
 add(void)
 {
-    global.addr -= 2;
     write("\tCLC");
-    write("\tLDA %d", global.addr - 2);
-    write("\tADC %d", global.addr - 0);
-    write("\tSTA %d", global.addr - 2);
-    write("\tLDA %d", global.addr - 1);
-    write("\tADC %d", global.addr + 1);
-    write("\tSTA %d", global.addr - 1);
+    for(size_t i = 0; i < WORD_SIZE; i++)
+    {
+        write("\tLDA %d", global.addr + i - WORD_SIZE);
+        write("\tADC %d", global.addr + i);
+        write("\tSTA %d", global.addr + i - WORD_SIZE);
+    }
 }
 
 void
 sub(void)
 {
-    global.addr -= 2;
     write("\tSEC");
-    write("\tLDA %d", global.addr - 2);
-    write("\tSBC %d", global.addr - 0);
-    write("\tSTA %d", global.addr - 2);
-    write("\tLDA %d", global.addr - 1);
-    write("\tSBC %d", global.addr + 1);
-    write("\tSTA %d", global.addr - 1);
+    for(size_t i = 0; i < WORD_SIZE; i++)
+    {
+        write("\tLDA %d", global.addr + i - WORD_SIZE);
+        write("\tSBC %d", global.addr + i);
+        write("\tSTA %d", global.addr + i - WORD_SIZE);
+    }
+}
+
+void
+not(void)
+{
+    write("\tLDA #1");
+    write("\tEOR %d", global.addr - WORD_SIZE);
+    write("\tSTA %d", global.addr - WORD_SIZE);
 }
 
 token
@@ -428,6 +452,16 @@ expression(void);
 void
 term(void)
 {
+    if(is_unary(next()))
+    {
+        if(next() == '!')
+        {
+            match('!');
+            term();
+            not();
+        }
+    }
+    else
     if(next() == '(')
     {
         match('(');
@@ -447,8 +481,6 @@ term(void)
             quit("type '%s' cannot be loaded", res.name.value);
         if(res.is_fun)
             quit("function '%s' cannot be loaded", res.name.value);
-        if(res.is_array)
-            quit("array '%s' cannot be loaded", res.name.value);
         load_value(&res);
         str_free(&n);
         token_free(&res);
@@ -469,7 +501,10 @@ terms(void)
     while(!end_of_expression(next()))
     {
         str o = operator();
+        if(last->is_array)
+            quit("cannot use operator '%s' on array '%s'\n", o.value, last->name.value);
         term();
+        global.addr -= WORD_SIZE;
         if(str_compare(&o, "+") == 0)
             add();
         else
@@ -486,6 +521,7 @@ expression(void)
 {
     term();
     terms();
+    global.addr -= last->size;
 }
 
 void
@@ -493,7 +529,9 @@ assign(token* tok)
 {
     match('=');
     expression();
-    global.addr -= tok->size;
+    if(tok->size != last->size)
+        quit("'%s' and '%s' size mismatch ('%lu' bytes and '%lu' bytes)\n",
+                tok->name.value, last->name.value, tok->size, last->size);
     copy(global.addr, tok->addr, tok->size);
 }
 
@@ -505,7 +543,7 @@ declare_array(char* type, char* name, size_t size)
     size_t width = atoi(d.value);
     str_free(&d);
     match(']');
-    declare(type, name, width * size, 0, 1);
+    declare(type, name, width * size, 1);
 }
 
 void
@@ -515,7 +553,7 @@ declarations(token* tok)
     if(next() == '[')
         declare_array(tok->type.value, name.value, tok->size);
     else
-        declare(tok->type.value, name.value, tok->size, 0, 0);
+        declare(tok->type.value, name.value, tok->size, 0);
     str_free(&name);
 }
 
@@ -636,10 +674,27 @@ inline_asm(void)
 }
 
 void
+block(void);
+
+void
+if_statement(void)
+{
+    match('(');
+    expression();
+    match(')');
+    block();
+}
+
+void
 statement(void)
 {
-    if(is_digit(next()) || next() == '(')
+    if(next() == ';')
+        quit("empty statement '%c' found", next());
+    if(is_digit(next()) || next() == '(' || is_unary(next())) // MIGHT CONSIDER REMOVING EMPTY EXPRESIONS.
+    {
         expression();
+        match(';');
+    }
     else
     {
         str lead = ident();
@@ -648,6 +703,9 @@ statement(void)
         else
         if(str_compare(&lead, "asm") == 0)
             inline_asm();
+        else
+        if(str_compare(&lead, "if") == 0)
+            if_statement();
         else
         {
             general(&lead);
@@ -699,7 +757,7 @@ void
 function(void)
 {
     str name = ident();
-    declare("void", name.value, 0, 1, 0);
+    def_fun("void", name.value);
     write("%s:", name.value);
     str_free(&name);
     block();
@@ -717,7 +775,9 @@ program(void)
 void
 setup(void)
 {
-    keyword("int", 2, 1);
+    keyword("int", WORD_SIZE, 1);
+    keyword("for", 0, 0);
+    keyword("if", 0, 0);
 }
 
 void
@@ -737,16 +797,18 @@ int
 main(void)
 {
     compile(
-        "main                       \n"
-        "{                          \n"
-        "    int  x[8];             \n"
-        "    int  y[8];             \n"
-        "    int vx[8];             \n"
-        "    int vy[8];             \n"
-        "    for($a, $i : x)        \n"
-        "    {                      \n"
-        "        $a = 1;            \n"
-        "    }                      \n"
-        "}                          \n"
+            "main\n"
+            "{\n"
+                "int a[3];\n"
+                "int b[3];\n"
+                "int temp;\n"
+                "for($A : a)\n"
+                "{\n"
+                    "$A = 9;\n"
+                "}\n"
+                "b = a;\n"
+                "temp = -1;\n"
+                "if(1) {}\n"
+            "}\n"
     );
 }
