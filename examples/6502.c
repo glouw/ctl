@@ -178,6 +178,7 @@ save(void)
     FILE* out = fopen("out.asm", "w");
     foreach(lst_str, &global.assem, it,
         char* s = it.ref->value;
+        puts(s);
         fprintf(out, "%s\n", s);
     )
     fclose(out);

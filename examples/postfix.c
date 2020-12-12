@@ -189,45 +189,14 @@ to_postfix(ls* tokens)
     return postfix;
 }
 
-void
-gen_asm(ls* postfix)
-{
-    int sp = 0;
-    foreach(ls, postfix, it,
-    {
-        str* token = it.ref;
-        char c = token->value[0];
-        if(is_digit(c))
-        {
-            printf("LD R[%d], %d\n", sp, atoi(token->value));
-            sp += 1;
-        }
-        else
-        if(is_operator(token))
-        {
-            switch(c)
-            {
-            case '+': sp -= 1; printf("ADD R[%d] R[%d]\n", sp - 1, sp); break;
-            case '-': sp -= 1; printf("SUB R[%d] R[%d]\n", sp - 1, sp); break;
-            case '/': sp -= 1; printf("DIV R[%d] R[%d]\n", sp - 1, sp); break;
-            case '*': sp -= 1; printf("MUL R[%d] R[%d]\n", sp - 1, sp); break;
-            }
-        }
-        else
-        {
-            printf("error: gen_asm(): unknown token '%c'\n", c);
-            exit(1);
-        }
-    })
-}
-
 int
 main(void)
 {
     str s = str_init("64 * (128 / 2 - 128 / (2 - 1))");
     ls tokens = tokenize(&s);
     ls postfix = to_postfix(&tokens);
-    gen_asm(&postfix);
+    puts(s.value);
+    foreach(ls, &postfix, it, puts(it.ref->value);)
     ls_free(&tokens);
     ls_free(&postfix);
     str_free(&s);
