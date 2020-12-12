@@ -1,5 +1,5 @@
 //
-// -- A 6502 compiler specalizing in zero page 16-bit integer math and loop unroling --
+// -- A 6502 compiler specalizing in brute force zero page 16-bit integer math and loop unrolling --
 //
 
 #include <str.h>
@@ -85,6 +85,7 @@ struct
     // Scoped brace matching.
     int l;
     int r;
+    token* last;
 }
 global;
 
@@ -97,6 +98,7 @@ global_init(void)
     global.assem = lst_str_init();
     global.variables = lst_str_init();
     global.addr = global.label = global.l = global.r = 0;
+    global.last = NULL;
 }
 
 void
@@ -120,15 +122,13 @@ find(str* name)
     return NULL;
 }
 
-token* last;
-
 token*
 get(str* name)
 {
     token* tok = find(name);
     if(!tok)
         quit("token '%s' not defined", name->value);
-    last = tok;
+    global.last = tok;
     return tok;
 }
 
@@ -198,25 +198,40 @@ is_digit(char c)
 int
 is_operator(char c)
 {
-    return c == '+' || c == '-' || c == '=' || c == '!';
+    return c == '+'
+        || c == '-'
+        || c == '='
+        || c == '!'
+        || c == '<'
+        || c == '>'
+        || c == '&'
+        || c == '|'
+        || c == '^';
 }
 
 int
 is_ident(char c)
 {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || is_digit(c);
+    return (c >= 'a' && c <= 'z')
+        || (c >= 'A' && c <= 'Z')
+        || (c == '_')
+        || is_digit(c);
 }
 
 int
 is_macro_token(char c)
 {
-    return c == '$' || is_ident(c);
+    return c == '$'
+        || is_ident(c);
 }
 
 int
 is_space(char c)
 {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    return c == ' '
+        || c == '\t'
+        || c == '\n'
+        || c == '\r';
 }
 
 int
@@ -395,27 +410,46 @@ load_digit(void)
 }
 
 void
-add(void)
+apply(char* method)
 {
-    write("\tCLC");
     for(size_t i = 0; i < WORD_SIZE; i++)
     {
         write("\tLDA %d", global.addr + i - WORD_SIZE);
-        write("\tADC %d", global.addr + i);
+        write("\t%s %d", method, global.addr + i);
         write("\tSTA %d", global.addr + i - WORD_SIZE);
     }
+}
+
+void
+or(void)
+{
+    apply("ORA");
+}
+
+void
+and(void)
+{
+    apply("AND");
+}
+
+void
+xor(void)
+{
+    apply("EOR");
+}
+
+void
+add(void)
+{
+    write("\tCLC");
+    apply("ADC");
 }
 
 void
 sub(void)
 {
     write("\tSEC");
-    for(size_t i = 0; i < WORD_SIZE; i++)
-    {
-        write("\tLDA %d", global.addr + i - WORD_SIZE);
-        write("\tSBC %d", global.addr + i);
-        write("\tSTA %d", global.addr + i - WORD_SIZE);
-    }
+    apply("SBC");
 }
 
 void
@@ -495,23 +529,57 @@ end_of_expression(char c)
 }
 
 void
-equal(void)
+compare(char* method, int x, int y)
 {
     size_t a = global.label + 0;
     size_t b = global.label + 1;
     global.label += 2;
-    for(size_t i = 0; i < WORD_SIZE; i++)
+    size_t i = WORD_SIZE;
+    while(i)
     {
+        i -= 1;
         write("\tLDA %d", global.addr + i - WORD_SIZE);
         write("\tCMP %d", global.addr + i);
-        write("\tBNE L%d\n", a);
+        write("\t%s L%d\n", method, a);
     }
     write("\tBNE L%d\n", a);
-    set(global.addr - WORD_SIZE, 1);
+    set(global.addr - WORD_SIZE, x);
     write("\tJMP L%d\n", b);
     write("L%d:\n", a);
-    set(global.addr - WORD_SIZE, 0);
+    set(global.addr - WORD_SIZE, y);
     write("L%d:\n", b);
+}
+
+void
+equal(void)
+{
+    compare("BNE", 1, 0);
+}
+
+void
+less_than(void)
+{
+    compare("BCC", 0, 1);
+}
+
+void
+greater_than(void)
+{
+    compare("BNE", 0, 1);
+}
+
+void
+greater_than_or_equal(void)
+{
+    less_than();
+    not();
+}
+
+void
+less_than_or_equal(void)
+{
+    greater_than();
+    not();
 }
 
 void
@@ -520,8 +588,8 @@ terms(void)
     while(!end_of_expression(next()))
     {
         str o = operator();
-        if(last->is_array)
-            quit("cannot use operator '%s' on array '%s'\n", o.value, last->name.value);
+        if(global.last->is_array)
+            quit("cannot use operator '%s' on array '%s'\n", o.value, global.last->name.value);
         if(str_compare(&o, "==") == 0)
         {
             expression();
@@ -531,11 +599,32 @@ terms(void)
         {
             term();
             global.addr -= WORD_SIZE;
+            if(str_compare(&o, "|") == 0)
+                or();
+            else
+            if(str_compare(&o, "&") == 0)
+                and();
+            else
+            if(str_compare(&o, "^") == 0)
+                xor();
+            else
             if(str_compare(&o, "+") == 0)
                 add();
             else
             if(str_compare(&o, "-") == 0)
                 sub();
+            else
+            if(str_compare(&o, "<") == 0)
+                less_than();
+            else
+            if(str_compare(&o, ">") == 0)
+                greater_than();
+            else
+            if(str_compare(&o, "<=") == 0)
+                less_than_or_equal();
+            else
+            if(str_compare(&o, ">=") == 0)
+                greater_than_or_equal();
             else
                 quit("unknown operator '%s'", o.value);
         }
@@ -548,7 +637,7 @@ expression(void)
 {
     term();
     terms();
-    global.addr -= last->size;
+    global.addr -= global.last->size;
 }
 
 void
@@ -556,9 +645,9 @@ assign(token* tok)
 {
     match('=');
     expression();
-    if(tok->size != last->size)
+    if(tok->size != global.last->size)
         quit("'%s' and '%s' size mismatch ('%lu' bytes and '%lu' bytes)\n",
-                tok->name.value, last->name.value, tok->size, last->size);
+                tok->name.value, global.last->name.value, tok->size, global.last->size);
     copy(global.addr, tok->addr, tok->size);
 }
 
@@ -585,7 +674,7 @@ declarations(token* tok)
 }
 
 void
-index(token* tok)
+deref(token* tok)
 {
     token res = resolve(tok);
     if(next() == '=')
@@ -608,7 +697,7 @@ general(str* lead)
     else
     {
         if(next() == '[')
-            index(tok);
+            deref(tok);
         else
         if(next() == '=')
             assign(tok);
@@ -835,17 +924,17 @@ int
 main(void)
 {
     compile(
-            "main\n"
+        "main\n"
+        "{\n"
+            "int a;\n"
+            "int b;\n"
+            "int c;\n"
+            "if(1 | 0)\n"
             "{\n"
-                "int a;\n"
-                "int b;\n"
-                "int c;\n"
-                "if(0 == 0)\n"
-                "{\n"
-                    "a = 5;\n"
-                    "b = 6;\n"
-                    "c = 7;\n"
-                "}\n"
+                "a = 5;\n"
+                "b = 6;\n"
+                "c = 1024;\n"
             "}\n"
+        "}\n"
     );
 }
