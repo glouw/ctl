@@ -129,7 +129,6 @@ get(str* name)
     if(!tok)
         quit("token '%s' not defined", name->value);
     last = tok;
-    puts(last->name.value);
     return tok;
 }
 
@@ -496,6 +495,26 @@ end_of_expression(char c)
 }
 
 void
+equal(void)
+{
+    size_t a = global.label + 0;
+    size_t b = global.label + 1;
+    global.label += 2;
+    for(size_t i = 0; i < WORD_SIZE; i++)
+    {
+        write("\tLDA %d", global.addr + i - WORD_SIZE);
+        write("\tCMP %d", global.addr + i);
+        write("\tBNE L%d\n", a);
+    }
+    write("\tBNE L%d\n", a);
+    set(global.addr - WORD_SIZE, 1);
+    write("\tJMP L%d\n", b);
+    write("L%d:\n", a);
+    set(global.addr - WORD_SIZE, 0);
+    write("L%d:\n", b);
+}
+
+void
 terms(void)
 {
     while(!end_of_expression(next()))
@@ -503,15 +522,23 @@ terms(void)
         str o = operator();
         if(last->is_array)
             quit("cannot use operator '%s' on array '%s'\n", o.value, last->name.value);
-        term();
-        global.addr -= WORD_SIZE;
-        if(str_compare(&o, "+") == 0)
-            add();
+        if(str_compare(&o, "==") == 0)
+        {
+            expression();
+            equal();
+        }
         else
-        if(str_compare(&o, "-") == 0)
-            sub();
-        else
-            quit("unknown operator '%s'", o.value);
+        {
+            term();
+            global.addr -= WORD_SIZE;
+            if(str_compare(&o, "+") == 0)
+                add();
+            else
+            if(str_compare(&o, "-") == 0)
+                sub();
+            else
+                quit("unknown operator '%s'", o.value);
+        }
         str_free(&o);
     }
 }
@@ -682,7 +709,18 @@ if_statement(void)
     match('(');
     expression();
     match(')');
+    size_t a = global.label + 0;
+    size_t b = global.label + 1;
+    global.label += 2;
+    for(size_t i = 0; i < WORD_SIZE; i++)
+    {
+        write("\tLDA %d", global.addr + i);
+        write("\tBNE L%d", a);
+    }
+    write("\tJMP L%d", b);
+    write("L%d:", a);
     block();
+    write("L%d:", b);
 }
 
 void
@@ -690,7 +728,7 @@ statement(void)
 {
     if(next() == ';')
         quit("empty statement '%c' found", next());
-    if(is_digit(next()) || next() == '(' || is_unary(next())) // MIGHT CONSIDER REMOVING EMPTY EXPRESIONS.
+    if(is_digit(next()) || next() == '(' || is_unary(next()))
     {
         expression();
         match(';');
@@ -799,16 +837,15 @@ main(void)
     compile(
             "main\n"
             "{\n"
-                "int a[3];\n"
-                "int b[3];\n"
-                "int temp;\n"
-                "for($A : a)\n"
+                "int a;\n"
+                "int b;\n"
+                "int c;\n"
+                "if(0 == 0)\n"
                 "{\n"
-                    "$A = 9;\n"
+                    "a = 5;\n"
+                    "b = 6;\n"
+                    "c = 7;\n"
                 "}\n"
-                "b = a;\n"
-                "temp = -1;\n"
-                "if(1) {}\n"
             "}\n"
     );
 }
