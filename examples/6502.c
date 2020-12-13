@@ -10,6 +10,7 @@
 
 #define quit(msg, ...) { printf("error: internal %d: "msg, __LINE__, __VA_ARGS__); exit(1); }
 
+#define DEFAULT_BYTE_SIZE (1)
 #define DEFAULT_WORD_SIZE (2)
 
 #define P
@@ -92,14 +93,10 @@ struct
     set_token tokens;
     lst_str assem;
     lst_str variables;
-    size_t addr;
+    size_t local_addr;
+    size_t global_addr;
     size_t label;
-    struct
-    {
-        int l;
-        int r;
-    }
-    brace;
+    struct { int l, r; } brace;
 }
 global;
 
@@ -111,7 +108,8 @@ global_init(void)
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
     global.variables = lst_str_init();
-    global.addr = global.label = global.brace.l = global.brace.r = 0;
+    global.local_addr = global.label = global.brace.l = global.brace.r = 0;
+    global.global_addr = 0x300 + 3; // +3 for JMP MAIN.
 }
 
 void
@@ -394,31 +392,40 @@ resolve(token* tok)
 }
 
 void
-declare(char* type, char* name, size_t size, size_t addr, family fam)
+check(char* name)
 {
     str temp = str_init(name);
     token* exists = find(&temp);
     if(exists)
         quit("token '%s' already defined", exists->name.value);
     str_free(&temp);
+}
+
+void
+declare(char* type, char* name, size_t size, size_t addr, family fam)
+{
+    check(name);
     insert(token_init(type, name, size, addr, fam));
 }
 
 void
-def_fun(char* name)
+def_fun(char* type, char* name)
 {
-    insert(token_init("void", name, 0, 0, FUN));
+    check(name);
+    insert(token_init(type, name, 0, 0, FUN));
 }
 
 void
 keyword(char* name)
 {
+    check(name);
     insert(token_init(name, name, 0, 0, NONE));
 }
 
 void
 keytype(char* name, size_t size)
 {
+    check(name);
     insert(token_init(name, name, size, 0, TYPE));
 }
 
@@ -439,27 +446,39 @@ set(size_t addr, int n)
     write("\tLDA #%d", (n >> 8) & 0xFF), write("\tSTA %d", addr + 1);
 }
 
+family
+expression(void);
+
 void
 load_value(token* tok)
 {
+    size_t offset_size = 0;
     if(tok->fam == ARRAY)
-    {
-        copy(tok->addr, global.addr, tok->size);
-        global.addr += tok->size;
-    }
+        offset_size = tok->size;
     else
     {
-        set(global.addr, 0); // Such that u8 does not get garbage MSB.
-        copy(tok->addr, global.addr, tok->size);
-        global.addr += DEFAULT_WORD_SIZE;
+        set(global.local_addr, 0); // Such that u8 does not get garbage MSB.
+        offset_size = DEFAULT_WORD_SIZE;
     }
+    copy(tok->addr, global.local_addr, tok->size);
+    global.local_addr += offset_size;
+}
+
+void
+assign(token* tok)
+{
+    match('=');
+    family fam = expression();
+    size_t offset_size = (fam == ARRAY) ? tok->size : DEFAULT_WORD_SIZE;
+    global.local_addr -= offset_size;
+    copy(global.local_addr, tok->addr, tok->size);
 }
 
 void
 load_digit_internal(int value)
 {
-    set(global.addr, value);
-    global.addr += DEFAULT_WORD_SIZE;
+    set(global.local_addr, value);
+    global.local_addr += DEFAULT_WORD_SIZE;
 }
 
 void
@@ -481,9 +500,9 @@ apply(char* method)
 {
     for(size_t i = 0; i < DEFAULT_WORD_SIZE; i++)
     {
-        write("\tLDA %d", global.addr + i - DEFAULT_WORD_SIZE);
-        write("\t%s %d", method, global.addr + i);
-        write("\tSTA %d", global.addr + i - DEFAULT_WORD_SIZE);
+        write("\tLDA %d", global.local_addr + i - DEFAULT_WORD_SIZE);
+        write("\t%s %d", method, global.local_addr + i);
+        write("\tSTA %d", global.local_addr + i - DEFAULT_WORD_SIZE);
     }
 }
 
@@ -523,12 +542,9 @@ void
 not(void)
 {
     write("\tLDA #1");
-    write("\tEOR %d", global.addr - DEFAULT_WORD_SIZE);
-    write("\tSTA %d", global.addr - DEFAULT_WORD_SIZE);
+    write("\tEOR %d", global.local_addr - DEFAULT_WORD_SIZE);
+    write("\tSTA %d", global.local_addr - DEFAULT_WORD_SIZE);
 }
-
-family
-expression(void);
 
 family
 term(void)
@@ -556,7 +572,7 @@ term(void)
             {
                 load_digit_internal(0);
                 fam = term();
-                global.addr -= DEFAULT_WORD_SIZE;
+                global.local_addr -= DEFAULT_WORD_SIZE;
                 sub();
             }
         }
@@ -613,15 +629,15 @@ compare(char* method, int x, int y)
     while(i)
     {
         i -= 1;
-        write("\tLDA %d", global.addr + i - DEFAULT_WORD_SIZE);
-        write("\tCMP %d", global.addr + i);
+        write("\tLDA %d", global.local_addr + i - DEFAULT_WORD_SIZE);
+        write("\tCMP %d", global.local_addr + i);
         write("\t%s L%d\n", method, a);
     }
     write("\tBNE L%d\n", a);
-    set(global.addr - DEFAULT_WORD_SIZE, x);
+    set(global.local_addr - DEFAULT_WORD_SIZE, x);
     write("\tJMP L%d\n", b);
     write("L%d:\n", a);
-    set(global.addr - DEFAULT_WORD_SIZE, y);
+    set(global.local_addr - DEFAULT_WORD_SIZE, y);
     write("L%d:\n", b);
 }
 
@@ -669,13 +685,13 @@ expression(void)
         {
             // eg. a == 1
             next = expression();
-            global.addr -= DEFAULT_WORD_SIZE;
+            global.local_addr -= DEFAULT_WORD_SIZE;
             equal();
         }
         else
         {
             next = term();
-            global.addr -= DEFAULT_WORD_SIZE;
+            global.local_addr -= DEFAULT_WORD_SIZE;
             // eg. a | 1
             if(str_equal(&o, "|"))
                 or();
@@ -722,31 +738,24 @@ expression(void)
     return fam;
 }
 
-void
-declare_array(char* type, char* name, size_t size)
+size_t
+array_setup(void)
 {
-    match('[');
     // Array sizes are constants to facilitate fast zero page loads with loop unrolling.
+    match('[');
     str d = digit();
     size_t width = atoi(d.value);
     str_free(&d);
     match(']');
-    declare(type, name, width * size, global.addr, ARRAY);
-    global.addr += width * size;
+    return width;
 }
 
 void
-assign(token* tok)
+declare_local_array(char* type, char* name, size_t size)
 {
-    match('=');
-    printf("A %d\n", global.addr);
-    family fam = expression();
-    printf("B %d\n", global.addr);
-    if(fam == ARRAY)
-        global.addr -= tok->size;
-    else
-        global.addr -= DEFAULT_WORD_SIZE;
-    copy(global.addr, tok->addr, tok->size);
+    size_t width = array_setup();
+    declare(type, name, width * size, global.local_addr, ARRAY);
+    global.local_addr += width * size;
 }
 
 void
@@ -755,16 +764,16 @@ declarations(token* tok)
     str name = ident();
     // eg. int a[5]
     if(next() == '[')
-        declare_array(tok->type.value, name.value, tok->size);
+        declare_local_array(tok->type.value, name.value, tok->size);
     // eg. int a
     // eg. int a = 3
     else
     {
-        size_t addr = global.addr;
+        size_t addr = global.local_addr;
         match('=');
         expression();
         declare(tok->type.value, name.value, tok->size, addr, VAR);
-        global.addr = addr + tok->size;
+        global.local_addr = addr + tok->size;
     }
     str_free(&name);
 }
@@ -827,7 +836,7 @@ replace(str* s, str* macro, str* with)
 }
 
 void
-unroll_for(void)
+unroll(void)
 {
     match('(');
     str reftok = macro_token();
@@ -894,14 +903,14 @@ if_statement(void)
 {
     match('(');
     expression();
-    global.addr -= DEFAULT_WORD_SIZE;
+    global.local_addr -= DEFAULT_WORD_SIZE;
     match(')');
     size_t a = global.label + 0;
     size_t b = global.label + 1;
     global.label += 2;
     for(size_t i = 0; i < DEFAULT_WORD_SIZE; i++)
     {
-        write("\tLDA %d", global.addr + i);
+        write("\tLDA %d", global.local_addr + i);
         write("\tBNE L%d", a);
     }
     write("\tJMP L%d", b);
@@ -925,8 +934,8 @@ statement(void)
         quit("empty statement has no effect; see '%c'", next());
     // eg. for() { }
     str lead = ident();
-    if(str_equal(&lead, "for"))
-        unroll_for();
+    if(str_equal(&lead, "unroll"))
+        unroll();
     // eg. asm() { }
     else
     if(str_equal(&lead, "asm"))
@@ -964,7 +973,7 @@ pop_locals(size_t size)
         token* tok = get(it.ref);
         write("; %8s %8s %6d %6d %6d",
             tok->type.value, tok->name.value, tok->size, tok->addr, tok->fam);
-        global.addr -= tok->size;
+        global.local_addr -= tok->size;
         erase(&tok->name);
     )
     lst_str_free(&reversed);
@@ -988,21 +997,56 @@ block(void)
 }
 
 void
-function(void)
+function(str* type, str* name)
 {
-    str name = ident();
-    def_fun(name.value);
-    write("%s:", name.value);
-    str_free(&name);
+    match('(');
+    match(')');
+    def_fun(type->value, name->value);
+    write("%s:", name->value);
     block();
     write("\tRTS");
+}
+
+void
+declare_global_array(char* type, char* name, size_t size)
+{
+    size_t width = array_setup();
+    size_t bytes = width * size;
+    declare(type, name, bytes, global.global_addr, ARRAY);
+    write("%s:", name);
+    for(size_t i = 0; i < bytes; i++)
+        write("\t!byte 0");
+    global.global_addr += bytes;
+}
+
+void
+global_array(str* type, str* name)
+{
+    token* tok = get(type);
+    declare_global_array(type->value, name->value, tok->size);
 }
 
 void
 program(void)
 {
     write("JMP main");
-    function();
+    while(next() != EOF)
+    {
+        str type = ident();
+        str name = ident();
+        if(next() == '(')
+            function(&type, &name);
+        else
+        if(next() == '[')
+        {
+            global_array(&type, &name);
+            match(';');
+        }
+        else
+            quit("unknown character '%c' in top level definition (see defintion for '%s %s')", next(), type.value, name.value);
+        str_free(&type);
+        str_free(&name);
+    }
     pop_locals(global.variables.size);
 }
 
@@ -1010,13 +1054,15 @@ void
 setup(void)
 {
     keytype("i16", DEFAULT_WORD_SIZE);
-    keytype("u8", 1);
-    keyword("for");
+    keytype("u16", DEFAULT_WORD_SIZE);
+    keytype("u8", DEFAULT_BYTE_SIZE);
+    keytype("i8", DEFAULT_BYTE_SIZE);
+    keyword("unroll");
     keyword("if");
 }
 
 void
-compile(char* code)
+compile(uint16_t start, char* code)
 {
     global_init();
     setup();
@@ -1029,17 +1075,22 @@ compile(char* code)
 }
 
 int
-main(void)
+main(int argc, char* argv[])
 {
+    if(argc != 2)
+        quit("use: '%s'", "./a.out 0x0300 # PC");
+    char* hex = argv[1];
+    uint16_t start = strtol(argv[1], NULL, 16);
+    if(start == 0)
+        quit("'%s' not a valid hex address\n", hex);
     compile(
-        "main                        \n"
-        "{                           \n"
-        "    i16 a[4];               \n"
-        "    i16 b[4];               \n"
-        "    for($a : a) {$a = 255;} \n"
-        "    b = a;                  \n"
-        "    u8 c = 1;               \n"
-        "    u8 d = 2;               \n"
-        "}                           \n"
+        start,
+        "i8 test[4];                        \n"
+        "void main()                        \n"
+        "{                                  \n"
+        "    u16 last = -1;                 \n"
+        "    u8 next = last - 1;            \n"
+        "    u8 sent = 1;                   \n"
+        "}                                  \n"
     );
 }
