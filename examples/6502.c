@@ -3,6 +3,8 @@
 //
 
 #include <str.h>
+#define str_equal(a, b) (str_compare(a, b) == 0)
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -17,9 +19,20 @@
 #define T str
 #include <lst.h>
 
-enum family
+#define LIST X(NONE) X(TYPE) X(FUN) X(ARRAY) X(VAR)
+
+typedef enum
 {
-    NONE, TYPE, FUN, ARRAY, VAR
+#define X(name) name,
+    LIST
+#undef X
+}
+family;
+
+const char* lookup[] = {
+#define X(name) #name,
+    LIST
+#undef X
 };
 
 typedef struct
@@ -28,12 +41,12 @@ typedef struct
     str name;
     size_t size;
     size_t addr;
-    enum family fam;
+    family fam;
 }
 token;
 
 token
-token_init(char* type, char* name, size_t size, size_t addr, enum family fam)
+token_init(char* type, char* name, size_t size, size_t addr, family fam)
 {
     return (token) {
         str_init(type),
@@ -378,7 +391,7 @@ resolve(token* tok)
 }
 
 void
-declare(char* type, char* name, size_t size, size_t addr, enum family fam)
+declare(char* type, char* name, size_t size, size_t addr, family fam)
 {
     str temp = str_init(name);
     token* exists = find(&temp);
@@ -409,7 +422,6 @@ keytype(char* name, size_t size)
 void
 copy(size_t from, size_t to, size_t size)
 {
-    printf("COPY :: FROM %d : TO %d : SIZE %d\n", from, to, size);
     for(size_t i = 0; i < size; i++)
     {
         write("\tLDA %d", i + from);
@@ -503,19 +515,20 @@ not(void)
     write("\tSTA %d", global.addr - WORD_SIZE);
 }
 
-void
+family
 expression(void);
 
-void
+family
 term(void)
 {
+    family fam = NONE;
     if(is_unary(next()))
     {
         // eg. !a or !1
         if(next() == '!')
         {
             match('!');
-            term();
+            fam = term();
             not();
         }
         else
@@ -523,11 +536,14 @@ term(void)
         {
             match('-');
             if(is_digit(next()))
+            {
                 load_digit(1);
+                fam = VAR;
+            }
             else
             {
                 load_digit_internal(0);
-                term();
+                fam = term();
                 global.addr -= WORD_SIZE;
                 sub();
             }
@@ -538,13 +554,16 @@ term(void)
     if(next() == '(')
     {
         match('(');
-        expression();
+        fam = expression();
         match(')');
     }
     // eg. 1
     else
     if(is_digit(next()))
+    {
         load_digit(0);
+        fam = VAR;
+    }
     // eg. a
     else
     if(is_ident(next()))
@@ -552,17 +571,18 @@ term(void)
         str n = ident();
         token* tok = get(&n);
         token res = resolve(tok);
-        if(res.fam == TYPE)
+        fam = res.fam;
+        if(fam == TYPE)
             quit("type '%s' cannot be loaded", res.name.value);
-        if(res.fam == FUN)
+        if(fam == FUN)
             quit("function '%s' cannot be loaded", res.name.value);
-        printf("SRC : name %s : size %d : addr %d\n", res.name.value, res.size, res.addr);
         load_value(&res);
         str_free(&n);
         token_free(&res);
     }
     else
         quit("unknown character in term '%c'\n", next());
+    return fam;
 }
 
 int
@@ -625,69 +645,68 @@ less_than_or_equal(void)
     not();
 }
 
-void
-terms(void)
+family
+expression(void)
 {
+    family fam = term();
     while(!end_of_expression(next()))
     {
+        family next = NONE;
         str o = operator();
-        if(str_compare(&o, "==") == 0)
+        if(str_equal(&o, "=="))
         {
             // eg. a == 1
-            expression();
+            next = expression();
             equal();
         }
         else
         {
-            term();
+            next = term();
             global.addr -= WORD_SIZE;
             // eg. a | 1
-            if(str_compare(&o, "|") == 0)
+            if(str_equal(&o, "|"))
                 or();
             // eg. a & 1
             else
-            if(str_compare(&o, "&") == 0)
+            if(str_equal(&o, "&"))
                 and();
             // eg. a ^ 1
             else
-            if(str_compare(&o, "^") == 0)
+            if(str_equal(&o, "^"))
                 xor();
             // eg. a + 1
             else
-            if(str_compare(&o, "+") == 0)
+            if(str_equal(&o, "+"))
                 add();
             // eg. a - 1
             else
-            if(str_compare(&o, "-") == 0)
+            if(str_equal(&o, "-"))
                 sub();
             // eg. a < 1
             else
-            if(str_compare(&o, "<") == 0)
+            if(str_equal(&o, "<"))
                 less_than();
             // eg. a > 1
             else
-            if(str_compare(&o, ">") == 0)
+            if(str_equal(&o, ">"))
                 greater_than();
             // eg. a <= 1
             else
-            if(str_compare(&o, "<=") == 0)
+            if(str_equal(&o, "<="))
                 less_than_or_equal();
             // eg. a >= 1
             else
-            if(str_compare(&o, ">=") == 0)
+            if(str_equal(&o, ">="))
                 greater_than_or_equal();
             else
                 quit("unknown operator '%s'", o.value);
         }
+        if(fam != next)
+            quit("family type mismatch of '%s' and '%s'\n", lookup[fam], lookup[next]);
+        fam = next;
         str_free(&o);
     }
-}
-
-void
-expression(void)
-{
-    term();
-    terms();
+    return fam;
 }
 
 void
@@ -762,10 +781,7 @@ misc(str* lead)
         else
         // eg. a = 1
         if(next() == '=')
-        {
-            printf("DEST: name %s : size %d : addr %d\n", tok->name.value, tok->size, tok->addr);
             assign(tok);
-        }
         // eg. a + 1
         else
             quit("empty statement (misc) has no effect; see '%s'", lead->value);
@@ -890,15 +906,15 @@ statement(void)
         quit("empty statement has no effect; see '%c'", next());
     // eg. for() { }
     str lead = ident();
-    if(str_compare(&lead, "for") == 0)
+    if(str_equal(&lead, "for"))
         unroll_for();
     // eg. asm() { }
     else
-    if(str_compare(&lead, "asm") == 0)
+    if(str_equal(&lead, "asm"))
         inline_asm();
     // eg. if() { }
     else
-    if(str_compare(&lead, "if") == 0)
+    if(str_equal(&lead, "if"))
         if_statement();
     // eg. int a
     // eg. int a[5]
@@ -1004,7 +1020,7 @@ main(void)
             "{\n"
                 "$A = -1;\n"
             "}\n"
-            "b = a + 1;\n"
+            "b = a;\n"
             "int c = 0;\n"
         "}\n"
     );
