@@ -1,5 +1,5 @@
 //
-// -- A 6502 compiler specalizing in brute force zero page 16-bit integer math and loop unrolling --
+// -- A 6502 compiler specalizing in 16-bit integer math and brute force loop unrolling --
 //
 
 #include <str.h>
@@ -1032,14 +1032,14 @@ int
 main(void)
 {
     compile(
-        "main                       \n"
-        "{                          \n"
+        "main                        \n"
+        "{                           \n"
         "    i16 a[4];               \n"
         "    i16 b[4];               \n"
         "    for($a : a) {$a = 255;} \n"
-        "    b = a;                 \n"
-        "    u8 c = 1;              \n"
-        "    u8 d = 2;              \n"
-        "}                          \n"
+        "    b = a;                  \n"
+        "    u8 c = 1;               \n"
+        "    u8 d = 2;               \n"
+        "}                           \n"
     );
 }

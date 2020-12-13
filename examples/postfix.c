@@ -1,5 +1,5 @@
 //
-// -- INFIX TO POSTFIX TO PSEUDO ASM CONVERTER --
+// -- An infix to postfix converter --
 //
 
 #include <stdio.h>
