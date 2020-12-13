@@ -10,7 +10,7 @@
 
 #define quit(msg, ...) { printf("error: internal %d: "msg, __LINE__, __VA_ARGS__); exit(1); }
 
-#define WORD_SIZE (2)
+#define DEFAULT_WORD_SIZE (2)
 
 #define P
 #define T char
@@ -94,9 +94,12 @@ struct
     lst_str variables;
     size_t addr;
     size_t label;
-    // Scoped brace matching.
-    int l;
-    int r;
+    struct
+    {
+        int l;
+        int r;
+    }
+    brace;
 }
 global;
 
@@ -108,7 +111,7 @@ global_init(void)
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
     global.variables = lst_str_init();
-    global.addr = global.label = global.l = global.r = 0;
+    global.addr = global.label = global.brace.l = global.brace.r = 0;
 }
 
 void
@@ -256,15 +259,15 @@ is_space(char c)
 int
 is_scoped(char c)
 {
-    int diff = global.l - global.r;
+    int diff = global.brace.l - global.brace.r;
     if(c == '}' && diff == 0)
     {
-        global.l = 0;
-        global.r = 0;
+        global.brace.l = 0;
+        global.brace.r = 0;
         return 0;
     }
-    if(c == '{') global.l += 1;
-    if(c == '}') global.r += 1;
+    if(c == '{') global.brace.l += 1;
+    if(c == '}') global.brace.r += 1;
     return 1;
 }
 
@@ -380,7 +383,7 @@ resolve(token* tok)
     {
         token* type = find(&tok->type);
         copy.size = type->size;
-        copy.fam = type->fam;
+        copy.fam = VAR;
         match('[');
         str d = digit();
         copy.addr += atoi(d.value) * type->size;
@@ -439,21 +442,30 @@ set(size_t addr, int n)
 void
 load_value(token* tok)
 {
-    copy(tok->addr, global.addr, tok->size);
-    global.addr += tok->size;
+    if(tok->fam == ARRAY)
+    {
+        copy(tok->addr, global.addr, tok->size);
+        global.addr += tok->size;
+    }
+    else
+    {
+        set(global.addr, 0); // Such that u8 does not get garbage MSB.
+        copy(tok->addr, global.addr, tok->size);
+        global.addr += DEFAULT_WORD_SIZE;
+    }
 }
 
 void
 load_digit_internal(int value)
 {
     set(global.addr, value);
-    global.addr += WORD_SIZE;
+    global.addr += DEFAULT_WORD_SIZE;
 }
 
 void
 load_digit(int negate)
 {
-    str integer = str_init("int");
+    str integer = str_init("i16");
     get(&integer);
     str_free(&integer);
     str d = digit();
@@ -467,11 +479,11 @@ load_digit(int negate)
 void
 apply(char* method)
 {
-    for(size_t i = 0; i < WORD_SIZE; i++)
+    for(size_t i = 0; i < DEFAULT_WORD_SIZE; i++)
     {
-        write("\tLDA %d", global.addr + i - WORD_SIZE);
+        write("\tLDA %d", global.addr + i - DEFAULT_WORD_SIZE);
         write("\t%s %d", method, global.addr + i);
-        write("\tSTA %d", global.addr + i - WORD_SIZE);
+        write("\tSTA %d", global.addr + i - DEFAULT_WORD_SIZE);
     }
 }
 
@@ -511,8 +523,8 @@ void
 not(void)
 {
     write("\tLDA #1");
-    write("\tEOR %d", global.addr - WORD_SIZE);
-    write("\tSTA %d", global.addr - WORD_SIZE);
+    write("\tEOR %d", global.addr - DEFAULT_WORD_SIZE);
+    write("\tSTA %d", global.addr - DEFAULT_WORD_SIZE);
 }
 
 family
@@ -544,7 +556,7 @@ term(void)
             {
                 load_digit_internal(0);
                 fam = term();
-                global.addr -= WORD_SIZE;
+                global.addr -= DEFAULT_WORD_SIZE;
                 sub();
             }
         }
@@ -597,19 +609,19 @@ compare(char* method, int x, int y)
     size_t a = global.label + 0;
     size_t b = global.label + 1;
     global.label += 2;
-    size_t i = WORD_SIZE;
+    size_t i = DEFAULT_WORD_SIZE;
     while(i)
     {
         i -= 1;
-        write("\tLDA %d", global.addr + i - WORD_SIZE);
+        write("\tLDA %d", global.addr + i - DEFAULT_WORD_SIZE);
         write("\tCMP %d", global.addr + i);
         write("\t%s L%d\n", method, a);
     }
     write("\tBNE L%d\n", a);
-    set(global.addr - WORD_SIZE, x);
+    set(global.addr - DEFAULT_WORD_SIZE, x);
     write("\tJMP L%d\n", b);
     write("L%d:\n", a);
-    set(global.addr - WORD_SIZE, y);
+    set(global.addr - DEFAULT_WORD_SIZE, y);
     write("L%d:\n", b);
 }
 
@@ -657,12 +669,13 @@ expression(void)
         {
             // eg. a == 1
             next = expression();
+            global.addr -= DEFAULT_WORD_SIZE;
             equal();
         }
         else
         {
             next = term();
-            global.addr -= WORD_SIZE;
+            global.addr -= DEFAULT_WORD_SIZE;
             // eg. a | 1
             if(str_equal(&o, "|"))
                 or();
@@ -701,8 +714,8 @@ expression(void)
             else
                 quit("unknown operator '%s'", o.value);
         }
-        if(fam != next)
-            quit("family type mismatch of '%s' and '%s'\n", lookup[fam], lookup[next]);
+        if(fam != VAR || next != VAR)
+            quit("operators only support variables (received '%s' and '%s')\n", lookup[fam], lookup[next]);
         fam = next;
         str_free(&o);
     }
@@ -726,8 +739,13 @@ void
 assign(token* tok)
 {
     match('=');
-    expression();
-    global.addr -= tok->size;
+    printf("A %d\n", global.addr);
+    family fam = expression();
+    printf("B %d\n", global.addr);
+    if(fam == ARRAY)
+        global.addr -= tok->size;
+    else
+        global.addr -= DEFAULT_WORD_SIZE;
     copy(global.addr, tok->addr, tok->size);
 }
 
@@ -746,6 +764,7 @@ declarations(token* tok)
         match('=');
         expression();
         declare(tok->type.value, name.value, tok->size, addr, VAR);
+        global.addr = addr + tok->size;
     }
     str_free(&name);
 }
@@ -875,12 +894,12 @@ if_statement(void)
 {
     match('(');
     expression();
-    global.addr -= WORD_SIZE;
+    global.addr -= DEFAULT_WORD_SIZE;
     match(')');
     size_t a = global.label + 0;
     size_t b = global.label + 1;
     global.label += 2;
-    for(size_t i = 0; i < WORD_SIZE; i++)
+    for(size_t i = 0; i < DEFAULT_WORD_SIZE; i++)
     {
         write("\tLDA %d", global.addr + i);
         write("\tBNE L%d", a);
@@ -990,7 +1009,8 @@ program(void)
 void
 setup(void)
 {
-    keytype("int", WORD_SIZE);
+    keytype("i16", DEFAULT_WORD_SIZE);
+    keytype("u8", 1);
     keyword("for");
     keyword("if");
 }
@@ -1012,16 +1032,14 @@ int
 main(void)
 {
     compile(
-        "main\n"
-        "{\n"
-            "int a[3];\n"
-            "int b[3];\n"
-            "for($A : a)\n"
-            "{\n"
-                "$A = -1;\n"
-            "}\n"
-            "b = a;\n"
-            "int c = 0;\n"
-        "}\n"
+        "main                       \n"
+        "{                          \n"
+        "    i16 a[4];               \n"
+        "    i16 b[4];               \n"
+        "    for($a : a) {$a = 255;} \n"
+        "    b = a;                 \n"
+        "    u8 c = 1;              \n"
+        "    u8 d = 2;              \n"
+        "}                          \n"
     );
 }
