@@ -155,7 +155,7 @@ JOIN(A, alloc)(A* self, size_t capacity, size_t shift_from)
 static inline void
 JOIN(A, push_front)(A* self, T value)
 {
-    if(self->mark_b - self->mark_a == 0)
+    if(JOIN(A, empty)(self))
     {
         self->mark_a = 0;
         self->mark_b = 1;
@@ -200,7 +200,7 @@ JOIN(A, pop_front)(A* self)
 static inline void
 JOIN(A, push_back)(A* self, T value)
 {
-    if(self->mark_b - self->mark_a == 0)
+    if(JOIN(A, empty)(self))
     {
         self->mark_a = 0;
         self->mark_b = 1;

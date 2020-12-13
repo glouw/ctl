@@ -82,11 +82,68 @@ test_capacity_edge_case(void)
         deq_digi_free(&a);
     }
 }
+void
+test_random_work_load(void)
+{
+    deq_digi a = deq_digi_init();
+    std::deque<DIGI> b;
+    const size_t loops = TEST_RAND(TEST_MAX_LOOPS);
+    for(size_t i = 0; i < loops; i++)
+        switch(TEST_RAND(5))
+        {
+            case 0:
+            {
+                assert(a.size == b.size());
+                deq_digi_push_front(&a, digi_init(1));
+                b.push_front(DIGI{1});
+                assert(a.size == b.size());
+                break;
+            }
+            case 1:
+            {
+                assert(a.size == b.size());
+                deq_digi_push_back(&a, digi_init(1));
+                b.push_back(DIGI{1});
+                assert(a.size == b.size());
+                break;
+            }
+            case 2:
+            {
+                assert(a.size == b.size());
+                if(a.size)
+                    deq_digi_pop_front(&a);
+                if(b.size())
+                    b.pop_front();
+                assert(a.size == b.size());
+                break;
+            }
+            case 3:
+            {
+                assert(a.size == b.size());
+                if(a.size)
+                    deq_digi_pop_back(&a);
+                if(b.size())
+                    b.pop_back();
+                assert(a.size == b.size());
+                break;
+            }
+            case 4:
+            {
+                assert(a.size == b.size());
+                deq_digi_clear(&a);
+                b.clear();
+                assert(a.size == b.size());
+                break;
+            }
+        }
+    deq_digi_free(&a);
+}
 
 int
 main(void)
 {
     test_capacity_edge_case();
+    test_random_work_load();
 #ifdef SRAND
     srand(time(NULL));
 #endif

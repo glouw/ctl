@@ -17,30 +17,30 @@
 #define T str
 #include <lst.h>
 
+enum family
+{
+    NONE, TYPE, FUN, ARRAY, VAR
+};
+
 typedef struct
 {
     str type;
     str name;
     size_t size;
     size_t addr;
-    int is_type;
-    int is_fun;
-    int is_array;
+    enum family fam;
 }
 token;
 
 token
-token_init(char* type, char* name, size_t size, size_t addr, int is_type, int is_fun, int is_array)
+token_init(char* type, char* name, size_t size, size_t addr, enum family fam)
 {
-    return (token)
-    {
+    return (token) {
         str_init(type),
         str_init(name),
         size,
         addr,
-        is_type,
-        is_fun,
-        is_array,
+        fam,
     };
 }
 
@@ -48,13 +48,12 @@ token
 token_copy(token* self)
 {
     return token_init(
-            self->type.value,
-            self->name.value,
-            self->size,
-            self->addr,
-            self->is_type,
-            self->is_fun,
-            self->is_array);
+        self->type.value,
+        self->name.value,
+        self->size,
+        self->addr,
+        self->fam
+    );
 }
 
 void
@@ -85,7 +84,6 @@ struct
     // Scoped brace matching.
     int l;
     int r;
-    token* last;
 }
 global;
 
@@ -98,7 +96,6 @@ global_init(void)
     global.assem = lst_str_init();
     global.variables = lst_str_init();
     global.addr = global.label = global.l = global.r = 0;
-    global.last = NULL;
 }
 
 void
@@ -109,6 +106,14 @@ global_free(void)
     set_token_free(&global.tokens);
     lst_str_free(&global.assem);
     lst_str_free(&global.variables);
+}
+
+void
+erase(str* name)
+{
+    token key;
+    key.name = *name;
+    set_token_erase(&global.tokens, key);
 }
 
 token*
@@ -128,7 +133,6 @@ get(str* name)
     token* tok = find(name);
     if(!tok)
         quit("token '%s' not defined", name->value);
-    global.last = tok;
     return tok;
 }
 
@@ -187,7 +191,8 @@ save(void)
 int
 is_unary(char c)
 {
-    return c == '!';
+    return c == '!'
+        || c == '-';
 }
 
 int
@@ -354,40 +359,62 @@ match(char c)
     pop();
 }
 
-void
-declare(char* type, char* name, size_t size, int is_array)
+token
+resolve(token* tok)
 {
-    insert(token_init(type, name, size, global.addr, 0, 0, is_array));
-    global.addr += size;
+    token copy = token_copy(tok);
+    if(next() == '[')
+    {
+        token* type = find(&tok->type);
+        copy.size = type->size;
+        copy.fam = type->fam;
+        match('[');
+        str d = digit();
+        copy.addr += atoi(d.value) * type->size;
+        str_free(&d);
+        match(']');
+    }
+    return copy;
 }
 
 void
-def_fun(char* type, char* name)
+declare(char* type, char* name, size_t size, size_t addr, enum family fam)
 {
-    insert(token_init(type, name, 0, 0, 0, 1, 0));
+    str temp = str_init(name);
+    token* exists = find(&temp);
+    if(exists)
+        quit("token '%s' already defined", exists->name.value);
+    str_free(&temp);
+    insert(token_init(type, name, size, addr, fam));
 }
 
 void
-keyword(char* name, size_t size, int is_type)
+def_fun(char* name)
 {
-    insert(token_init(name, name, size, 0, is_type, 0, 0));
+    insert(token_init("void", name, 0, 0, FUN));
+}
+
+void
+keyword(char* name)
+{
+    insert(token_init(name, name, 0, 0, NONE));
+}
+
+void
+keytype(char* name, size_t size)
+{
+    insert(token_init(name, name, size, 0, TYPE));
 }
 
 void
 copy(size_t from, size_t to, size_t size)
 {
+    printf("COPY :: FROM %d : TO %d : SIZE %d\n", from, to, size);
     for(size_t i = 0; i < size; i++)
     {
         write("\tLDA %d", i + from);
         write("\tSTA %d", i + to);
     }
-}
-
-void
-load_value(token* tok)
-{
-    copy(tok->addr, global.addr, tok->size);
-    global.addr += tok->size;
 }
 
 void
@@ -398,16 +425,31 @@ set(size_t addr, int n)
 }
 
 void
-load_digit(void)
+load_value(token* tok)
+{
+    copy(tok->addr, global.addr, tok->size);
+    global.addr += tok->size;
+}
+
+void
+load_digit_internal(int value)
+{
+    set(global.addr, value);
+    global.addr += WORD_SIZE;
+}
+
+void
+load_digit(int negate)
 {
     str integer = str_init("int");
     get(&integer);
     str_free(&integer);
     str d = digit();
     int value = atoi(d.value);
-    set(global.addr, value);
+    if(negate)
+        value *= -1;
+    load_digit_internal(value);
     str_free(&d);
-    global.addr += WORD_SIZE;
 }
 
 void
@@ -461,25 +503,6 @@ not(void)
     write("\tSTA %d", global.addr - WORD_SIZE);
 }
 
-token
-resolve(token* tok)
-{
-    token copy = token_copy(tok);
-    if(next() == '[')
-    {
-        token* type = find(&tok->type);
-        match('[');
-        str d = digit();
-        int index = atoi(d.value);
-        copy.size = type->size;
-        copy.is_array = type->is_array;
-        copy.addr += index * type->size;
-        match(']');
-        str_free(&d);
-    }
-    return copy;
-}
-
 void
 expression(void);
 
@@ -488,13 +511,29 @@ term(void)
 {
     if(is_unary(next()))
     {
+        // eg. !a or !1
         if(next() == '!')
         {
             match('!');
             term();
             not();
         }
+        else
+        if(next() == '-')
+        {
+            match('-');
+            if(is_digit(next()))
+                load_digit(1);
+            else
+            {
+                load_digit_internal(0);
+                term();
+                global.addr -= WORD_SIZE;
+                sub();
+            }
+        }
     }
+    // eg. (a + 1)
     else
     if(next() == '(')
     {
@@ -502,19 +541,22 @@ term(void)
         expression();
         match(')');
     }
+    // eg. 1
     else
     if(is_digit(next()))
-        load_digit();
+        load_digit(0);
+    // eg. a
     else
     if(is_ident(next()))
     {
         str n = ident();
         token* tok = get(&n);
         token res = resolve(tok);
-        if(res.is_type)
+        if(res.fam == TYPE)
             quit("type '%s' cannot be loaded", res.name.value);
-        if(res.is_fun)
+        if(res.fam == FUN)
             quit("function '%s' cannot be loaded", res.name.value);
+        printf("SRC : name %s : size %d : addr %d\n", res.name.value, res.size, res.addr);
         load_value(&res);
         str_free(&n);
         token_free(&res);
@@ -589,10 +631,9 @@ terms(void)
     while(!end_of_expression(next()))
     {
         str o = operator();
-        if(global.last->is_array)
-            quit("cannot use operator '%s' on array '%s'\n", o.value, global.last->name.value);
         if(str_compare(&o, "==") == 0)
         {
+            // eg. a == 1
             expression();
             equal();
         }
@@ -600,29 +641,38 @@ terms(void)
         {
             term();
             global.addr -= WORD_SIZE;
+            // eg. a | 1
             if(str_compare(&o, "|") == 0)
                 or();
+            // eg. a & 1
             else
             if(str_compare(&o, "&") == 0)
                 and();
+            // eg. a ^ 1
             else
             if(str_compare(&o, "^") == 0)
                 xor();
+            // eg. a + 1
             else
             if(str_compare(&o, "+") == 0)
                 add();
+            // eg. a - 1
             else
             if(str_compare(&o, "-") == 0)
                 sub();
+            // eg. a < 1
             else
             if(str_compare(&o, "<") == 0)
                 less_than();
+            // eg. a > 1
             else
             if(str_compare(&o, ">") == 0)
                 greater_than();
+            // eg. a <= 1
             else
             if(str_compare(&o, "<=") == 0)
                 less_than_or_equal();
+            // eg. a >= 1
             else
             if(str_compare(&o, ">=") == 0)
                 greater_than_or_equal();
@@ -638,7 +688,19 @@ expression(void)
 {
     term();
     terms();
-    global.addr -= global.last->size;
+}
+
+void
+declare_array(char* type, char* name, size_t size)
+{
+    match('[');
+    // Array sizes are constants to facilitate fast zero page loads with loop unrolling.
+    str d = digit();
+    size_t width = atoi(d.value);
+    str_free(&d);
+    match(']');
+    declare(type, name, width * size, global.addr, ARRAY);
+    global.addr += width * size;
 }
 
 void
@@ -646,31 +708,26 @@ assign(token* tok)
 {
     match('=');
     expression();
-    if(tok->size != global.last->size)
-        quit("'%s' and '%s' size mismatch ('%lu' bytes and '%lu' bytes)\n",
-                tok->name.value, global.last->name.value, tok->size, global.last->size);
+    global.addr -= tok->size;
     copy(global.addr, tok->addr, tok->size);
-}
-
-void
-declare_array(char* type, char* name, size_t size)
-{
-    match('[');
-    str d = digit();
-    size_t width = atoi(d.value);
-    str_free(&d);
-    match(']');
-    declare(type, name, width * size, 1);
 }
 
 void
 declarations(token* tok)
 {
     str name = ident();
+    // eg. int a[5]
     if(next() == '[')
         declare_array(tok->type.value, name.value, tok->size);
+    // eg. int a
+    // eg. int a = 3
     else
-        declare(tok->type.value, name.value, tok->size, 0);
+    {
+        size_t addr = global.addr;
+        match('=');
+        expression();
+        declare(tok->type.value, name.value, tok->size, addr, VAR);
+    }
     str_free(&name);
 }
 
@@ -678,35 +735,40 @@ void
 deref(token* tok)
 {
     token res = resolve(tok);
+    // eg. a[1] = 1;
     if(next() == '=')
         assign(&res);
+    // eg. a[1] + 1;
     else
-    if(is_operator(next()))
-    {
-        pop();
-        expression();
-    }
+        quit("empty statement (deref) has no effect; see '%s'", res.name.value);
     token_free(&res);
 }
 
 void
-general(str* lead)
+misc(str* lead)
 {
     token* tok = get(lead);
-    if(tok->is_type)
+    // eg. int a
+    // eg. int a = 3
+    // eg. int a[5]
+    if(tok->fam == TYPE)
         declarations(tok);
     else
     {
+        // eg. a[1] = 1
+        // eg. a[1] + 1
         if(next() == '[')
             deref(tok);
         else
+        // eg. a = 1
         if(next() == '=')
-            assign(tok);
-        else
         {
-            load_value(tok);
-            terms();
+            printf("DEST: name %s : size %d : addr %d\n", tok->name.value, tok->size, tok->addr);
+            assign(tok);
         }
+        // eg. a + 1
+        else
+            quit("empty statement (misc) has no effect; see '%s'", lead->value);
     }
 }
 
@@ -752,7 +814,6 @@ unroll_for(void)
     match(')');
     match('{');
     str meta = buffer(is_scoped);
-    puts(meta.value);
     lst_str expanded = lst_str_init();
     for(size_t i = 0; i < size; i++)
     {
@@ -798,6 +859,7 @@ if_statement(void)
 {
     match('(');
     expression();
+    global.addr -= WORD_SIZE;
     match(')');
     size_t a = global.label + 0;
     size_t b = global.label + 1;
@@ -813,34 +875,42 @@ if_statement(void)
     write("L%d:", b);
 }
 
+int
+start_of_expression(char c)
+{
+    return is_digit(c) || c == '(' || is_unary(c);
+}
+
 void
 statement(void)
 {
     if(next() == ';')
         quit("empty statement '%c' found", next());
-    if(is_digit(next()) || next() == '(' || is_unary(next()))
-    {
-        expression();
-        match(';');
-    }
+    if(start_of_expression(next()))
+        quit("empty statement has no effect; see '%c'", next());
+    // eg. for() { }
+    str lead = ident();
+    if(str_compare(&lead, "for") == 0)
+        unroll_for();
+    // eg. asm() { }
+    else
+    if(str_compare(&lead, "asm") == 0)
+        inline_asm();
+    // eg. if() { }
+    else
+    if(str_compare(&lead, "if") == 0)
+        if_statement();
+    // eg. int a
+    // eg. int a[5]
+    // eg. a[1] = 1
+    // eg. a = 1
+    // eg. a + 1
     else
     {
-        str lead = ident();
-        if(str_compare(&lead, "for") == 0)
-            unroll_for();
-        else
-        if(str_compare(&lead, "asm") == 0)
-            inline_asm();
-        else
-        if(str_compare(&lead, "if") == 0)
-            if_statement();
-        else
-        {
-            general(&lead);
-            match(';');
-        }
-        str_free(&lead);
+        misc(&lead);
+        match(';');
     }
+    str_free(&lead);
 }
 
 void
@@ -854,12 +924,13 @@ pop_locals(size_t size)
         lst_str_pop_back(&global.variables);
         size -= 1;
     }
-    write("; %8s %8s %6s %6s %6s %6s %6s", "TYPE", "NAME", "SIZE", "ADDR", "T?", "F?", "A?");
+    write("; %8s %8s %6s %6s %6s", "TYPE", "NAME", "SIZE", "ADDR", "F");
     foreach(lst_str, &reversed, it,
         token* tok = get(it.ref);
-        write("; %8s %8s %6d %6d %6d %6d %6d",
-            tok->type.value, tok->name.value, tok->size, tok->addr, tok->is_type, tok->is_fun, tok->is_array);
+        write("; %8s %8s %6d %6d %6d",
+            tok->type.value, tok->name.value, tok->size, tok->addr, tok->fam);
         global.addr -= tok->size;
+        erase(&tok->name);
     )
     lst_str_free(&reversed);
 }
@@ -885,7 +956,7 @@ void
 function(void)
 {
     str name = ident();
-    def_fun("void", name.value);
+    def_fun(name.value);
     write("%s:", name.value);
     str_free(&name);
     block();
@@ -903,9 +974,9 @@ program(void)
 void
 setup(void)
 {
-    keyword("int", WORD_SIZE, 1);
-    keyword("for", 0, 0);
-    keyword("if", 0, 0);
+    keytype("int", WORD_SIZE);
+    keyword("for");
+    keyword("if");
 }
 
 void
@@ -927,15 +998,14 @@ main(void)
     compile(
         "main\n"
         "{\n"
-            "int a;\n"
-            "int b;\n"
-            "int c;\n"
-            "if(1 | 0)\n"
+            "int a[3];\n"
+            "int b[3];\n"
+            "for($A : a)\n"
             "{\n"
-                "a = 5;\n"
-                "b = 6;\n"
-                "c = 1024;\n"
+                "$A = -1;\n"
             "}\n"
+            "b = a + 1;\n"
+            "int c = 0;\n"
         "}\n"
     );
 }
