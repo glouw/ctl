@@ -108,7 +108,9 @@ global_init(void)
     global.tokens = set_token_init(token_key_compare);
     global.assem = lst_str_init();
     global.variables = lst_str_init();
-    global.local_addr = global.label = global.brace.l = global.brace.r = 0;
+    global.label = global.brace.l = global.brace.r = 0;
+    // ATARI 2600.
+    global.local_addr = 128;
     global.global_addr = 0x300 + 3; // +3 for JMP MAIN.
 }
 
@@ -206,7 +208,8 @@ int
 is_unary(char c)
 {
     return c == '!'
-        || c == '-';
+        || c == '-'
+        || c == '+';
 }
 
 int
@@ -402,7 +405,7 @@ check(char* name)
 }
 
 void
-declare(char* type, char* name, size_t size, size_t addr, family fam)
+define(char* type, char* name, size_t size, size_t addr, family fam)
 {
     check(name);
     insert(token_init(type, name, size, addr, fam));
@@ -446,31 +449,23 @@ set(size_t addr, int n)
     write("\tLDA #%d", (n >> 8) & 0xFF), write("\tSTA %d", addr + 1);
 }
 
-family
+void
 expression(void);
 
 void
 load_value(token* tok)
 {
-    size_t offset_size = 0;
-    if(tok->fam == ARRAY)
-        offset_size = tok->size;
-    else
-    {
-        set(global.local_addr, 0); // Such that u8 does not get garbage MSB.
-        offset_size = DEFAULT_WORD_SIZE;
-    }
+    set(global.local_addr, 0); // Such that u8 does not get garbage MSB.
     copy(tok->addr, global.local_addr, tok->size);
-    global.local_addr += offset_size;
+    global.local_addr += DEFAULT_WORD_SIZE;
 }
 
 void
 assign(token* tok)
 {
     match('=');
-    family fam = expression();
-    size_t offset_size = (fam == ARRAY) ? tok->size : DEFAULT_WORD_SIZE;
-    global.local_addr -= offset_size;
+    expression();
+    global.local_addr -= DEFAULT_WORD_SIZE;
     copy(global.local_addr, tok->addr, tok->size);
 }
 
@@ -546,17 +541,16 @@ not(void)
     write("\tSTA %d", global.local_addr - DEFAULT_WORD_SIZE);
 }
 
-family
+void
 term(void)
 {
-    family fam = NONE;
     if(is_unary(next()))
     {
         // eg. !a or !1
         if(next() == '!')
         {
             match('!');
-            fam = term();
+            term();
             not();
         }
         else
@@ -564,14 +558,11 @@ term(void)
         {
             match('-');
             if(is_digit(next()))
-            {
                 load_digit(1);
-                fam = VAR;
-            }
             else
             {
                 load_digit_internal(0);
-                fam = term();
+                term();
                 global.local_addr -= DEFAULT_WORD_SIZE;
                 sub();
             }
@@ -582,16 +573,13 @@ term(void)
     if(next() == '(')
     {
         match('(');
-        fam = expression();
+        expression();
         match(')');
     }
     // eg. 1
     else
     if(is_digit(next()))
-    {
         load_digit(0);
-        fam = VAR;
-    }
     // eg. a
     else
     if(is_ident(next()))
@@ -599,18 +587,14 @@ term(void)
         str n = ident();
         token* tok = get(&n);
         token res = resolve(tok);
-        fam = res.fam;
-        if(fam == TYPE)
-            quit("type '%s' cannot be loaded", res.name.value);
-        if(fam == FUN)
-            quit("function '%s' cannot be loaded", res.name.value);
+        if(res.fam != VAR)
+            quit("%s '%s %s' cannot be loaded", lookup[res.fam], res.type.value, res.name.value);
         load_value(&res);
         str_free(&n);
         token_free(&res);
     }
     else
         quit("unknown character in term '%c'\n", next());
-    return fam;
 }
 
 int
@@ -648,6 +632,13 @@ equal(void)
 }
 
 void
+not_equal(void)
+{
+    compare("BNE", 1, 0);
+    not();
+}
+
+void
 less_than(void)
 {
     compare("BCC", 0, 1);
@@ -673,24 +664,31 @@ less_than_or_equal(void)
     not();
 }
 
-family
+void
 expression(void)
 {
-    family fam = term();
+    term();
     while(!end_of_expression(next()))
     {
-        family next = NONE;
         str o = operator();
         if(str_equal(&o, "=="))
         {
             // eg. a == 1
-            next = expression();
+            expression();
             global.local_addr -= DEFAULT_WORD_SIZE;
             equal();
         }
         else
+        if(str_equal(&o, "!="))
         {
-            next = term();
+            // eg. a != 1
+            expression();
+            global.local_addr -= DEFAULT_WORD_SIZE;
+            not_equal();
+        }
+        else
+        {
+            term();
             global.local_addr -= DEFAULT_WORD_SIZE;
             // eg. a | 1
             if(str_equal(&o, "|"))
@@ -730,12 +728,8 @@ expression(void)
             else
                 quit("unknown operator '%s'", o.value);
         }
-        if(fam != VAR || next != VAR)
-            quit("operators only support variables (received '%s' and '%s')\n", lookup[fam], lookup[next]);
-        fam = next;
         str_free(&o);
     }
-    return fam;
 }
 
 size_t
@@ -750,12 +744,13 @@ array_setup(void)
     return width;
 }
 
-void
-declare_local_array(char* type, char* name, size_t size)
+size_t
+local_array(char* type, char* name, size_t size)
 {
     size_t width = array_setup();
-    declare(type, name, width * size, global.local_addr, ARRAY);
-    global.local_addr += width * size;
+    size_t bytes = width * size;
+    define(type, name, bytes, global.local_addr, ARRAY);
+    return bytes;
 }
 
 void
@@ -764,7 +759,10 @@ declarations(token* tok)
     str name = ident();
     // eg. int a[5]
     if(next() == '[')
-        declare_local_array(tok->type.value, name.value, tok->size);
+    {
+        size_t bytes = local_array(tok->type.value, name.value, tok->size);
+        global.local_addr += bytes;
+    }
     // eg. int a
     // eg. int a = 3
     else
@@ -772,7 +770,7 @@ declarations(token* tok)
         size_t addr = global.local_addr;
         match('=');
         expression();
-        declare(tok->type.value, name.value, tok->size, addr, VAR);
+        define(tok->type.value, name.value, tok->size, addr, VAR);
         global.local_addr = addr + tok->size;
     }
     str_free(&name);
@@ -968,7 +966,7 @@ pop_locals(size_t size)
         lst_str_pop_back(&global.variables);
         size -= 1;
     }
-    write("; %8s %8s %6s %6s %6s", "TYPE", "NAME", "SIZE", "ADDR", "F");
+    write("; %8s %8s %6s %6s %6s", "TYPE", "NAME", "SIZE", "ADDR", "FAM");
     foreach(lst_str, &reversed, it,
         token* tok = get(it.ref);
         write("; %8s %8s %6d %6d %6d",
@@ -1008,37 +1006,53 @@ function(str* type, str* name)
 }
 
 void
-declare_global_array(char* type, char* name, size_t size)
-{
-    size_t width = array_setup();
-    size_t bytes = width * size;
-    declare(type, name, bytes, global.global_addr, ARRAY);
-    write("%s:", name);
-    for(size_t i = 0; i < bytes; i++)
-        write("\t!byte 0");
-    global.global_addr += bytes;
-}
-
-void
 global_array(str* type, str* name)
 {
     token* tok = get(type);
-    declare_global_array(type->value, name->value, tok->size);
+    size_t width = array_setup();
+    size_t addr = global.global_addr;
+    int reference = 0;
+    if(next() == '@')
+    {
+        match('@');
+        str d = digit();
+        addr = atoi(d.value);
+        str_free(&d);
+        reference = 1;
+    }
+    size_t bytes = width * tok->size;
+    define(type->value, name->value, bytes, addr, ARRAY);
+    if(!reference)
+    {
+        write("%s:", name->value);
+        for(size_t i = 0; i < bytes; i++)
+            write("\t!byte 0");
+        global.global_addr += bytes;
+    }
 }
 
 void
 program(void)
 {
     write("JMP main");
+    int found_function = 0;
     while(next() != EOF)
     {
         str type = ident();
         str name = ident();
         if(next() == '(')
+        {
+            found_function = 1;
+            char* requires = "main";
+            if(!str_equal(&name, requires))
+                quit("only function '%s' may be defined", requires);
             function(&type, &name);
+        }
         else
         if(next() == '[')
         {
+            if(found_function)
+                quit("array declarations (see '%s %s') must come before the main function", type.value, name.value);
             global_array(&type, &name);
             match(';');
         }
@@ -1062,7 +1076,7 @@ setup(void)
 }
 
 void
-compile(uint16_t start, char* code)
+compile(char* code)
 {
     global_init();
     setup();
@@ -1074,23 +1088,101 @@ compile(uint16_t start, char* code)
     global_free();
 }
 
-int
-main(int argc, char* argv[])
+void
+boids(void)
 {
-    if(argc != 2)
-        quit("use: '%s'", "./a.out 0x0300 # PC");
-    char* hex = argv[1];
-    uint16_t start = strtol(argv[1], NULL, 16);
-    if(start == 0)
-        quit("'%s' not a valid hex address\n", hex);
     compile(
-        start,
-        "i8 test[4];                        \n"
-        "void main()                        \n"
-        "{                                  \n"
-        "    u16 last = -1;                 \n"
-        "    u8 next = last - 1;            \n"
-        "    u8 sent = 1;                   \n"
-        "}                                  \n"
+        "u8 main()  \n"
+        "{          \n"
+            "i16 x[9];  \n"
+            "i16 y[9];  \n"
+            "i16 vx[9]; \n"
+            "i16 vy[9]; \n"
+            "x  [0] = 13210;\n"
+            "y  [0] = 11701;\n"
+            "vx [0] =   397;\n"
+            "vy [0] =   117;\n"
+            "x  [1] = 12059;\n"
+            "y  [1] =   550;\n"
+            "vx [1] =   520;\n"
+            "vy [1] =  1312;\n"
+            "x  [2] = 11619;\n"
+            "y  [2] =  6259;\n"
+            "vx [2] =  1305;\n"
+            "vy [2] =   200;\n"
+            "x  [3] = 15545;\n"
+            "y  [3] =  9691;\n"
+            "vx [3] =    32;\n"
+            "vy [3] =   983;\n"
+            "x  [4] =  1533;\n"
+            "y  [4] =  4617;\n"
+            "vx [4] =  1181;\n"
+            "vy [4] =  1875;\n"
+            "x  [5] = 11123;\n"
+            "y  [5] =  9797;\n"
+            "vx [5] =    71;\n"
+            "vy [5] =   785;\n"
+            "x  [6] =  8111;\n"
+            "y  [6] = 12965;\n"
+            "vx [6] =  1295;\n"
+            "vy [6] =    73;\n"
+            "x  [7] =   430;\n"
+            "y  [7] =  1888;\n"
+            "vx [7] =   712;\n"
+            "vy [7] =  1608;\n"
+            "x  [8] = 13590;\n"
+            "y  [8] = 13509;\n"
+            "vx [8] =  1213;\n"
+            "vy [8] =  1086;\n"
+            "i16 xmax = 32767;\n"
+            "i16 ymax = 32767;\n"
+            "i16 border = 8192;\n"
+            "i16 x0 = border;\n"
+            "i16 y0 = border;\n"
+            "i16 x1 = xmax - border;\n"
+            "i16 y1 = ymax - border;\n"
+            "unroll($X, $I : x)\n"
+            "{\n"
+                "x[$I] = x[$I] + vx[$I];\n"
+                "y[$I] = y[$I] + vy[$I];\n"
+                "if(x[$I] < x0) { vx[$I] = -vx[$I]; }\n"
+                "if(x[$I] > x1) { vx[$I] = -vx[$I]; }\n"
+                "if(y[$I] < y0) { vy[$I] = -vy[$I]; }\n"
+                "if(y[$I] > y1) { vy[$I] = -vy[$I]; }\n"
+            "}\n"
+            "i16 dx = 0;\n"
+            "i16 dy = 0;\n"
+            "i16 cx = 0;\n"
+            "i16 cy = 0;\n"
+            "i16 max = 1024;\n"
+            "unroll($X, $I : x)\n"
+            "{\n"
+                "cx = 0;\n"
+                "cy = 0;\n"
+                "unroll($Y, $J : y)\n"
+                "{\n"
+                    "dx = x[$I] - x[$J];\n"
+                    "dy = y[$I] - y[$J];\n"
+                    "if(dx < 0) { dx = -dx; }\n"
+                    "if(dy < 0) { dy = -dy; }\n"
+                    "if(dx < max)\n"
+                    "{\n"
+                        "if(dy < max)\n"
+                        "{\n"
+                            "cx = cx - dx;\n"
+                            "cy = cy - dy;\n"
+                        "}\n"
+                    "}\n"
+                "}\n"
+                "vx[$I] = vx[$I] + cx;\n"
+                "vy[$I] = vy[$I] + cy;\n"
+            "}\n"
+        "}\n"
     );
+}
+
+int
+main(void)
+{
+    boids();
 }
