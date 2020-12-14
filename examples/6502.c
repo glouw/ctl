@@ -109,8 +109,7 @@ global_init(void)
     global.assem = lst_str_init();
     global.variables = lst_str_init();
     global.label = global.brace.l = global.brace.r = 0;
-    // ATARI 2600.
-    global.local_addr = 128;
+    global.local_addr = 0;
     global.global_addr = 0x300 + 3; // +3 for JMP MAIN.
 }
 
@@ -735,7 +734,7 @@ expression(void)
 size_t
 array_setup(void)
 {
-    // Array sizes are constants to facilitate fast zero page loads with loop unrolling.
+    // Array sizes are constants to facilitate fast loads with loop unrolling.
     match('[');
     str d = digit();
     size_t width = atoi(d.value);
@@ -1091,13 +1090,16 @@ compile(char* code)
 void
 boids(void)
 {
+    // This program simluates 9 boids starting in random positions and
+    // move in random velocities while avoid one another. Boids bounce
+    // off the edge of the screen.
     compile(
-        "u8 main()  \n"
-        "{          \n"
-            "i16 x[9];  \n"
-            "i16 y[9];  \n"
-            "i16 vx[9]; \n"
-            "i16 vy[9]; \n"
+        "void main()\n"
+        "{\n"
+            "i16 x[9];\n"
+            "i16 y[9];\n"
+            "i16 vx[9];\n"
+            "i16 vy[9];\n"
             "x  [0] = 13210;\n"
             "y  [0] = 11701;\n"
             "vx [0] =   397;\n"
