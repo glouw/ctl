@@ -25,25 +25,15 @@
 #define T char
 #include <stk.h>
 
-#define quit(msg, ...) { printf("parse error: line %d: %s(): "msg, __LINE__, __func__, __VA_ARGS__); exit(1); }
+struct val;
 
-typedef struct val val;
-
-typedef val* valp;
+typedef struct val* valp;
 
 static void
 valp_free(valp*);
 
 static valp
 valp_copy(valp*);
-
-typedef struct set_pair set_pair;
-
-static void
-set_pair_heap_free(set_pair*);
-
-static set_pair*
-set_pair_heap_copy(set_pair*);
 
 #define T valp
 #include <vec.h>
@@ -80,10 +70,18 @@ typedef enum
 }
 fam;
 
+struct set_pair;
+
+static void
+set_pair_heap_free(struct set_pair*);
+
+static struct set_pair*
+set_pair_heap_copy(struct set_pair*);
+
 typedef union
 {
     str string;
-    set_pair* object;
+    struct set_pair* object;
     vec_valp* array;
     double number;
 }
@@ -239,7 +237,10 @@ static void
 match(stk_char* feed, char c)
 {
     if(next(feed) != c)
-        quit("expected '%c' but received '%c'", c, next(feed));
+    {
+        printf("expected '%c' but received '%c'\n", c, next(feed));
+        exit(1);
+    }
     stk_char_pop(feed);
 }
 
@@ -414,9 +415,9 @@ pprint(valp value, int tabs)
             vec_valp* array = value->of.array;
             int index = 0;
             foreach(vec_valp, array, it,
-                valp value = *it.ref;
+                valp v = *it.ref;
                 printf("[%d] = ", index);
-                pprint(value, tabs);
+                pprint(v, tabs);
                 if(it.ref < vec_valp_end(array) - 1)
                     printf(", ");
                 index += 1;
@@ -461,13 +462,13 @@ get(valp value, char* s)
 }
 
 static int
-is_array_in_bounds(valp value, int index)
+is_array_in_bounds(valp value, size_t index)
 {
     return index < value->of.array->size;
 }
 
 static valp
-ind(valp value, int index)
+ind(valp value, size_t index)
 {
     if(is_array(value))
         if(is_array_in_bounds(value, index))
@@ -488,7 +489,7 @@ erase_obj(valp value, char* string)
 }
 
 static void
-erase_ind(valp value, int index)
+erase_ind(valp value, size_t index)
 {
     if(is_array(value))
         if(is_array_in_bounds(value, index))

@@ -66,3 +66,7 @@ jobs:
     - name: Ofast (SANITIZE=0)
       run:
         make -j9 LONG=1 Ofast=1 SANITIZE=0
+
+    - name: examples
+      run:
+        make examples
