@@ -1,7 +1,7 @@
 //
 // -- An A* pathfinder inspired by the excellent tutorial at Red Blob Games --
 //
-// For implementation details:
+// See:
 //     https://www.redblobgames.com/pathfinding/a-star/introduction.html
 
 #include <str.h>

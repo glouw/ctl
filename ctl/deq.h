@@ -18,7 +18,7 @@ typedef struct B
 }
 B;
 
-typedef struct
+typedef struct A
 {
     void (*free)(T*);
     T (*copy)(T*);

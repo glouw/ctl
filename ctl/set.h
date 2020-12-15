@@ -21,7 +21,7 @@ typedef struct B
 }
 B;
 
-typedef struct
+typedef struct A
 {
     B* root;
     int (*compare)(T*, T*);

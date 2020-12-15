@@ -9,7 +9,7 @@
 
 #define MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 
-typedef struct
+typedef struct A
 {
     T* value;
     void (*free)(T*);
