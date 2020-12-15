@@ -3,6 +3,7 @@
 //
 // Note:
 //     Function arguments containing /* M */ signal a move like std::move
+//     Support for True, False, and Null not implemented.
 //
 // See:
 //     https://www.json.org/json-en.html
@@ -362,7 +363,7 @@ void
 traverse(set_pair*, int tabs);
 
 void
-print(val* value, int tabs)
+pprint(val* value, int tabs)
 {
     if(value)
     {
@@ -381,7 +382,7 @@ print(val* value, int tabs)
             vec_valp* array = &value->of.array;
             foreach(vec_valp, array, it,
                 val* value = *it.ref;
-                print(value, tabs);
+                pprint(value, tabs);
                 if(it.ref < vec_valp_end(array) - 1)
                     printf(", ");
             )
@@ -391,13 +392,19 @@ print(val* value, int tabs)
 }
 
 void
+print(val* value)
+{
+    pprint(value, 0);
+}
+
+void
 traverse(set_pair* json, int tabs)
 {
     printf("{\n");
     foreach(set_pair, json, it,
         tab(tabs + 1);
         printf("\"%s\" : ", it.ref->string.value);
-        print(it.ref->value, tabs);
+        pprint(it.ref->value, tabs);
         putchar('\n');
     )
     tab(tabs);
@@ -407,7 +414,7 @@ traverse(set_pair* json, int tabs)
 val*
 get(val* value, char* s)
 {
-    if(value)
+    if(value && value->family == OBJECT)
     {
         pair p;
         p.string = str_init(s);
@@ -422,7 +429,7 @@ get(val* value, char* s)
 val*
 ind(val* value, int index)
 {
-    if(value && index < value->of.array.size)
+    if(value && value->family == ARRAY && index < value->of.array.size)
         return value->of.array.value[index];
     return NULL;
 }
@@ -453,7 +460,6 @@ main(void)
             "}"
         "}"
     );
-    val* found = ind(get(get(get(json, "EEE"), "TEST"), "something"), 1);
-    print(found, 0);
+    print(ind(get(get(get(json, "EEE"), "TEST"), "something"), 1));
     valp_free(&json);
 }
