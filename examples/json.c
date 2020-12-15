@@ -18,25 +18,23 @@
 
 #define quit(msg, ...) { printf("parse error: line %d: %s(): "msg, __LINE__, __func__, __VA_ARGS__); exit(1); }
 
-typedef struct set_pair set_pair;
-
-typedef set_pair* obj;
-
 typedef struct val val;
 
 typedef val* valp;
 
 void
-valp_free(valp*);
+valp_free(val**);
 
-valp
-valp_copy(valp*);
+val*
+valp_copy(val**);
+
+typedef struct set_pair set_pair;
 
 void
-obj_free(obj*);
+set_pair_heap_free(set_pair**);
 
-obj
-obj_copy(obj*);
+set_pair*
+set_pair_heap_copy(set_pair**);
 
 #define T valp
 #include <vec.h>
@@ -53,7 +51,7 @@ fam;
 typedef union
 {
     str string;
-    obj object;
+    set_pair* object;
     vec_valp array;
     double number;
 }
@@ -82,7 +80,7 @@ val_free(val* self)
         str_free(&self->of.string);
     else
     if(self->family == OBJECT)
-        obj_free(&self->of.object);
+        set_pair_heap_free(&self->of.object);
     else
     if(self->family == ARRAY)
         vec_valp_free(&self->of.array);
@@ -97,7 +95,7 @@ val_copy(val* self)
         temp.of.string = str_copy(&self->of.string);
     else
     if(temp.family == OBJECT)
-        temp.of.object = obj_copy(&self->of.object);
+        temp.of.object = set_pair_heap_copy(&self->of.object);
     else
     if(temp.family == ARRAY)
         temp.of.array  = vec_valp_copy(&self->of.array);
@@ -107,25 +105,25 @@ val_copy(val* self)
     return temp;
 }
 
-valp
+val*
 valp_init(val* value)
 {
-   valp self = malloc(sizeof(*self));
+   val* self = malloc(sizeof(*self));
    *self = *value;
    return self;
 }
 
 void
-valp_free(valp* self)
+valp_free(val** self)
 {
     val_free(*self);
     free(*self);
 }
 
-valp
-valp_copy(valp* self)
+val*
+valp_copy(val** self)
 {
-   valp copy = valp_init(*self);
+   val* copy = valp_init(*self);
    *copy = val_copy(*self);
    return copy;
 }
@@ -133,7 +131,7 @@ valp_copy(valp* self)
 typedef struct
 {
     str string;
-    valp value;
+    val* value;
 }
 pair;
 
@@ -162,8 +160,8 @@ set_pair_key_compare(pair* a, pair* b)
     return str_key_compare(&a->string, &b->string);
 }
 
-obj
-obj_init(set_pair* set)
+set_pair*
+set_pair_heap_init(set_pair* set)
 {
    set_pair* self = malloc(sizeof(*self));
    *self = *set;
@@ -171,16 +169,16 @@ obj_init(set_pair* set)
 }
 
 void
-obj_free(obj* self)
+set_pair_heap_free(set_pair** self)
 {
     set_pair_free(*self);
     free(*self);
 }
 
-obj
-obj_copy(obj* self)
+set_pair*
+set_pair_heap_copy(set_pair** self)
 {
-   obj copy = obj_init(*self);
+   set_pair* copy = set_pair_heap_init(*self);
    *copy = set_pair_copy(*self);
    return copy;
 }
@@ -278,10 +276,10 @@ read_number(stk_char* feed)
     return converted;
 }
 
-obj
+set_pair*
 read_object(stk_char*);
 
-valp
+val*
 read_value(stk_char* feed)
 {
     val value;
@@ -310,7 +308,7 @@ read_value(stk_char* feed)
         value.of.array = vec_valp_init();
         while(next(feed) != ']')
         {
-            valp v = read_value(feed);
+            val* v = read_value(feed);
             vec_valp_push_back(&value.of.array, v);
             if(next(feed) == ']')
                 break;
@@ -321,7 +319,7 @@ read_value(stk_char* feed)
     return valp_init(&value);
 }
 
-obj
+set_pair*
 read_object(stk_char* feed)
 {
     set_pair child = set_pair_init(set_pair_key_compare);
@@ -330,22 +328,22 @@ read_object(stk_char* feed)
     {
         str string = read_string(feed);
         match(feed, ':');
-        valp value = read_value(feed);
+        val* value = read_value(feed);
         set_pair_insert(&child, (pair) { string, value });
         if(next(feed) == '}')
             break;
         match(feed, ',');
     }
     match(feed, '}');
-    return obj_init(&child);
+    return set_pair_heap_init(&child);
 }
 
-obj
+val*
 jsonify(char* serial)
 {
     str text = str_init(serial);
     stk_char feed = prime(&text);
-    obj json = read_object(&feed);
+    val* json = read_value(&feed);
     stk_char_free(&feed);
     str_free(&text);
     return json;
@@ -361,55 +359,78 @@ tab(int tabs)
 }
 
 void
-print(set_pair*, int tabs);
+traverse(set_pair*, int tabs);
 
 void
-mutate(valp value, int tabs)
+print(val* value, int tabs)
 {
-    if(value->family == NUMBER)
-        printf("%f", value->of.number);
-    else
-    if(value->family == STRING)
-        printf("\"%s\"", value->of.string.value);
-    else
-    if(value->family == OBJECT)
+    if(value)
     {
-        printf("{\n");
-        print(value->of.object, tabs + 1);
-        tab(tabs);
-        printf("}");
-    }
-    else
-    if(value->family == ARRAY)
-    {
-        printf("[");
-        vec_valp* array = &value->of.array;
-        foreach(vec_valp, array, it,
-            valp value = *it.ref;
-            mutate(value, tabs);
-            if(it.ref < vec_valp_end(array) - 1)
-                printf(", ");
-        )
-        printf("]");
+        if(value->family == NUMBER)
+            printf("%.2f", value->of.number);
+        else
+        if(value->family == STRING)
+            printf("\"%s\"", value->of.string.value);
+        else
+        if(value->family == OBJECT)
+            traverse(value->of.object, tabs + 1);
+        else
+        if(value->family == ARRAY)
+        {
+            printf("[");
+            vec_valp* array = &value->of.array;
+            foreach(vec_valp, array, it,
+                val* value = *it.ref;
+                print(value, tabs);
+                if(it.ref < vec_valp_end(array) - 1)
+                    printf(", ");
+            )
+            printf("]");
+        }
     }
 }
 
 void
-print(set_pair* json, int tabs)
+traverse(set_pair* json, int tabs)
 {
+    printf("{\n");
     foreach(set_pair, json, it,
-        valp value = it.ref->value;
-        tab(tabs);
-        printf("\"%s\" = ", it.ref->string.value);
-        mutate(value, tabs);
+        tab(tabs + 1);
+        printf("\"%s\" : ", it.ref->string.value);
+        print(it.ref->value, tabs);
         putchar('\n');
     )
+    tab(tabs);
+    printf("}");
+}
+
+val*
+get(val* value, char* s)
+{
+    if(value)
+    {
+        pair p;
+        p.string = str_init(s);
+        set_pair_node* node = set_pair_find(value->of.object, p);
+        str_free(&p.string);
+        if(node)
+            return node->key.value;
+    }
+    return NULL;
+}
+
+val*
+ind(val* value, int index)
+{
+    if(value && index < value->of.array.size)
+        return value->of.array.value[index];
+    return NULL;
 }
 
 int
 main(void)
 {
-    obj json = jsonify(
+    val* json = jsonify(
         "{"
             "\"AAA\" : 1.1,"
             "\"BBB\" : 2.2,"
@@ -427,10 +448,12 @@ main(void)
                     "\"e\" : \"name\","
                     "\"f\" : \"adam\","
                     "\"g\" : \"gustav\","
+                    "\"something\" : [\"gustav\", \"susan\"],"
                 "}"
             "}"
         "}"
     );
-    print(json, 0);
-    obj_free(&json);
+    val* found = ind(get(get(get(json, "EEE"), "TEST"), "something"), 1);
+    print(found, 0);
+    valp_free(&json);
 }
