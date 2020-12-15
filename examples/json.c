@@ -1,9 +1,17 @@
 //
-// -- A fast JSON parser written in less than 500 lines --
+// -- A fast JSON parser written in about 500 lines --
 //
 // Note:
-//     Function arguments containing /* M */ signal a move like std::move
-//     Support for True, False, and Null not implemented.
+//     - Support for True, False, and Null is not implemented.
+//     - Strings are limited to alphanumeric characters and underscores.
+//
+//     * That being said, the parser can easily be modified to include support
+//       for the above, but a C-like subset of JSON is preferred for
+//       the purpose of this example.
+//
+//     - Output is alphabetically ordered.
+//     - Once the JSON has been parsed, values can be erased, modified,
+//       inserted, and even copied with common vec and set operations.
 //
 // See:
 //     https://www.json.org/json-en.html
@@ -23,22 +31,45 @@ typedef struct val val;
 
 typedef val* valp;
 
-void
-valp_free(val**);
+static void
+valp_free(valp*);
 
-val*
-valp_copy(val**);
+static valp
+valp_copy(valp*);
 
 typedef struct set_pair set_pair;
 
-void
-set_pair_heap_free(set_pair**);
+static void
+set_pair_heap_free(set_pair*);
 
-set_pair*
-set_pair_heap_copy(set_pair**);
+static set_pair*
+set_pair_heap_copy(set_pair*);
 
 #define T valp
 #include <vec.h>
+
+static vec_valp*
+vec_valp_heap_init(void)
+{
+   vec_valp* self = malloc(sizeof(*self));
+   *self = vec_valp_init();
+   return self;
+}
+
+static void
+vec_valp_heap_free(vec_valp* self)
+{
+    vec_valp_free(self);
+    free(self);
+}
+
+static vec_valp*
+vec_valp_heap_copy(vec_valp* self)
+{
+   vec_valp* copy = vec_valp_heap_init();
+   *copy = vec_valp_copy(self);
+   return copy;
+}
 
 typedef enum
 {
@@ -53,7 +84,7 @@ typedef union
 {
     str string;
     set_pair* object;
-    vec_valp array;
+    vec_valp* array;
     double number;
 }
 type;
@@ -65,30 +96,21 @@ typedef struct val
 }
 val;
 
-val
-val_init(fam family, type of)
-{
-    val value;
-    value.family = family;
-    value.of = of;
-    return value;
-}
-
-void
-val_free(val* self)
+static void
+val_free(valp self)
 {
     if(self->family == STRING)
         str_free(&self->of.string);
     else
     if(self->family == OBJECT)
-        set_pair_heap_free(&self->of.object);
+        set_pair_heap_free(self->of.object);
     else
     if(self->family == ARRAY)
-        vec_valp_free(&self->of.array);
+        vec_valp_heap_free(self->of.array);
 }
 
-val
-val_copy(val* self)
+static val
+val_copy(valp self)
 {
     val temp;
     temp.family = self->family;
@@ -96,35 +118,33 @@ val_copy(val* self)
         temp.of.string = str_copy(&self->of.string);
     else
     if(temp.family == OBJECT)
-        temp.of.object = set_pair_heap_copy(&self->of.object);
+        temp.of.object = set_pair_heap_copy(self->of.object);
     else
     if(temp.family == ARRAY)
-        temp.of.array  = vec_valp_copy(&self->of.array);
+        temp.of.array  = vec_valp_heap_copy(self->of.array);
     else
     if(temp.family == NUMBER)
         temp.of.number = self->of.number;
     return temp;
 }
 
-val*
-valp_init(val* value)
+static valp
+valp_init(void)
 {
-   val* self = malloc(sizeof(*self));
-   *self = *value;
-   return self;
+   return malloc(sizeof(val));
 }
 
-void
-valp_free(val** self)
+static void
+valp_free(valp* self)
 {
     val_free(*self);
     free(*self);
 }
 
-val*
-valp_copy(val** self)
+static valp
+valp_copy(valp* self)
 {
-   val* copy = valp_init(*self);
+   valp copy = valp_init();
    *copy = val_copy(*self);
    return copy;
 }
@@ -132,18 +152,18 @@ valp_copy(val** self)
 typedef struct
 {
     str string;
-    val* value;
+    valp value;
 }
 pair;
 
-void
+static void
 pair_free(pair* self)
 {
     str_free(&self->string);
     valp_free(&self->value);
 }
 
-pair
+static pair
 pair_copy(pair* self)
 {
     return (pair) {
@@ -155,36 +175,36 @@ pair_copy(pair* self)
 #define T pair
 #include <set.h>
 
-int
+static int
 set_pair_key_compare(pair* a, pair* b)
 {
     return str_key_compare(&a->string, &b->string);
 }
 
-set_pair*
-set_pair_heap_init(set_pair* set)
+static set_pair*
+set_pair_heap_init(void)
 {
    set_pair* self = malloc(sizeof(*self));
-   *self = *set;
+   *self = set_pair_init(set_pair_key_compare);
    return self;
 }
 
-void
-set_pair_heap_free(set_pair** self)
+static void
+set_pair_heap_free(set_pair* self)
 {
-    set_pair_free(*self);
-    free(*self);
+    set_pair_free(self);
+    free(self);
 }
 
-set_pair*
-set_pair_heap_copy(set_pair** self)
+static set_pair*
+set_pair_heap_copy(set_pair* self)
 {
-   set_pair* copy = set_pair_heap_init(*self);
-   *copy = set_pair_copy(*self);
+   set_pair* copy = set_pair_heap_init();
+   *copy = set_pair_copy(self);
    return copy;
 }
 
-stk_char
+static stk_char
 prime(str* text)
 {
     stk_char feed = stk_char_init();
@@ -197,7 +217,7 @@ prime(str* text)
     return feed;
 }
 
-int
+static int
 is_space(char c)
 {
     return c == ' '
@@ -206,7 +226,7 @@ is_space(char c)
         || c == '\t';
 }
 
-int
+static int
 next(stk_char* feed)
 {
     char c;
@@ -215,7 +235,7 @@ next(stk_char* feed)
     return c;
 }
 
-void
+static void
 match(stk_char* feed, char c)
 {
     if(next(feed) != c)
@@ -223,7 +243,7 @@ match(stk_char* feed, char c)
     stk_char_pop(feed);
 }
 
-int
+static int
 is_number(char c)
 {
     return c == '.'
@@ -234,18 +254,16 @@ is_number(char c)
         || (c >= '0' && c <= '9');
 }
 
-int
+static int
 is_string(char c)
 {
-    return c == ' '
-        || c == '_'
+    return c == '_'
         || (c >= 'a' && c <= 'z')
         || (c >= 'A' && c <= 'Z')
         || is_number(c);
 }
 
-
-str
+static str
 read(stk_char* feed, int clause(char c))
 {
     next(feed);
@@ -259,7 +277,7 @@ read(stk_char* feed, int clause(char c))
     return s;
 }
 
-str
+static str
 read_string(stk_char* feed)
 {
     match(feed, '"');
@@ -268,7 +286,7 @@ read_string(stk_char* feed)
     return string;
 }
 
-double
+static double
 read_number(stk_char* feed)
 {
     str number = read(feed, is_number);
@@ -277,80 +295,80 @@ read_number(stk_char* feed)
     return converted;
 }
 
-set_pair*
+static set_pair*
 read_object(stk_char*);
 
-val*
+static valp
 read_value(stk_char* feed)
 {
-    val value;
+    valp value = valp_init();
     if(is_number(next(feed)))
     {
-        value.family = NUMBER;
-        value.of.number = read_number(feed);
+        value->family = NUMBER;
+        value->of.number = read_number(feed);
     }
     else
     if(next(feed) == '"')
     {
-        value.family = STRING;
-        value.of.string = read_string(feed);
+        value->family = STRING;
+        value->of.string = read_string(feed);
     }
     else
     if(next(feed) == '{')
     {
-        value.family = OBJECT;
-        value.of.object = read_object(feed);
+        value->family = OBJECT;
+        value->of.object = read_object(feed);
     }
     else
     if(next(feed) == '[')
     {
         match(feed, '[');
-        value.family = ARRAY;
-        value.of.array = vec_valp_init();
+        value->family = ARRAY;
+        value->of.array = vec_valp_heap_init();
         while(next(feed) != ']')
         {
-            val* v = read_value(feed);
-            vec_valp_push_back(&value.of.array, v);
+            valp sub = read_value(feed);
+            vec_valp_push_back(value->of.array, sub);
             if(next(feed) == ']')
                 break;
             match(feed, ',');
         }
         match(feed, ']');
     }
-    return valp_init(&value);
+    return value;
 }
 
-set_pair*
+static set_pair*
 read_object(stk_char* feed)
 {
-    set_pair child = set_pair_init(set_pair_key_compare);
+    set_pair* child = set_pair_heap_init();
     match(feed, '{');
     while(next(feed) != '}')
     {
         str string = read_string(feed);
         match(feed, ':');
-        val* value = read_value(feed);
-        set_pair_insert(&child, (pair) { string, value });
+        valp value = read_value(feed);
+        set_pair_insert(child, (pair) { string, value });
         if(next(feed) == '}')
             break;
         match(feed, ',');
     }
     match(feed, '}');
-    return set_pair_heap_init(&child);
+    return child;;
 }
 
-val*
+static valp
 jsonify(char* serial)
 {
     str text = str_init(serial);
     stk_char feed = prime(&text);
-    val* json = read_value(&feed);
+    valp json = read_value(&feed);
     stk_char_free(&feed);
     str_free(&text);
     return json;
 }
 
-void
+static void
 tab(int tabs)
 {
     int spaces = 4;
@@ -359,11 +377,25 @@ tab(int tabs)
             printf(" ");
 }
 
-void
-traverse(set_pair*, int tabs);
+static void
+pprint(valp, int);
 
-void
-pprint(val* value, int tabs)
+static void
+traverse(set_pair* json, int tabs)
+{
+    printf("{\n");
+    foreach(set_pair, json, it,
+        tab(tabs);
+        printf("\"%s\" : ", it.ref->string.value);
+        pprint(it.ref->value, tabs);
+        putchar('\n');
+    )
+    tab(tabs - 1);
+    printf("}");
+}
+
+static void
+pprint(valp value, int tabs)
 {
     if(value)
     {
@@ -379,42 +411,44 @@ pprint(val* value, int tabs)
         if(value->family == ARRAY)
         {
             printf("[");
-            vec_valp* array = &value->of.array;
+            vec_valp* array = value->of.array;
+            int index = 0;
             foreach(vec_valp, array, it,
-                val* value = *it.ref;
+                valp value = *it.ref;
+                printf("[%d] = ", index);
                 pprint(value, tabs);
                 if(it.ref < vec_valp_end(array) - 1)
                     printf(", ");
+                index += 1;
             )
             printf("]");
         }
     }
 }
 
-void
-print(val* value)
+static void
+print(valp value)
 {
     pprint(value, 0);
+    putchar('\n');
 }
 
-void
-traverse(set_pair* json, int tabs)
+static int
+is_array(valp value)
 {
-    printf("{\n");
-    foreach(set_pair, json, it,
-        tab(tabs + 1);
-        printf("\"%s\" : ", it.ref->string.value);
-        pprint(it.ref->value, tabs);
-        putchar('\n');
-    )
-    tab(tabs);
-    printf("}");
+    return value && value->family == ARRAY;
 }
 
-val*
-get(val* value, char* s)
+static int
+is_object(valp value)
 {
-    if(value && value->family == OBJECT)
+    return value && value->family == OBJECT;
+}
+
+static valp
+get(valp value, char* s)
+{
+    if(is_object(value))
     {
         pair p;
         p.string = str_init(s);
@@ -426,40 +460,80 @@ get(val* value, char* s)
     return NULL;
 }
 
-val*
-ind(val* value, int index)
+static int
+is_array_in_bounds(valp value, int index)
 {
-    if(value && value->family == ARRAY && index < value->of.array.size)
-        return value->of.array.value[index];
+    return index < value->of.array->size;
+}
+
+static valp
+ind(valp value, int index)
+{
+    if(is_array(value))
+        if(is_array_in_bounds(value, index))
+            return value->of.array->value[index];
     return NULL;
+}
+
+static void
+erase_obj(valp value, char* string)
+{
+    if(is_object(value))
+    {
+        pair p;
+        p.string = str_init(string);
+        set_pair_erase(value->of.object, p);
+        str_free(&p.string);
+    }
+}
+
+static void
+erase_ind(valp value, int index)
+{
+    if(is_array(value))
+        if(is_array_in_bounds(value, index))
+            vec_valp_erase(value->of.array, index);
 }
 
 int
 main(void)
 {
-    val* json = jsonify(
-        "{"
-            "\"AAA\" : 1.1,"
+    valp json = jsonify(
+        "{\n"
+            "\"CCC\" : [1.2, 2.2, 3.3],\n"
             "\"BBB\" : 2.2,"
-            "\"CCC\" : [1.2, 2.2, 3.3],"
+            "\"AAA\" : 1.1,"
+            "\"ZZZ\" : \"this_is_a_test\","
             "\"EEE\" : {"
-                "\"Z\" : 9.1,"
-                "\"b\" : 7.2,"
                 "\"c\" : 9.3,"
+                "\"Z\" : 9.11321,"
                 "\"d\" : 3.4,"
+                "\"D\" : { \"nested_arrays\": [[[[[[[{}, {}, {}]]]]]]] } ,"
+                "\"b\" : 7.2,"
                 "\"TEST\" : {"
                     "\"a\" : 9.1,"
-                    "\"b\" : 9.2,"
                     "\"c\" : 9.3,"
-                    "\"d\" : 9.4,"
                     "\"e\" : \"name\","
+                    "\"b\" : 9.2,"
+                    "\"something\" : [\"gustav\", \"susan\", 1, 0],"
                     "\"f\" : \"adam\","
                     "\"g\" : \"gustav\","
-                    "\"something\" : [\"gustav\", \"susan\"],"
+                    "\"d\" : 9.4,"
                 "}"
             "}"
         "}"
     );
-    print(ind(get(get(get(json, "EEE"), "TEST"), "something"), 1));
+    valp copy = valp_copy(&json);
+    print(get(json, "CCC"));
+    erase_ind(get(json, "CCC"), 0);
+    erase_obj(get(json, "EEE"), "TEST");
+    erase_obj(get(json, "EEE"), "D");
+    print(get(json, "CCC"));
+    print(ind(get(json, "CCC"), 0));
+    puts("--- MODIFIED JSON ---");
+    print(json);
+    puts("--- ORIGINAL COPY ---");
+    print(copy);
     valp_free(&json);
+    valp_free(&copy);
 }
