@@ -1,4 +1,4 @@
-CFLAGS='-Ofast -march=native'
+CFLAGS='-O3'
 
 function perf_graph
 {

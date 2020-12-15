@@ -1,5 +1,6 @@
 //
-// -- Showcases container-container templating with a neat snow animation --
+// -- Showcases container-container templating to create a 2D array using vectors,
+//    and then proceeds to create a neat snow animation --
 //
 
 #include <stdio.h>
@@ -12,7 +13,7 @@
 // P is omitted since the previous inclusion of vec
 // defines vec_char_init, vec_char_free, and vec_char_copy
 
-#define T vec_char // A 2D array.
+#define T vec_char // A 2D array, like std::vector<std::vector<char>>.
 #include <vec.h>
 
 enum
