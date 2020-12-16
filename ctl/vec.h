@@ -255,7 +255,7 @@ JOIN(A, erase)(A* self, size_t index)
 }
 
 static inline void
-JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int compare(T*, T*))
+JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int _compare(T*, T*))
 {
     if(a >= b)
         return;
@@ -263,20 +263,20 @@ JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int compare(T*, T*))
     SWAP(T, &self->value[a], &self->value[mid]);
     int64_t z = a;
     for(int64_t i = a + 1; i <= b; i++)
-        if(compare(&self->value[a], &self->value[i]))
+        if(_compare(&self->value[a], &self->value[i]))
         {
             z += 1;
             SWAP(T, &self->value[z], &self->value[i]);
         }
     SWAP(T, &self->value[a], &self->value[z]);
-    JOIN(A, ranged_sort)(self, a, z - 1, compare);
-    JOIN(A, ranged_sort)(self, z + 1, b, compare);
+    JOIN(A, ranged_sort)(self, a, z - 1, _compare);
+    JOIN(A, ranged_sort)(self, z + 1, b, _compare);
 }
 
 static inline void
-JOIN(A, sort)(A* self, int compare(T*, T*))
+JOIN(A, sort)(A* self, int _compare(T*, T*))
 {
-    JOIN(A, ranged_sort)(self, 0, self->size - 1, compare);
+    JOIN(A, ranged_sort)(self, 0, self->size - 1, _compare);
 }
 
 static inline A
@@ -356,7 +356,7 @@ JOIN(A, remove_if)(A* self, int (*_match)(T*))
 }
 
 static inline int
-JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
+JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
 {
     if(self->size != other->size)
         return 0;
@@ -364,7 +364,7 @@ JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
     I b = JOIN(I, each)(other);
     while(!a.done && !b.done)
     {
-        if(!equal(a.ref, b.ref))
+        if(!_equal(a.ref, b.ref))
             return 0;
         a.step(&a);
         b.step(&b);
@@ -373,10 +373,10 @@ JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
 }
 
 static inline T*
-JOIN(A, find)(A* self, T key, int equal(T*, T*))
+JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 {
     foreach(A, self, it,
-        if(equal(it.ref, &key))
+        if(_equal(it.ref, &key))
             return it.ref;
     );
     return NULL;

@@ -297,11 +297,11 @@ JOIN(A, reverse)(A* self)
 }
 
 static inline size_t
-JOIN(A, remove_if)(A* self, int (*equal)(T*))
+JOIN(A, remove_if)(A* self, int _equal(T*))
 {
     size_t erases = 0;
     foreach(A, self, it,
-        if(equal(it.ref))
+        if(_equal(it.ref))
         {
             JOIN(A, erase)(self, it.node);
             erases += 1;
@@ -320,14 +320,14 @@ JOIN(A, splice)(A* self, B* position, A* other)
 }
 
 static inline void
-JOIN(A, merge)(A* self, A* other, int compare(T*, T*))
+JOIN(A, merge)(A* self, A* other, int _compare(T*, T*))
 {
     if(JOIN(A, empty)(self))
         JOIN(A, swap)(self, other);
     else
     {
         for(B* node = self->head; node; node = node->next)
-            while(!JOIN(A, empty)(other) && compare(&node->value, &other->head->value))
+            while(!JOIN(A, empty)(other) && _compare(&node->value, &other->head->value))
                 JOIN(A, transfer)(self, other, node, other->head, 1);
         while(!JOIN(A, empty)(other)) // REMAINDER.
             JOIN(A, transfer)(self, other, self->tail, other->head, 0);
@@ -335,7 +335,7 @@ JOIN(A, merge)(A* self, A* other, int compare(T*, T*))
 }
 
 static inline int
-JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
+JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
 {
     if(self->size != other->size)
         return 0;
@@ -343,7 +343,7 @@ JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
     I b = JOIN(I, each)(other);
     while(!a.done && !b.done)
     {
-        if(!equal(a.ref, b.ref))
+        if(!_equal(a.ref, b.ref))
             return 0;
         a.step(&a);
         b.step(&b);
@@ -352,7 +352,7 @@ JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
 }
 
 static inline void
-JOIN(A, sort)(A* self, int compare(T*, T*))
+JOIN(A, sort)(A* self, int _compare(T*, T*))
 {
     if(self->size > 1)
     {
@@ -367,7 +367,7 @@ JOIN(A, sort)(A* self, int compare(T*, T*))
             JOIN(A, transfer)(&carry, self, carry.head, self->head, 1);
             for(counter = temp; counter != fill && !JOIN(A, empty)(counter); counter++)
             {
-                JOIN(A, merge)(counter, &carry, compare);
+                JOIN(A, merge)(counter, &carry, _compare);
                 JOIN(A, swap)(&carry, counter);
             }
             JOIN(A, swap)(&carry, counter);
@@ -376,25 +376,25 @@ JOIN(A, sort)(A* self, int compare(T*, T*))
         }
         while(!JOIN(A, empty)(self));
         for(counter = temp + 1; counter != fill; counter++)
-            JOIN(A, merge)(counter, counter - 1, compare);
+            JOIN(A, merge)(counter, counter - 1, _compare);
         JOIN(A, swap)(self, fill - 1);
     }
 }
 
 static inline void
-JOIN(A, unique)(A* self, int equal(T*, T*))
+JOIN(A, unique)(A* self, int _equal(T*, T*))
 {
     foreach(A, self, it,
-        if(it.next && equal(it.ref, &it.next->value))
+        if(it.next && _equal(it.ref, &it.next->value))
             JOIN(A, erase)(self, it.node);
     );
 }
 
 static inline B*
-JOIN(A, find)(A* self, T key, int equal(T*, T*))
+JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 {
     foreach(A, self, it,
-        if(equal(it.ref, &key))
+        if(_equal(it.ref, &key))
             return it.node;
     );
     return NULL;

@@ -68,11 +68,11 @@ JOIN(A, implicit_copy)(T* self)
 }
 
 static inline A
-JOIN(A, init)(int compare(T*, T*))
+JOIN(A, init)(int _compare(T*, T*))
 {
     static A zero;
     A self = zero;
-    self.compare = compare;
+    self.compare = _compare;
 #ifdef P
 #undef P
     self.copy = JOIN(A, implicit_copy);
@@ -633,7 +633,7 @@ JOIN(I, each)(A* a)
 }
 
 static inline int
-JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
+JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
 {
     if(self->size != other->size)
         return 0;
@@ -641,7 +641,7 @@ JOIN(A, equal)(A* self, A* other, int equal(T*, T*))
     I b = JOIN(I, each)(other);
     while(!a.done && !b.done)
     {
-        if(!equal(&a.node->key, &b.node->key))
+        if(!_equal(&a.node->key, &b.node->key))
             return 0;
         a.step(&a);
         b.step(&b);

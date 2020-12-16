@@ -37,10 +37,10 @@
 #define A JOIN(pqu, T)
 
 static inline A
-JOIN(A, init)(int compare(T*, T*))
+JOIN(A, init)(int _compare(T*, T*))
 {
     A self = JOIN(A, __INIT)();
-    self.compare = compare;
+    self.compare = _compare;
     return self;
 }
 
