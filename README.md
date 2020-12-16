@@ -82,7 +82,7 @@ Omitted from these performance measurements are `que.h`, `stk.h`, and `str.h`,
 as their performance characteristics can be inferred from `deq.h`, and `vec.h`,
 respectively.
 
-Of not, CTL strings do not support short strings.
+Note, CTL strings do not support short strings.
 
 ## Running Tests
 
