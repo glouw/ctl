@@ -49,6 +49,9 @@ To compile, include the `ctl` directory:
 
     gcc main.c -I ctl
 
+For a much more thorough getting starting guide,
+see the wiki: https://github.com/glouw/ctl/wiki
+
 ## Memory Ownership
 
 Types with memory ownership require definition `P` be omitted, and require
@@ -97,23 +100,23 @@ To compile examples, run:
 To generate performance graphs, run:
 
     sh gen_images.sh
+    # Graphing requires python3 and the Plotly family of libraries via pip3.
 
 To do all of the above in one step, run:
 
     ./all.sh
 
-For debugging purposes, a container templated to type `int` can be
+For maintaining CTL, a container templated to type `int` can be
 outputted to `stdout` by running make on the container name, eg:
 
-    make set
-
-    make vec
-
+    make deq
     make lst
-
-    etc.
-
-Graphing requires python3 and the Plotly family of libraries via pip3.
+    make pqu
+    make que
+    make set
+    make stk
+    make str
+    make vec
 
 ## Acknowledgements
 
