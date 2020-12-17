@@ -270,8 +270,7 @@ JOIN(I, each)(A* a)
 static inline void
 JOIN(A, assign)(A* self, size_t size, T value)
 {
-    static T zero;
-    JOIN(A, resize)(self, size, zero);
+    JOIN(A, resize)(self, size, value);
     size_t i = 0;
     foreach(A, self, it,
         if(self->free)

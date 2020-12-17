@@ -209,8 +209,7 @@ JOIN(A, resize)(A* self, size_t size, T value)
 static inline void
 JOIN(A, assign)(A* self, size_t size, T value)
 {
-    static T zero;
-    JOIN(A, resize)(self, size, zero);
+    JOIN(A, resize)(self, size, value);
     for(size_t i = 0; i < size; i++)
         JOIN(A, set)(self, i, self->copy(&value));
 }

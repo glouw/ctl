@@ -294,17 +294,19 @@ static inline void
 JOIN(A, resize)(A* self, size_t size, T value)
 {
     if(size != self->size)
-        for(size_t i = 0; size != self->size; i++)
-            (size < self->size)
-                ? JOIN(A, pop_back)(self)
-                : JOIN(A, push_back)(self, self->copy(&value));
+    {
+        while(size != self->size)
+            if(size < self->size)
+                JOIN(A, pop_back)(self);
+            else
+                JOIN(A, push_back)(self, self->copy(&value));
+    }
 }
 
 static inline void
 JOIN(A, assign)(A* self, size_t size, T value)
 {
-    static T zero;
-    JOIN(A, resize)(self, size, zero);
+    JOIN(A, resize)(self, size, value);
     for(size_t i = 0; i < size; i++)
         JOIN(A, set)(self, i, self->copy(&value));
 }
