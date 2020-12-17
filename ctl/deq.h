@@ -297,7 +297,7 @@ JOIN(A, resize)(A* self, size_t size, T value)
         for(size_t i = 0; size != self->size; i++)
             (size < self->size)
                 ? JOIN(A, pop_back)(self)
-                : JOIN(A, push_back)(self, (i == 0) ? value : self->copy(&value));
+                : JOIN(A, push_back)(self, self->copy(&value));
 }
 
 static inline void
@@ -306,7 +306,7 @@ JOIN(A, assign)(A* self, size_t size, T value)
     static T zero;
     JOIN(A, resize)(self, size, zero);
     for(size_t i = 0; i < size; i++)
-        JOIN(A, set)(self, i, (i == 0) ? value : self->copy(&value));
+        JOIN(A, set)(self, i, self->copy(&value));
 }
 
 static inline void

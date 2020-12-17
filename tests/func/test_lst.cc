@@ -5,6 +5,7 @@
 #include <lst.h>
 
 #include <list>
+#include <algorithm>
 
 #define CHECK(_x, _y) {                                           \
     assert(_x.size == _y.size());                                 \
@@ -72,6 +73,7 @@ main(void)
             TEST_EQUAL,
             TEST_SORT,
             TEST_UNIQUE,
+            TEST_FIND,
             TEST_TOTAL
         };
         int which = TEST_RAND(TEST_TOTAL);
@@ -162,7 +164,9 @@ main(void)
             case TEST_RESIZE:
             {
                 size_t resize = 3 * TEST_RAND(a.size);
-                lst_digi_resize(&a, resize, digi_init(0));
+                digi d = digi_init(0);
+                lst_digi_resize(&a, resize, d);
+                digi_free(&d);
                 b.resize(resize);
                 CHECK(a, b);
                 break;
@@ -173,7 +177,9 @@ main(void)
                 if(width > 2)
                 {
                     int value = TEST_RAND(INT_MAX);
-                    lst_digi_assign(&a, width, digi_init(value));
+                    digi d = digi_init(value);
+                    lst_digi_assign(&a, width, d);
+                    digi_free(&d);
                     b.assign(width, DIGI{value});
                 }
                 CHECK(a, b);
@@ -278,6 +284,35 @@ main(void)
                 lst_digi_unique(&a, digi_match);
                 b.unique();
                 CHECK(a, b);
+                break;
+            }
+            case TEST_FIND:
+            {
+                if(a.size > 0)
+                {
+                    const size_t index = TEST_RAND(a.size);
+                    int test_value = 0;
+                    size_t current = 0;
+                    foreach(lst_digi, &a, it,
+                        if(current == index)
+                        {
+                            test_value = *it.ref->value;
+                            break;
+                        }
+                        current += 1;
+                    )
+                    int value = TEST_RAND(2) ? TEST_RAND(INT_MAX) : test_value;
+                    digi key = digi_init(value);
+                    lst_digi_node* aa = lst_digi_find(&a, key, digi_match);
+                    auto bb = std::find(b.begin(), b.end(), DIGI{value});
+                    bool found_a = aa != NULL;
+                    bool found_b = bb != b.end();
+                    assert(found_a == found_b);
+                    if(found_a && found_b)
+                        assert(*aa->value.value == *bb->value);
+                    digi_free(&key);
+                    CHECK(a, b);
+                }
                 break;
             }
         }

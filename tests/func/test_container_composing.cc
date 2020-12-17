@@ -14,6 +14,9 @@
 #include <que.h>
 
 #define T deq_int
+#include <set.h>
+
+#define T deq_int
 #include <stk.h>
 
 #define T deq_int
@@ -30,6 +33,9 @@
 #include <que.h>
 
 #define T lst_int
+#include <set.h>
+
+#define T lst_int
 #include <stk.h>
 
 #define T lst_int
@@ -46,6 +52,9 @@
 #include <que.h>
 
 #define T pqu_int
+#include <set.h>
+
+#define T pqu_int
 #include <stk.h>
 
 #define T pqu_int
@@ -60,6 +69,9 @@
 #define P
 #define T int
 #include <que.h>
+
+#define T que_int
+#include <set.h>
 
 #define T que_int
 #include <stk.h>
@@ -78,6 +90,28 @@
 
 #define P
 #define T int
+#include <set.h>
+
+#define T set_int
+#include <stk.h>
+
+#define T set_int
+#include <vec.h>
+
+#define T set_int
+#include <deq.h>
+
+#define T set_int
+#include <lst.h>
+
+#define T set_int
+#include <pqu.h>
+
+#define T set_int
+#include <que.h>
+
+#define P
+#define T int
 #include <stk.h>
 
 #define T stk_int
@@ -95,6 +129,9 @@
 #define T stk_int
 #include <que.h>
 
+#define T stk_int
+#include <set.h>
+
 #define P
 #define T int
 #include <vec.h>
@@ -110,6 +147,9 @@
 
 #define T vec_int
 #include <que.h>
+
+#define T vec_int
+#include <set.h>
 
 #define T vec_int
 #include <stk.h>

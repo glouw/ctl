@@ -163,7 +163,9 @@ main(void)
             std::deque<DIGI> b;
             if(mode == MODE_DIRECT)
             {
-                deq_digi_resize(&a, size, digi_init(0));
+                digi d = digi_init(0);
+                deq_digi_resize(&a, size, d);
+                digi_free(&d);
                 b.resize(size);
             }
             if(mode == MODE_GROWTH)
@@ -192,6 +194,7 @@ main(void)
                 TEST_ASSIGN,
                 TEST_REMOVE_IF,
                 TEST_EQUAL,
+                TEST_FIND,
                 TEST_TOTAL,
             };
             int which = TEST_RAND(TEST_TOTAL);
@@ -255,7 +258,9 @@ main(void)
                 {
                     const size_t resize = 3 * TEST_RAND(a.size) + 1;
                     b.resize(resize);
-                    deq_digi_resize(&a, resize, digi_init(0));
+                    digi d = digi_init(0);
+                    deq_digi_resize(&a, resize, d);
+                    digi_free(&d);
                     CHECK(a, b);
                     break;
                 }
@@ -307,6 +312,7 @@ main(void)
                     size_t assign_size = TEST_RAND(a.size) + 1;
                     digi d = digi_init(value);
                     deq_digi_assign(&a, assign_size, d);
+                    digi_free(&d);
                     b.assign(assign_size, DIGI{value});
                     CHECK(a, b);
                     break;
@@ -326,6 +332,25 @@ main(void)
                     assert(b == bb);
                     deq_digi_free(&aa);
                     CHECK(a, b);
+                    break;
+                }
+                case TEST_FIND:
+                {
+                    if(a.size > 0)
+                    {
+                        const size_t index = TEST_RAND(a.size);
+                        int value = TEST_RAND(2) ? TEST_RAND(INT_MAX) : *deq_digi_at(&a, index)->value;
+                        digi key = digi_init(value);
+                        digi* aa = deq_digi_find(&a, key, digi_match);
+                        auto bb = std::find(b.begin(), b.end(), DIGI{value});
+                        bool found_a = aa != NULL;
+                        bool found_b = bb != b.end();
+                        assert(found_a == found_b);
+                        if(found_a && found_b)
+                            assert(*aa->value == *bb->value);
+                        digi_free(&key);
+                        CHECK(a, b);
+                    }
                     break;
                 }
             }

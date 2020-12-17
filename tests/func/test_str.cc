@@ -114,6 +114,7 @@ main(void)
                 TEST_FIND_LAST_NOT_OF,
                 TEST_SUBSTR,
                 TEST_COMPARE,
+                TEST_COUNT,
                 TEST_TOTAL
             };
             int which = TEST_RAND(TEST_TOTAL);
@@ -338,6 +339,13 @@ main(void)
                     CHECK(aaa, bbb);
                     str_free(&aaa);
                     str_free(&aa);
+                    CHECK(a, b);
+                    break;
+                }
+                case TEST_COUNT:
+                {
+                    const char value = TEST_RAND(ALPHA_LETTERS);
+                    assert(count(b.begin(), b.end(), value) == str_count(&a, value));
                     CHECK(a, b);
                     break;
                 }

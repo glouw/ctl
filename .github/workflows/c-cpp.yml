@@ -21,23 +21,23 @@ jobs:
 
     - name: O0
       run:
-        make -j9 LONG=1 O0=1
+        make -j9 LONG=1 O0=1 SANITIZE=1
 
     - name: O1
       run:
-        make -j9 LONG=1 O1=1
+        make -j9 LONG=1 O1=1 SANITIZE=1
 
     - name: O2
       run:
-        make -j9 LONG=1 O2=1
+        make -j9 LONG=1 O2=1 SANITIZE=1
 
     - name: O3
       run:
-        make -j9 LONG=1 O3=1
+        make -j9 LONG=1 O3=1 SANITIZE=1
 
     - name: Og
       run:
-        make -j9 LONG=1 Og=1
+        make -j9 LONG=1 Og=1 SANITIZE=1
 
     - name: Ofast
       run:
