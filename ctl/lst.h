@@ -210,6 +210,8 @@ JOIN(A, resize)(A* self, size_t size, T value)
             (size < self->size)
                 ? JOIN(A, pop_back)(self)
                 : JOIN(A, push_back)(self, self->copy(&value));
+    if(self->free)
+        self->free(&value);
 }
 
 static inline void
@@ -270,7 +272,7 @@ JOIN(I, each)(A* a)
 static inline void
 JOIN(A, assign)(A* self, size_t size, T value)
 {
-    JOIN(A, resize)(self, size, value);
+    JOIN(A, resize)(self, size, self->copy(&value));
     size_t i = 0;
     foreach(A, self, it,
         if(self->free)
@@ -278,6 +280,8 @@ JOIN(A, assign)(A* self, size_t size, T value)
         *it.ref = self->copy(&value);
         i += 1;
     )
+    if(self->free)
+        self->free(&value);
 }
 
 static inline void

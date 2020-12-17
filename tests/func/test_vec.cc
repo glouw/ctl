@@ -51,9 +51,7 @@ main(void)
             std::vector<DIGI> b;
             if(mode == MODE_DIRECT)
             {
-                digi d = digi_init(0);
-                vec_digi_resize(&a, size, d);
-                digi_free(&d);
+                vec_digi_resize(&a, size, digi_init(0));
                 b.resize(size);
             }
             if(mode == MODE_GROWTH)
@@ -140,9 +138,7 @@ main(void)
                 {
                     const size_t resize = 3 * TEST_RAND(a.size) + 1;
                     b.resize(resize);
-                    digi d = digi_init(0);
-                    vec_digi_resize(&a, resize, d);
-                    digi_free(&d);
+                    vec_digi_resize(&a, resize, digi_init(0));
                     CHECK(a, b);
                     break;
                 }
@@ -181,9 +177,7 @@ main(void)
                 {
                     const int value = TEST_RAND(INT_MAX);
                     size_t assign_size = TEST_RAND(a.size) + 1;
-                    digi d = digi_init(value);
-                    vec_digi_assign(&a, assign_size, d);
-                    digi_free(&d);
+                    vec_digi_assign(&a, assign_size, digi_init(value));
                     b.assign(assign_size, DIGI{value});
                     CHECK(a, b);
                     break;

@@ -1,4 +1,5 @@
 CFLAGS='-O3'
+VERSION=$(gcc --version | head -1)
 
 function perf_graph
 {
@@ -46,7 +47,7 @@ function perf_compile_two_bar
 
 perf_graph \
     'set.log' \
-    "std::set<int> vs. CTL set_int ($CFLAGS)" \
+    "std::set<int> vs. CTL set_int ($CFLAGS) ($VERSION)" \
     "tests/perf/set/perf_set_insert.cc \
      tests/perf/set/perf_set_insert.c \
      tests/perf/set/perf_set_erase.cc \
@@ -56,7 +57,7 @@ perf_graph \
 
 perf_graph \
     'pqu.log' \
-    "std::priority_queue<int> vs. CTL pqu_int ($CFLAGS)" \
+    "std::priority_queue<int> vs. CTL pqu_int ($CFLAGS) ($VERSION)" \
     "tests/perf/pqu/perf_priority_queue_push.cc \
      tests/perf/pqu/perf_pqu_push.c \
      tests/perf/pqu/perf_priority_queue_pop.cc \
@@ -64,7 +65,7 @@ perf_graph \
 
 perf_graph \
     'vec.log' \
-    "std::vector<int> vs. CTL vec_int ($CFLAGS)" \
+    "std::vector<int> vs. CTL vec_int ($CFLAGS) ($VERSION)" \
     "tests/perf/vec/perf_vector_push_back.cc \
      tests/perf/vec/perf_vec_push_back.c \
      tests/perf/vec/perf_vector_pop_back.cc \
@@ -76,7 +77,7 @@ perf_graph \
 
 perf_graph \
     'lst.log' \
-    "std::list<int> vs. CTL lst_int ($CFLAGS)" \
+    "std::list<int> vs. CTL lst_int ($CFLAGS) ($VERSION)" \
     "tests/perf/lst/perf_list_push_back.cc
      tests/perf/lst/perf_lst_push_back.c \
      tests/perf/lst/perf_list_pop_back.cc \
@@ -92,7 +93,7 @@ perf_graph \
 
 perf_graph \
     'deq.log' \
-    "std::deque<int> vs. CTL deq_int ($CFLAGS)" \
+    "std::deque<int> vs. CTL deq_int ($CFLAGS) ($VERSION)" \
     "tests/perf/deq/perf_deque_push_back.cc
      tests/perf/deq/perf_deq_push_back.c \
      tests/perf/deq/perf_deque_pop_back.cc \
@@ -108,6 +109,6 @@ perf_graph \
 
 perf_compile_two_bar \
     'compile.log' \
-    "CTL vs STL Compilation ($CFLAGS)" \
+    "CTL vs STL Compilation ($CFLAGS) ($VERSION)" \
     'tests/perf/perf_compile_c99.c' \
     'tests/perf/perf_compile_cc.cc'

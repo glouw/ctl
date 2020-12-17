@@ -149,9 +149,7 @@ main(void)
         vec_str_push_back(&b, str_init("is"));
         vec_str_push_back(&b, str_init("a"));
         vec_str_push_back(&b, str_init("test"));
-        str empty = str_init("");
-        vec_str_resize(&b, 512, empty);
-        str_free(&empty);
+        vec_str_resize(&b, 512, str_init(""));
         vec_str_free(&b);
     }{
         vec_person c = vec_person_init();

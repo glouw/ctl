@@ -164,9 +164,7 @@ main(void)
             case TEST_RESIZE:
             {
                 size_t resize = 3 * TEST_RAND(a.size);
-                digi d = digi_init(0);
-                lst_digi_resize(&a, resize, d);
-                digi_free(&d);
+                lst_digi_resize(&a, resize, digi_init(0));
                 b.resize(resize);
                 CHECK(a, b);
                 break;
@@ -177,9 +175,7 @@ main(void)
                 if(width > 2)
                 {
                     int value = TEST_RAND(INT_MAX);
-                    digi d = digi_init(value);
-                    lst_digi_assign(&a, width, d);
-                    digi_free(&d);
+                    lst_digi_assign(&a, width, digi_init(value));
                     b.assign(width, DIGI{value});
                 }
                 CHECK(a, b);

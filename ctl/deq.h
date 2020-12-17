@@ -301,14 +301,18 @@ JOIN(A, resize)(A* self, size_t size, T value)
             else
                 JOIN(A, push_back)(self, self->copy(&value));
     }
+    if(self->free)
+        self->free(&value);
 }
 
 static inline void
 JOIN(A, assign)(A* self, size_t size, T value)
 {
-    JOIN(A, resize)(self, size, value);
+    JOIN(A, resize)(self, size, self->copy(&value));
     for(size_t i = 0; i < size; i++)
         JOIN(A, set)(self, i, self->copy(&value));
+    if(self->free)
+        self->free(&value);
 }
 
 static inline void
