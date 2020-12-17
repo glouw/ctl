@@ -49,7 +49,7 @@ To compile, include the `ctl` directory:
 
     gcc main.c -I ctl
 
-For a much more thorough getting starting guide,
+For a much more thorough getting started guide,
 see the wiki: https://github.com/glouw/ctl/wiki
 
 ## Memory Ownership
