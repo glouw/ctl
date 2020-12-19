@@ -1,5 +1,5 @@
 CFLAGS='-O3'
-VERSION=$(gcc --version | head -1)
+VERSION=$(g++ --version | head -1)
 
 function perf_graph
 {
