@@ -7,14 +7,14 @@ CTL is a fast compiling, type safe, header only, template-like library for ISO C
 CTL aims to improve C99 developer productivity by implementing the following
 STL containers in ISO C99:
 
-    deq.h -> std::deque
-    lst.h -> std::list
-    pqu.h -> std::priority_queue
-    que.h -> std::queue
-    set.h -> std::set
-    stk.h -> std::stack
-    str.h -> std::string
-    vec.h -> std::vector
+    deq.h = std::deque
+    lst.h = std::list
+    pqu.h = std::priority_queue
+    que.h = std::queue
+    set.h = std::set
+    stk.h = std::stack
+    str.h = std::string
+    vec.h = std::vector
 
 ## Use
 

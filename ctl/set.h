@@ -308,7 +308,7 @@ JOIN(A, insert_3)(A*, B*),
 JOIN(A, insert_4)(A*, B*),
 JOIN(A, insert_5)(A*, B*);
 
-static inline void
+static inline B*
 JOIN(A, insert)(A* self, T key)
 {
     B* insert = JOIN(B, init)(key, 0);
@@ -321,7 +321,7 @@ JOIN(A, insert)(A* self, T key)
             if(diff == 0)
             {
                 JOIN(A, free_node)(self, insert);
-                return;
+                return node;
             }
             else
             if(diff < 0)
@@ -354,6 +354,7 @@ JOIN(A, insert)(A* self, T key)
 #ifdef USE_INTERNAL_VERIFY
     JOIN(A, verify)(self);
 #endif
+    return insert;
 }
 
 static inline void
