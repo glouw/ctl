@@ -129,7 +129,7 @@ because ordered containers are preferred, even at the cost of performance.
 STL variants of multi-sets and multi-maps will not be implemented because
 similar behaviour can be implemented as an amalgamation of a `set` and `lst`.
 
-# Base Implementation Details
+## Base Implementation Details
 
 vec.h: See `realloc`.
 deq.h: Paged `realloc`.
