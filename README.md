@@ -131,10 +131,10 @@ similar behaviour can be implemented as an amalgamation of a `set` and `lst`.
 
 ## Base Implementation Details
 
-vec.h: See `realloc`.
-deq.h: Paged `realloc`.
-lst.h: Doubly linked list.
-set.h: Red black tree.
+    vec.h: See `realloc`.
+    deq.h: Paged `realloc`.
+    lst.h: Doubly linked list.
+    set.h: Red black tree.
 
 ## Acknowledgements
 

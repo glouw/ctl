@@ -1,0 +1,58 @@
+typedef struct B
+{
+    T value[DEQ_BUCKET_SIZE];
+    int16_t a;
+    int16_t b;
+}
+B;
+
+typedef struct A
+{
+    void (*free)(T*);
+    T (*copy)(T*);
+    B** pages;
+    size_t mark_a;
+    size_t mark_b;
+    size_t capacity;
+    size_t size;
+}
+A;
+
+typedef struct I
+{
+    void (*step)(struct I*);
+    A* container;
+    T* ref;
+    size_t index;
+    size_t index_next;
+    size_t index_last;
+    int done;
+}
+I;
+
+static inline int
+JOIN(A, empty)(A* self)
+
+static inline void
+JOIN(A, push)(A* self, T value)
+
+static inline void
+JOIN(A, pop)(A* self)
+
+static inline A
+JOIN(A, init)(void)
+
+static inline T*
+JOIN(A, top)(A* self)
+
+static inline void
+JOIN(A, free)(A* self)
+
+static inline void
+JOIN(A, swap)(A* self, A* other)
+
+static inline A
+JOIN(A, copy)(A* self)
+
+static inline int
+JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
