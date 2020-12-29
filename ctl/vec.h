@@ -393,7 +393,8 @@ JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 #undef I
 #undef MUST_ALIGN_16
 
-// HOLD PRESERVES T IF OTHER CONTAINERS (EG. PQU.H) WISH TO EXTEND VEC.H
+// Hold preserves `T` if other containers
+// (eg. `pqu.h`) wish to extend `vec.h`.
 #ifdef HOLD
 #undef HOLD
 #else

@@ -332,7 +332,8 @@ JOIN(A, merge)(A* self, A* other, int _compare(T*, T*))
         for(B* node = self->head; node; node = node->next)
             while(!JOIN(A, empty)(other) && _compare(&node->value, &other->head->value))
                 JOIN(A, transfer)(self, other, node, other->head, 1);
-        while(!JOIN(A, empty)(other)) // REMAINDER.
+        // Remainder.
+        while(!JOIN(A, empty)(other))
             JOIN(A, transfer)(self, other, self->tail, other->head, 0);
     }
 }

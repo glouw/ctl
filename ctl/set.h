@@ -1,6 +1,3 @@
-// For implementation details:
-//     https://web.archive.org/web/20140328232325/http://en.literateprograms.org/Red-black_tree_(C)
-
 #ifndef T
 #error "Template type T undefined for <set.h>"
 #endif
@@ -17,7 +14,9 @@ typedef struct B
     struct B* r;
     struct B* p;
     T key;
-    int color; // RED 0, BLK 1.
+    // Red = 0
+    // Black = 1
+    int color;
 }
 B;
 
@@ -268,11 +267,11 @@ JOIN(B, verify_property_5)(B* self)
 static inline void
 JOIN(A, verify)(A* self)
 {
-    JOIN(B, verify_property_1)(self->root); // PROPERTY 1: EACH NODE IS EITHER RED OR BLACK.
-    JOIN(B, verify_property_2)(self->root); // PROPERTY 2: THE ROOT NODE IS BLACK.
-    /* IMPLICIT */                          // PROPERTY 3: LEAVES ARE COLORED BLACK
-    JOIN(B, verify_property_4)(self->root); // PROPERTY 4: EVERY RED NODE HAS TWO BLACK NDOES.
-    JOIN(B, verify_property_5)(self->root); // PROPERTY 5: ALL PATHS FROM A NODE HAVE THE SAME NUMBER OF BLACK NODES.
+    JOIN(B, verify_property_1)(self->root); // Property 1: Each node is either red or black.
+    JOIN(B, verify_property_2)(self->root); // Property 2: The root node is black.
+    /* Implicit */                          // Property 3: Leaves are colored black
+    JOIN(B, verify_property_4)(self->root); // Property 4: Every red node has two black ndoes.
+    JOIN(B, verify_property_5)(self->root); // Property 5: All paths from a node have the same number of black nodes.
 }
 
 #endif

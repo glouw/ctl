@@ -131,5 +131,5 @@ JOIN(A, pop)(A* self)
 #undef each
 #undef remove_if
 
-#undef T // SEE HOLD.
+#undef T // See HOLD.
 #undef A

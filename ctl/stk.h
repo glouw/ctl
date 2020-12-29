@@ -23,7 +23,8 @@
 #define step        __STEP
 #define remove_if   __REMOVE_IF
 
-// CAN ALSO USE VEC OR LST.
+// Replace the three instances of `deq` below
+// with either `vec` or `lst`, depending on your use case.
 #define deq stk
 #include <deq.h>
 #undef deq
