@@ -118,6 +118,24 @@ outputted to `stdout` by running make on the container name, eg:
     make str
     make vec
 
+## Other
+
+STL `std::map` will not be implemented in CTL because maps only provide slight
+syntactic improvements over sets.
+
+STL `std::unordered_map` and `std::unordered_set` will not be implemented in CTL
+because ordered containers are preferred, even at the cost of performance.
+
+STL variants of multi-sets and multi-maps will not be implemented because
+similar behaviour can be implemented as an amalgamation of a `set` and `lst`.
+
+# Base Implementation Details
+
+vec.h: See `realloc`.
+deq.h: Paged `realloc`.
+lst.h: Doubly linked list.
+set.h: Red black tree.
+
 ## Acknowledgements
 
 Thank you `github.com/kully/` for the Plotly code, and thank you for the general review.
