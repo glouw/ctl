@@ -110,5 +110,5 @@ perf_graph \
 perf_compile_two_bar \
     'compile.log' \
     "CTL vs STL Compilation ($CFLAGS) ($VERSION)" \
-    'tests/perf/perf_compile_c99.c' \
+    'tests/perf/perf_compile_c11.c' \
     'tests/perf/perf_compile_cc.cc'

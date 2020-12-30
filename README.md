@@ -1,11 +1,11 @@
 # C TEMPLATE LIBRARY (CTL)
 
-CTL is a fast compiling, type safe, header only, template-like library for ISO C99.
+CTL is a fast compiling, type safe, header only, template-like library for ISO C11.
 
 ## Motivation
 
-CTL aims to improve C99 developer productivity by implementing the following
-STL containers in ISO C99:
+CTL aims to improve C11 developer productivity by implementing the following
+STL containers in ISO C11:
 
 ```
 deq.h = std::deque
@@ -74,7 +74,7 @@ type type_copy(type*);
 Forgetting a declaration will print a human-readable error message:
 
 ```shell
-tests/test_c99.c:11:11: error: ‘type_free’ undeclared (first use in this function)
+tests/test_c11.c:11:11: error: ‘type_free’ undeclared (first use in this function)
    11 | #define T type
 ```
 
