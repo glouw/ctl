@@ -1,4 +1,4 @@
-CC = gcc -std=c99
+CC = gcc -std=c17
 CXX = g++ -std=c++17
 
 LONG = 0
