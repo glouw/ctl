@@ -195,11 +195,12 @@ void
 save(void)
 {
     FILE* out = fopen("out.asm", "w");
-    foreach(lst_str, &global.assem, it,
+    foreach(lst_str, &global.assem, it)
+    {
         char* s = it.ref->value;
         puts(s);
         fprintf(out, "%s\n", s);
-    )
+    }
     fclose(out);
 }
 
@@ -872,9 +873,8 @@ unroll(void)
         str_free(&temp);
     }
     match('}');
-    foreach(lst_str, &expanded, it,
+    foreach(lst_str, &expanded, it)
         prime(it.ref);
-    )
     lst_str_free(&expanded);
     str_free(&meta);
     str_free(&reftok);
@@ -966,13 +966,14 @@ pop_locals(size_t size)
         size -= 1;
     }
     write("; %8s %8s %6s %6s %6s", "TYPE", "NAME", "SIZE", "ADDR", "FAM");
-    foreach(lst_str, &reversed, it,
+    foreach(lst_str, &reversed, it)
+    {
         token* tok = get(it.ref);
         write("; %8s %8s %6d %6d %6d",
             tok->type.value, tok->name.value, tok->size, tok->addr, tok->fam);
         global.local_addr -= tok->size;
         erase(&tok->name);
-    )
+    }
     lst_str_free(&reversed);
 }
 

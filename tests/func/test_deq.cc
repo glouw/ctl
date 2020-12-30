@@ -15,10 +15,10 @@
         assert(*_y.back().value == *deq_digi_back(&_x)->value);   \
     }                                                             \
     std::deque<DIGI>::iterator _iter = _y.begin();                \
-    foreach(deq_digi, &_x, _it, {                                 \
+    foreach(deq_digi, &_x, _it) {                                 \
         assert(*_it.ref->value == *_iter->value);                 \
         _iter++;                                                  \
-    });                                                           \
+    }                                                             \
     deq_digi_it _it = deq_digi_it_each(&_x);                      \
     for(auto& _d : _y) {                                          \
         assert(*_it.ref->value == *_d.value);                     \

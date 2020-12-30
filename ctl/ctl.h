@@ -12,19 +12,9 @@
 
 #define SWAP(TYPE, a, b) { TYPE temp = *(a); *(a) = *(b); *(b) = temp; }
 
-#define iterate(iterator, ...)    \
-    while(!iterator.done)         \
-    {                             \
-        __VA_ARGS__               \
-        iterator.step(&iterator); \
-    }                             \
-
-#define foreach(container, variable, iterator, ...)                               \
-    {                                                                             \
-        JOIN(container, it) iterator = JOIN(JOIN(container, it), each)(variable); \
-        iterate(iterator, __VA_ARGS__)                                            \
-    }                                                                             \
+#define foreach(a, b, c) for(JOIN(a, it) c = JOIN(JOIN(a, it), each) (b); !c.done; c.step(&c))
 
 #define len(a) (sizeof(a) / sizeof(*(a)))
 
 #endif
+

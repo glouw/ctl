@@ -345,7 +345,8 @@ static inline size_t
 JOIN(A, remove_if)(A* self, int (*_match)(T*))
 {
     size_t erases = 0;
-    foreach(A, self, it,
+    foreach(A, self, it)
+    {
         if(_match(it.ref))
         {
             size_t index = it.ref - JOIN(A, begin)(self);
@@ -354,7 +355,7 @@ JOIN(A, remove_if)(A* self, int (*_match)(T*))
             it.next = it.ref;
             erases += 1;
         }
-    )
+    }
     return erases;
 }
 
@@ -378,10 +379,11 @@ JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
 static inline T*
 JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 {
-    foreach(A, self, it,
+    foreach(A, self, it)
+    {
         if(_equal(it.ref, &key))
             return it.ref;
-    );
+    }
     return NULL;
 }
 

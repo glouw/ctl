@@ -127,7 +127,7 @@ to_postfix(ls* tokens)
 {
     ls postfix = ls_init();
     ss operators = ss_init();
-    foreach(ls, tokens, it,
+    foreach(ls, tokens, it)
     {
         str* token = it.ref;
         char c = token->value[0];
@@ -182,7 +182,7 @@ to_postfix(ls* tokens)
             printf("error: to_postfix(): unknown token '%c'\n", c);
             exit(1);
         }
-    })
+    }
     while(!ss_empty(&operators))
     {
         str* operator = ss_top(&operators);
@@ -200,7 +200,8 @@ main(void)
     ls tokens = tokenize(&s);
     ls postfix = to_postfix(&tokens);
     puts(s.value);
-    foreach(ls, &postfix, it, puts(it.ref->value);)
+    foreach(ls, &postfix, it)
+        puts(it.ref->value);
     ls_free(&tokens);
     ls_free(&postfix);
     str_free(&s);

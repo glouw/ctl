@@ -180,7 +180,7 @@ main(void)
         "#########################################################################\n");
     int width = str_find(&maze, "\n") + 1;
     deq_point path = astar(&maze, width);
-    foreach(deq_point, &path, it, maze.value[point_index(it.ref)] = 'x';);
+    foreach(deq_point, &path, it) maze.value[point_index(it.ref)] = 'x';
     printf("%s", maze.value);
     str_free(&maze);
     deq_point_free(&path);

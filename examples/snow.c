@@ -41,9 +41,8 @@ setup(size_t xres, size_t yres)
 {
     vec_vec_char snow = vec_vec_char_init();
     vec_vec_char_resize(&snow, xres, vec_char_init());
-    foreach(vec_vec_char, &snow, it,
+    foreach(vec_vec_char, &snow, it)
         vec_char_resize(it.ref, yres, AIR);
-    )
     return snow;
 }
 

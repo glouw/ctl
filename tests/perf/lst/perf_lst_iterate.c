@@ -18,7 +18,8 @@ int main(void)
             lst_int_push_back(&c, rand());
         int t0 = TEST_TIME();
         volatile int sum = 0;
-        foreach(lst_int, &c, it, sum += *it.ref;);
+        foreach(lst_int, &c, it)
+            sum += *it.ref;
         int t1 = TEST_TIME();
         printf("%10d %10d\n", elems, t1 - t0);
         lst_int_free(&c);

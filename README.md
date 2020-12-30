@@ -40,9 +40,8 @@ int main(void)
     vec_int_push_back(&a, 3);
     vec_int_push_back(&a, 4);
     vec_int_sort(&a, compare);
-    foreach(vec_int, &a, it,
+    foreach(vec_int, &a, it)
         printf("%d\n", *it.ref);
-    )
     vec_int_free(&a);
 }
 ```

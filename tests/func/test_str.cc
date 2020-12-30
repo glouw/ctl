@@ -19,10 +19,10 @@
         assert(_y.back() == *str_back(&_x));         \
     }                                                \
     std::string::iterator _iter = _y.begin();        \
-    foreach(str, &_x, _it, {                         \
+    foreach(str, &_x, _it) {                         \
         assert(*_it.ref == *_iter);                  \
         _iter++;                                     \
-    });                                              \
+    }                                                \
     str_it _it = str_it_each(&_x);                   \
     for(auto& _d : _y) {                             \
         assert(*_it.ref == _d);                      \

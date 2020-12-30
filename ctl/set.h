@@ -666,13 +666,12 @@ static inline size_t
 JOIN(A, remove_if)(A* self, int (*_match)(T*))
 {
     size_t erases = 0;
-    foreach(A, self, it,
+    foreach(A, self, it)
         if(_match(&it.node->key))
         {
             JOIN(A, erase_node)(self, it.node);
             erases += 1;
         }
-    )
     return erases;
 }
 
@@ -680,10 +679,9 @@ static inline A
 JOIN(A, intersection)(A* a, A* b)
 {
     A self = JOIN(A, init)(a->compare);
-    foreach(A, a, i,
+    foreach(A, a, i)
         if(JOIN(A, find)(b, *i.ref))
             JOIN(A, insert)(&self, self.copy(i.ref));
-    )
     return self;
 }
 
@@ -691,8 +689,8 @@ static inline A
 JOIN(A, union)(A* a, A* b)
 {
     A self = JOIN(A, init)(a->compare);
-    foreach(A, a, i, JOIN(A, insert)(&self, self.copy(i.ref));)
-    foreach(A, b, i, JOIN(A, insert)(&self, self.copy(i.ref));)
+    foreach(A, a, i) JOIN(A, insert)(&self, self.copy(i.ref));
+    foreach(A, b, i) JOIN(A, insert)(&self, self.copy(i.ref));
     return self;
 }
 
@@ -700,7 +698,7 @@ static inline A
 JOIN(A, difference)(A* a, A* b)
 {
     A self = JOIN(A, copy)(a);
-    foreach(A, b, i, JOIN(A, erase)(&self, *i.ref);)
+    foreach(A, b, i) JOIN(A, erase)(&self, *i.ref);
     return self;
 }
 
@@ -709,7 +707,7 @@ JOIN(A, symmetric_difference)(A* a, A* b)
 {
     A self = JOIN(A, union)(a, b);
     A intersection = JOIN(A, intersection)(a, b);
-    foreach(A, &intersection, i, JOIN(A, erase)(&self, *i.ref);)
+    foreach(A, &intersection, i) JOIN(A, erase)(&self, *i.ref);
     JOIN(A, free)(&intersection);
     return self;
 }

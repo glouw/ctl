@@ -15,10 +15,10 @@
         assert(*_y.back().value == *lst_digi_back(&_x)->value);   \
     }                                                             \
     std::list<DIGI>::iterator _iter = _y.begin();                 \
-    foreach(lst_digi, &_x, _it, {                                 \
+    foreach(lst_digi, &_x, _it) {                                 \
         assert(*_it.ref->value == *_iter->value);                 \
         _iter++;                                                  \
-    });                                                           \
+    }                                                             \
     lst_digi_it _it = lst_digi_it_each(&_x);                      \
     for(auto& _d : _y) {                                          \
         assert(*_it.ref->value == *_d.value);                     \
@@ -120,7 +120,7 @@ main(void)
                 size_t index = TEST_RAND(a.size);
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
-                foreach(lst_digi, &a, it,
+                foreach(lst_digi, &a, it)
                 {
                     if(current == index)
                     {
@@ -130,7 +130,7 @@ main(void)
                     }
                     iter++;
                     current += 1;
-                });
+                }
                 CHECK(a, b);
                 break;
             }
@@ -140,7 +140,7 @@ main(void)
                 int value = TEST_RAND(INT_MAX);
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
-                foreach(lst_digi, &a, it,
+                foreach(lst_digi, &a, it)
                 {
                     if(current == index)
                     {
@@ -150,7 +150,7 @@ main(void)
                     }
                     iter++;
                     current += 1;
-                });
+                }
                 CHECK(a, b);
                 break;
             }
@@ -223,13 +223,14 @@ main(void)
                 size_t current = 0;
                 std::list<DIGI>::iterator iter = b.begin();
                 lst_digi_it it = lst_digi_it_each(&a);
-                iterate(it,
+                while(!it.done)
                 {
                     if(current == index)
                         break;
                     iter++;
                     current += 1;
-                });
+                    it.step(&it);
+                }
                 lst_digi aa;
                 std::list<DIGI> bb;
                 setup_lists(&aa, bb, TEST_RAND(TEST_MAX_SIZE), NULL);
@@ -289,14 +290,15 @@ main(void)
                     const size_t index = TEST_RAND(a.size);
                     int test_value = 0;
                     size_t current = 0;
-                    foreach(lst_digi, &a, it,
+                    foreach(lst_digi, &a, it)
+                    {
                         if(current == index)
                         {
                             test_value = *it.ref->value;
                             break;
                         }
                         current += 1;
-                    )
+                    }
                     int value = TEST_RAND(2) ? TEST_RAND(INT_MAX) : test_value;
                     digi key = digi_init(value);
                     lst_digi_node* aa = lst_digi_find(&a, key, digi_match);

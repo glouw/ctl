@@ -385,12 +385,13 @@ static void
 traverse(set_pair* json, int tabs)
 {
     printf("{\n");
-    foreach(set_pair, json, it,
+    foreach(set_pair, json, it)
+    {
         tab(tabs);
         printf("\"%s\" : ", it.ref->string.value);
         pprint(it.ref->value, tabs);
         putchar('\n');
-    )
+    }
     tab(tabs - 1);
     printf("}");
 }
@@ -414,14 +415,15 @@ pprint(valp value, int tabs)
             printf("[");
             vec_valp* array = value->of.array;
             int index = 0;
-            foreach(vec_valp, array, it,
+            foreach(vec_valp, array, it)
+            {
                 valp v = *it.ref;
                 printf("[%d] = ", index);
                 pprint(v, tabs);
                 if(it.ref < vec_valp_end(array) - 1)
                     printf(", ");
                 index += 1;
-            )
+            }
             printf("]");
         }
     }

@@ -274,12 +274,13 @@ JOIN(A, assign)(A* self, size_t size, T value)
 {
     JOIN(A, resize)(self, size, self->copy(&value));
     size_t i = 0;
-    foreach(A, self, it,
+    foreach(A, self, it)
+    {
         if(self->free)
             self->free(it.ref);
         *it.ref = self->copy(&value);
         i += 1;
-    )
+    }
     if(self->free)
         self->free(&value);
 }
@@ -287,12 +288,13 @@ JOIN(A, assign)(A* self, size_t size, T value)
 static inline void
 JOIN(A, reverse)(A* self)
 {
-    foreach(A, self, it,
+    foreach(A, self, it)
+    {
         B* next = it.node->next;
         B* prev = it.node->prev;
         it.node->prev = next;
         it.node->next = prev;
-    )
+    }
     B* tail = self->tail;
     B* head = self->head;
     self->tail = head;
@@ -303,13 +305,12 @@ static inline size_t
 JOIN(A, remove_if)(A* self, int _equal(T*))
 {
     size_t erases = 0;
-    foreach(A, self, it,
+    foreach(A, self, it)
         if(_equal(it.ref))
         {
             JOIN(A, erase)(self, it.node);
             erases += 1;
         }
-    )
     return erases;
 }
 
@@ -319,7 +320,8 @@ JOIN(A, splice)(A* self, B* position, A* other)
     if(self->size == 0 && position == NULL)
         JOIN(A, swap)(self, other);
     else
-        foreach(A, other, it, JOIN(A, transfer)(self, other, position, it.node, 1);)
+        foreach(A, other, it)
+            JOIN(A, transfer)(self, other, position, it.node, 1);
 }
 
 static inline void
@@ -388,19 +390,17 @@ JOIN(A, sort)(A* self, int _compare(T*, T*))
 static inline void
 JOIN(A, unique)(A* self, int _equal(T*, T*))
 {
-    foreach(A, self, it,
+    foreach(A, self, it)
         if(it.next && _equal(it.ref, &it.next->value))
             JOIN(A, erase)(self, it.node);
-    );
 }
 
 static inline B*
 JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 {
-    foreach(A, self, it,
+    foreach(A, self, it)
         if(_equal(it.ref, &key))
             return it.node;
-    );
     return NULL;
 }
 
