@@ -157,4 +157,5 @@ similar behaviour can be implemented as an amalgamation of a `set` and `lst`.
 
 ## Acknowledgements
 
-Thank you `github.com/kully/` for the Plotly code, and thank you for the general review.
+Thank you `kully` for the Plotly code, and thank you for the general review.
+Thank you `smlckz` for the `foreach` cleanup.
