@@ -39,6 +39,10 @@ jobs:
       run:
         make -j9 LONG=1 Og=1 SANITIZE=1
 
+    - name: Os
+      run:
+        make -j9 LONG=1 Os=1 SANITIZE=1
+
     - name: Ofast
       run:
         make -j9 LONG=1 Ofast=1
@@ -62,6 +66,10 @@ jobs:
     - name: Og (SANITIZE=0)
       run:
         make -j9 LONG=1 Og=1 SANITIZE=0
+        
+    - name: Os (SANITIZE=0)
+      run:
+        make -j9 LONG=1 Os=1 SANITIZE=0
 
     - name: Ofast (SANITIZE=0)
       run:
