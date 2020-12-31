@@ -66,7 +66,7 @@ jobs:
     - name: Og (SANITIZE=0)
       run:
         make -j9 LONG=1 Og=1 SANITIZE=0
-        
+
     - name: Os (SANITIZE=0)
       run:
         make -j9 LONG=1 Os=1 SANITIZE=0
@@ -74,6 +74,18 @@ jobs:
     - name: Ofast (SANITIZE=0)
       run:
         make -j9 LONG=1 Ofast=1 SANITIZE=0
+
+    - name: c99
+      run:
+        make -j9 CC=gcc\ -std=c99
+
+    - name: c11
+      run:
+        make -j9 CC=gcc\ -std=c11
+
+    - name: c17
+      run:
+        make -j9 CC=gcc\ -std=c17
 
     - name: examples
       run:
