@@ -92,7 +92,7 @@ draw(vec_vec_char* snow, size_t xres, size_t yres)
             printf("%c", get(snow, x, y));
         putchar('\n');
     }
-    printf("\x1B[%luA", yres); // Rewinds stdout by 'yres' rows.
+    printf("\x1B[%zuA", yres); // Rewinds stdout by 'yres' rows.
     printf("\r"); // Rewinds stdout to the zero column.
     delay(25000);
 }
