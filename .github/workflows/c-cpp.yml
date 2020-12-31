@@ -83,10 +83,6 @@ jobs:
       run:
         make -j9 CC=gcc\ -std=c11
 
-    - name: c17
-      run:
-        make -j9 CC=gcc\ -std=c17
-
     - name: examples
       run:
         make examples
