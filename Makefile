@@ -107,6 +107,8 @@ pqu:
 	$(call expand,$@,-DT=int -DP)
 set:
 	$(call expand,$@,-DT=int -DP)
+ust:
+	$(call expand,$@,-DT=int -DP)
 
 examples/astar:                      ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
 examples/postfix:                    ALWAYS; $(CC)  $(CFLAGS) $@.c  -o $@
