@@ -11,6 +11,7 @@ O2 = 0
 O3 = 0
 Og = 0
 Ofast = 0
+Os = 0
 
 CFLAGS  = -Ictl
 CFLAGS += -Wall -Wextra -Wpedantic -Wfatal-errors -Wshadow
@@ -48,6 +49,10 @@ endif
 
 ifeq (1, $(Ofast))
 CFLAGS += -Ofast
+endif
+
+ifeq (1, $(Os))
+CFLAGS += -Os
 endif
 
 ifeq (1, $(SRAND))
