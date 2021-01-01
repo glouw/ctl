@@ -258,7 +258,7 @@ JOIN(A, count)(A* self, T value)
 }
 
 static inline void
-JOIN(A, remove)(A* self, T value)
+JOIN(A, erase)(A* self, T value)
 {
     B** bucket = JOIN(A, bucket)(self, value);
     B* prev = NULL;
@@ -284,6 +284,43 @@ JOIN(A, copy)(A* self)
     foreach(A, self, it)
         JOIN(A, insert)(self, self->copy(it.ref));
     return other;
+}
+
+static inline A
+JOIN(A, intersection)(A* a, A* b)
+{
+    A self = JOIN(A, init)(a->bucket_count, a->hash, a->equal);
+    foreach(A, a, i)
+        if(JOIN(A, find)(b, *i.ref))
+            JOIN(A, insert)(&self, self.copy(i.ref));
+    return self;
+}
+
+static inline A
+JOIN(A, union)(A* a, A* b)
+{
+    A self = JOIN(A, init)(a->bucket_count, a->hash, a->equal);
+    foreach(A, a, i) JOIN(A, insert)(&self, self.copy(i.ref));
+    foreach(A, b, i) JOIN(A, insert)(&self, self.copy(i.ref));
+    return self;
+}
+
+static inline A
+JOIN(A, difference)(A* a, A* b)
+{
+    A self = JOIN(A, init)(a->bucket_count, a->hash, a->equal);
+    foreach(A, b, i) JOIN(A, erase)(&self, *i.ref);
+    return self;
+}
+
+static inline A
+JOIN(A, symmetric_difference)(A* a, A* b)
+{
+    A self = JOIN(A, union)(a, b);
+    A intersection = JOIN(A, intersection)(a, b);
+    foreach(A, &intersection, i) JOIN(A, erase)(&self, *i.ref);
+    JOIN(A, free)(&intersection);
+    return self;
 }
 
 #undef T

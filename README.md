@@ -15,6 +15,7 @@ que.h = std::queue
 set.h = std::set
 stk.h = std::stack
 str.h = std::string
+ust.h = std::unordered_set
 vec.h = std::vector
 ```
 
@@ -134,6 +135,7 @@ make que
 make set
 make stk
 make str
+make ust
 make vec
 ```
 
@@ -142,9 +144,6 @@ make vec
 STL `std::map` will not be implemented in CTL because maps only provide slight
 syntactic improvements over sets.
 
-STL `std::unordered_map` and `std::unordered_set` will not be implemented in CTL
-because ordered containers are preferred, even at the cost of performance.
-
 STL variants of multi-sets and multi-maps will not be implemented because
 similar behaviour can be implemented as an amalgamation of a `set` and `lst`.
 
@@ -152,23 +151,46 @@ similar behaviour can be implemented as an amalgamation of a `set` and `lst`.
 
 ```
 vec.h: realloc
+str.h: vec.h
 deq.h: realloc (paged)
+que.h: deq.h
+stk.h: deq.h
+pqu.h: vec.h
 lst.h: doubly linked list
 set.h: red black tree
+ust.h: hashed forward linked lists
 
-                    vec  str  deq  lst  set  pqu  que  stk
-+--------------------------------------------------------+
-init                x    x    x    x    x    x    x    x
-free                x    x    x    x    x    x    x    x
-empty               x    x    x    x    x    x    x    x
+                    vec  str  deq  lst  set  pqu  que  stk  ust
++-------------------------------------------------------------+
+empty               x    x    x    x    x    x    x    x    x
+each                x    x    x    x    x                   x
+equal               x    x    x    x    x    x    x    x    x
+swap                x    x    x    x    x    x    x    x    x
+bucket                                                      x
+bucket_size                                                 x
+load_factor                                                 x
+rehash                                                      x
+insert              x    x    x    x    x                   x
+init                x    x    x    x    x    x    x    x    x
+free                x    x    x    x    x    x    x    x    x
+step                x    x    x    x    x                   x
+range               x    x    x    x    x                   x
+find                x    x    x    x    x                   x
+count                    x              x                   x
+erase               x    x    x    x    x                   x
+copy                x    x    x    x    x                   x
+begin               x    x    x    x    x                   x
+end                 x    x    x    x    x                   x
+intersection                            x                   x
+union                                   x                   x
+difference                              x                   x
+symmetric_difference                    x                   x
 top                                          x         x
 push                                         x    x    x
 pop                                          x    x    x
 at                  x    x    x
 front               x    x    x    x              x
 back                x    x    x    x              x
-begin               x    x    x    x    x
-end                 x    x    x    x    x
 set                 x    x    x
 pop_back            x    x    x    x
 pop_front                     x    x
@@ -184,27 +206,17 @@ assign              x    x    x    x
 reverse                            x
 shrink_to_fit       x    x
 data                x    x
-insert              x    x    x    x    x
-erase               x    x    x    x    x
 erase_node                              x
 sort                x    x    x    x
-copy                x    x    x    x    x
-step                x    x    x    x    x
-range               x    x    x    x    x
-each                x    x    x    x    x
 remove_if           x    x    x    x    x
-swap                x    x    x    x    x
-equal               x    x    x    x    x
 splice                             x
 merge                              x
 unique                             x
-find                x    x    x    x    x
 append                   x
 insert_str               x
 replace                  x              x
 c_str                    x
 find                     x
-count                    x              x
 contains                                x
 rfind                    x
 find_first_of            x
@@ -214,10 +226,6 @@ find_last_not_of         x
 substr                   x
 compare                  x
 key_compare              x
-insersection                            x
-union                                   x
-difference                              x
-symmetric_difference                    x
 ```
 
 ## Acknowledgements
