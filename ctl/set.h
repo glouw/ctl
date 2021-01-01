@@ -14,9 +14,7 @@ typedef struct B
     struct B* r;
     struct B* p;
     T key;
-    // Red = 0
-    // Black = 1
-    int color;
+    int color; // Red = 0, Black = 1
 }
 B;
 

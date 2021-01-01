@@ -411,8 +411,8 @@ static inline I
 JOIN(I, each)(A* a)
 {
     return JOIN(A, empty)(a)
-        ? JOIN(I, range)(a, NULL, NULL)
-        : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+         ? JOIN(I, range)(a, NULL, NULL)
+         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline size_t

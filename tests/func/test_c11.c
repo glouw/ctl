@@ -7,6 +7,18 @@
 
 #define P
 #define T int
+#include <ust.h>
+
+size_t
+int_hash(int* x)
+{ return abs(*x); }
+
+int
+int_equal(int* a, int* b)
+{ return *a == *b; }
+
+#define P
+#define T int
 #include <stk.h>
 
 #define P
@@ -177,6 +189,68 @@ main(void)
         lst_int_push_back(&a, 8);
         lst_int_unique(&a, int_match);
         lst_int_free(&a);
+    }{
+        ust_int a = ust_int_init(8, int_hash, int_equal);
+        ust_int_insert(&a, -0);
+        ust_int_insert(&a, -1);
+        ust_int_insert(&a, -2);
+        ust_int_insert(&a, -3);
+        ust_int_insert(&a, -4);
+        ust_int_insert(&a, -5);
+        ust_int_insert(&a, -6);
+        ust_int_insert(&a, -7);
+        ust_int_insert(&a, -8);
+        ust_int_insert(&a, -9);
+        ust_int_insert(&a, -10);
+        ust_int_insert(&a, -11);
+        ust_int_insert(&a, -12);
+        ust_int_insert(&a, -13);
+        ust_int_insert(&a, -14);
+        ust_int_insert(&a, -15);
+        ust_int_insert(&a, -16);
+        ust_int_insert(&a, -17);
+        ust_int_insert(&a, -18);
+        ust_int_insert(&a, -19);
+        ust_int_insert(&a, -20);
+        ust_int_insert(&a, -21);
+        ust_int_insert(&a, -22);
+        ust_int_insert(&a, -23);
+        ust_int_insert(&a, -24);
+        ust_int_insert(&a, -25);
+        ust_int_insert(&a, -26);
+        ust_int_insert(&a, -27);
+        ust_int_insert(&a, 0);
+        ust_int_insert(&a, 1);
+        ust_int_insert(&a, 2);
+        ust_int_insert(&a, 3);
+        ust_int_insert(&a, 4);
+        ust_int_insert(&a, 5);
+        ust_int_insert(&a, 6);
+        ust_int_insert(&a, 7);
+        ust_int_insert(&a, 8);
+        ust_int_insert(&a, 9);
+        ust_int_insert(&a, 10);
+        ust_int_insert(&a, 11);
+        ust_int_insert(&a, 12);
+        ust_int_insert(&a, 13);
+        ust_int_insert(&a, 14);
+        ust_int_insert(&a, 15);
+        ust_int_insert(&a, 16);
+        ust_int_insert(&a, 17);
+        ust_int_insert(&a, 18);
+        ust_int_insert(&a, 19);
+        ust_int_insert(&a, 20);
+        ust_int_insert(&a, 21);
+        ust_int_insert(&a, 22);
+        ust_int_insert(&a, 23);
+        ust_int_insert(&a, 24);
+        ust_int_insert(&a, 25);
+        ust_int_insert(&a, 26);
+        ust_int_insert(&a, 27);
+        foreach(ust_int, &a, it) { printf("GOT %d\n", *it.ref); }
+        foreach(ust_int, &a, it) { printf("SIZE %lu\n", ust_int_bucket_size(it.node)); }
+        printf("%f\n", ust_int_load_factor(&a));
+        ust_int_free(&a);
     }
     TEST_PASS(__FILE__);
 }

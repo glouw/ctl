@@ -8,6 +8,38 @@
 #define B JOIN(A, node)
 #define I JOIN(A, it)
 
+typedef struct B
+{
+    T value;
+    struct B* next;
+}
+B;
+
+typedef struct A
+{
+    void (*free)(T*);
+    T (*copy)(T*);
+    size_t (*hash)(T*);
+    int (*equal)(T*, T*);
+    B** bucket;
+    size_t size;
+    size_t bucket_count;
+}
+A;
+
+typedef struct I
+{
+    void (*step)(struct I*);
+    B* end;
+    B* node;
+    T* ref;
+    B* next;
+    A* container;
+    size_t hash;
+    int done;
+}
+I;
+
 static inline int
 JOIN(A, __is_prime)(size_t n)
 {
@@ -31,197 +63,224 @@ JOIN(A, __next_prime)(size_t n)
     return n;
 }
 
+static inline B*
+JOIN(B, init)(T value)
+{
+    B* n = malloc(sizeof(*n));
+    n->value = value;
+    n->next = NULL;
+    return n;
+}
+
+static inline B*
+JOIN(B, push)(B* bucket, B* n)
+{
+    n->next = bucket;
+    return n;
+}
+
+static inline int
+JOIN(A, empty)(A* self)
+{
+    return self->size == 0;
+}
+
+static inline B**
+JOIN(A, bucket)(A* self, T value)
+{
+    size_t hash = self->hash(&value) % self->bucket_count;
+    return &self->bucket[hash];
+}
+
+static inline size_t
+JOIN(A, bucket_size)(B* self)
+{
+    size_t size = 0;
+    for(B* n = self; n; n = n->next)
+        size += 1;
+    return size;
+}
+
+static inline B*
+JOIN(A, begin)(A* self)
+{
+    for(size_t i = 0; i < self->size; i++)
+    {
+        B* node = self->bucket[i];
+        if(node)
+            return node;
+    }
+    return NULL;
+}
+
+static inline B*
+JOIN(A, end)(A* self)
+{
+    (void) self;
+    return NULL;
+}
+
+static inline void
+JOIN(A, free_node)(A* self, B* n)
+{
+    if(self->free)
+        self->free(&n->value);
+    free(n);
+}
+
+static inline float
+JOIN(A, load_factor)(A* self)
+{
+    return (float) self->size / (float) self->bucket_count;
+}
+
+static inline void
+JOIN(A, reserve)(A* self, size_t desired_count)
+{
+    self->bucket_count = JOIN(A, __next_prime)(desired_count);
+    self->bucket = calloc(self->bucket_count, sizeof(*self->bucket));
+}
+
+static inline A
+JOIN(A, init)(size_t desired_count, size_t (*_hash)(T*), int (*_equal)(T*, T*))
+{
+    static A zero;
+    A self = zero;
+    self.hash = _hash;
+    self.equal = _equal;
+    JOIN(A, reserve)(&self, desired_count);
+    return self;
+}
+
+static inline void
+JOIN(A, insert)(A* self, T value)
+{
+    B** bucket = JOIN(A, bucket)(self, value);
+    for(B* n = *bucket; n; n = n->next)
+        if(self->equal(&value, &n->value))
+        {
+            if(self->free)
+                self->free(&value);
+            return;
+        }
+    *bucket = JOIN(B, push)(*bucket, JOIN(B, init)(value));
+    self->size += 1;
+}
+
+static inline void
+JOIN(I, step)(I* self)
+{
+    if(self->next == JOIN(A, end)(self->container))
+    {
+        for(size_t i = self->hash + 1; i < self->container->bucket_count; i++)
+            if((self->next = self->container->bucket[i]))
+                goto update;
+        self->done = 1;
+    }
+    else
+    {
+update:
+        self->node = self->next;
+        self->ref = &self->node->value;
+        self->next = self->node->next;
+        self->hash = self->container->hash(self->ref);
+    }
+}
+
+static inline I
+JOIN(I, range)(A* container, B* begin, B* end)
+{
+    static I zero;
+    I self = zero;
+    if(begin)
+    {
+        self.step = JOIN(I, step);
+        self.node = begin;
+        self.ref = &self.node->value;
+        self.next = self.node->next;
+        self.end = end;
+        self.container = container;
+        self.hash = self.container->hash(self.ref);
+    }
+    else
+        self.done = 1;
+    return self;
+}
+
+static inline I
+JOIN(I, each)(A* a)
+{
+    return JOIN(A, empty)(a)
+         ? JOIN(I, range)(a, NULL, NULL)
+         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+}
+
+static inline void
+JOIN(A, rehash)(A* self, size_t desired_count)
+{
+    A rehashed = JOIN(A, init)(desired_count, self->hash, self->equal);
+    foreach(A, self, it)
+    {
+        B** bucket = JOIN(A, bucket)(&rehashed, it.node->value);
+        *bucket = JOIN(B, push)(*bucket, it.node);
+    }
+    free(self->bucket);
+    *self = rehashed;
+}
+
+static inline void
+JOIN(A, free)(A* self)
+{
+    foreach(A, self, it)
+    {
+        if(self->free)
+            self->free(&it.node->value);
+        free(it.node);
+    }
+    free(self->bucket);
+}
+
+static inline B*
+JOIN(A, find)(A* self, T value)
+{
+    B** bucket = JOIN(A, bucket)(self, value);
+    for(B* n = *bucket; n; n = n->next)
+        if(self->equal(&value, &n->value))
+            return n;
+    return NULL;
+}
+
+static inline size_t
+JOIN(A, count)(A* self, T value)
+{
+    size_t count = 0;
+    foreach(A, self, it)
+        if(self->equal(it.ref , &value))
+            count += 1;
+    return count;
+}
+
+static inline void
+JOIN(A, remove)(A* self, T value)
+{
+    B** bucket = JOIN(A, bucket)(self, value);
+    B* prev = NULL;
+    for(B* n = *bucket; n; n = n->next)
+    {
+        if(self->equal(&value, &n->value))
+        {
+            B* next = n->next;
+            JOIN(A, free_node)(self, n);
+            if(prev)
+                prev->next = next;
+            self->size -= 1;
+            break;
+        }
+        prev = n;
+    }
+}
+
 #undef T
 #undef A
 #undef B
 #undef I
-
-//typedef struct node
-//{
-//    T value;
-//    struct node* next;
-//}
-//node;
-//
-//node*
-//node_init(T value)
-//{
-//    node* n = malloc(sizeof(*n));
-//    n->value = value;
-//    n->next = NULL;
-//    return n;
-//}
-//
-//node*
-//node_push(node* bucket, node* n)
-//{
-//    n->next = bucket;
-//    return n;
-//}
-//
-//typedef struct ust
-//{
-//    void (*free)(T*);
-//    T (*copy)(T*);
-//    size_t (*hash)(T*);
-//    int (*equal)(T*, T*);
-//    node** bucket;
-//    size_t size;
-//    size_t bucket_count;
-//}
-//ust;
-//
-//int
-//ust_empty(ust* self)
-//{
-//    return self->size == 0;
-//}
-//
-//static inline node**
-//ust_bucket(ust* self, T value)
-//{
-//    return &self->bucket[self->hash(&value) % self->bucket_count];
-//}
-//
-//node*
-//ust_begin(ust* self)
-//{
-//    return self->bucket[0];
-//}
-//
-//node*
-//ust_end(ust* self)
-//{
-//    return NULL;
-//}
-//
-//void
-//ust_free_node(ust* self, node* n)
-//{
-//    if(self->free)
-//        self->free(&n->value);
-//    free(n);
-//}
-//
-//static float
-//ust_load_factor(ust* self)
-//{
-//    return (float) self->size / (float) self->bucket_count;
-//}
-//
-//static void
-//ust_reserve(ust* self, size_t desired_count)
-//{
-//    self->bucket_count = __next_prime(desired_count);
-//    self->bucket = calloc(self->bucket_count, sizeof(*self->bucket));
-//}
-//
-//static inline ust
-//ust_init(size_t desired_count, size_t (*_hash)(T*), int (*_equal)(T*, T*))
-//{
-//    static ust zero;
-//    ust self = zero;
-//    self.hash = _hash;
-//    self.equal = _equal;
-//    ust_reserve(&self, desired_count);
-//    return self;
-//}
-//
-//static inline void
-//ust_insert(ust* self, T value)
-//{
-//    node** bucket = ust_bucket(self, value);
-//    for(node* n = *bucket; n; n = n->next)
-//        if(self->equal(&value, &n->value))
-//        {
-//            if(self->free)
-//                self->free(&value);
-//            return;
-//        }
-//    *bucket = node_push(*bucket, node_init(value));
-//}
-//
-//static void
-//ust_rehash(ust* self, size_t desired_count)
-//{
-//    ust rehashed = ust_init(desired_count, self->hash, self->equal);
-//    for(size_t i = 0; i < self->bucket_count; i++)
-//        for(node* n = self->bucket[i]; n; n = n->next)
-//        {
-//            node** bucket = ust_bucket(&rehashed, n->value);
-//            *bucket = node_push(*bucket, n);
-//        }
-//    free(self->bucket);
-//    *self = rehashed;
-//}
-//
-//static inline void
-//ust_free(ust* self)
-//{
-//    for(size_t i = 0; i < self->bucket_count; i++)
-//    {
-//        node* n = self->bucket[i];
-//        while(n)
-//        {
-//            node* next = n->next;
-//            ust_free_node(self, n);
-//            n = next;
-//        }
-//    }
-//    free(self->bucket);
-//}
-//
-//static inline size_t
-//ust_bucket_size(node* self)
-//{
-//    size_t size = 0;
-//    for(node* n = self; n; n = n->next)
-//        size += 1;
-//    return size;
-//}
-//
-//static inline node*
-//ust_find(ust* self, T value)
-//{
-//    node** bucket = ust_bucket(self, value);
-//    for(node* n = *bucket; n; n = n->next)
-//        if(self->equal(&value, &n->value))
-//            return n;
-//    return NULL;
-//}
-//
-//static inline size_t
-//ust_count(ust* self, T value)
-//{
-//    size_t count = 0;
-//    for(size_t i = 0; i < self->bucket_count; i++)
-//    {
-//        node* n = self->bucket[i];
-//        while(n)
-//        {
-//            node* next = n->next;
-//            if(self->equal(&n->value, &value))
-//                count += 1;
-//            n = next;
-//        }
-//    }
-//    return count;
-//}
-//
-//static inline void
-//ust_remove(ust* self, T value)
-//{
-//    node** bucket = ust_bucket(self, value);
-//    node* prev = NULL;
-//    for(node* n = *bucket; n; n = n->next)
-//    {
-//        if(self->equal(&value, &n->value))
-//        {
-//            node* next = n->next;
-//            ust_free_node(self, n);
-//            if(prev)
-//                prev->next = next;
-//        }
-//        prev = n;
-//    }
-//}
