@@ -60,23 +60,29 @@ JOIN(A, end)(A* self)
 }
 
 static inline void
+JOIN(I, update)(I* self)
+{
+    self->node = self->next;
+    self->ref = &self->node->value;
+    self->next = self->node->next;
+    self->hash = self->container->hash(self->ref);
+}
+
+static inline void
 JOIN(I, step)(I* self)
 {
     if(self->next == JOIN(A, end)(self->container))
     {
         for(size_t i = self->hash + 1; i < self->container->bucket_count; i++)
             if((self->next = self->container->bucket[i]))
-                goto update;
+            {
+                JOIN(I, update)(self);
+                return;
+            }
         self->done = 1;
     }
     else
-    {
-update:
-        self->node = self->next;
-        self->ref = &self->node->value;
-        self->next = self->node->next;
-        self->hash = self->container->hash(self->ref);
-    }
+        JOIN(I, update)(self);
 }
 
 static inline I
@@ -227,11 +233,7 @@ static inline void
 JOIN(A, free)(A* self)
 {
     foreach(A, self, it)
-    {
-        if(self->free)
-            self->free(&it.node->value);
-        free(it.node);
-    }
+        JOIN(A, free_node)(self, it.node);
     free(self->bucket);
 }
 
