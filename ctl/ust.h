@@ -40,67 +40,6 @@ typedef struct I
 }
 I;
 
-static inline int
-JOIN(A, __is_prime)(size_t n)
-{
-    if(n == 0 || n == 1)
-        return 0;
-    for(size_t i = 2; i * i <= n; i++)
-        if(n % i == 0)
-            return 0;
-    return 1;
-}
-
-static inline int
-JOIN(A, __next_prime)(size_t n)
-{
-    while(n)
-    {
-        if(JOIN(A, __is_prime)(n))
-            break;
-        n += 1;
-    }
-    return n;
-}
-
-static inline B*
-JOIN(B, init)(T value)
-{
-    B* n = malloc(sizeof(B));
-    n->value = value;
-    n->next = NULL;
-    return n;
-}
-
-static inline B*
-JOIN(B, push)(B* bucket, B* n)
-{
-    n->next = bucket;
-    return n;
-}
-
-static inline int
-JOIN(A, empty)(A* self)
-{
-    return self->size == 0;
-}
-
-static inline B**
-JOIN(A, bucket)(A* self, T value)
-{
-    size_t hash = self->hash(&value) % self->bucket_count;
-    return &self->bucket[hash];
-}
-
-static inline size_t
-JOIN(A, bucket_size)(B* self)
-{
-    size_t size = 0;
-    for(B* n = self; n; n = n->next)
-        size += 1;
-    return size;
-}
-
 static inline B*
 JOIN(A, begin)(A* self)
 {
@@ -118,66 +57,6 @@ JOIN(A, end)(A* self)
 {
     (void) self;
     return NULL;
-}
-
-static inline void
-JOIN(A, free_node)(A* self, B* n)
-{
-    if(self->free)
-        self->free(&n->value);
-    free(n);
-}
-
-static inline float
-JOIN(A, load_factor)(A* self)
-{
-    return (float) self->size / (float) self->bucket_count;
-}
-
-static inline void
-JOIN(A, reserve)(A* self, size_t desired_count)
-{
-    self->bucket_count = JOIN(A, __next_prime)(desired_count);
-    self->bucket = calloc(self->bucket_count, sizeof(B*));
-}
-
-static inline T
-JOIN(A, implicit_copy)(T* self)
-{
-    return *self;
-}
-
-static inline A
-JOIN(A, init)(size_t desired_count, size_t (*_hash)(T*), int (*_equal)(T*, T*))
-{
-    static A zero;
-    A self = zero;
-    self.hash = _hash;
-    self.equal = _equal;
-#ifdef P
-#undef P
-    self.copy = JOIN(A, implicit_copy);
-#else
-    self.free = JOIN(T, free);
-    self.copy = JOIN(T, copy);
-#endif
-    JOIN(A, reserve)(&self, desired_count);
-    return self;
-}
-
-static inline void
-JOIN(A, insert)(A* self, T value)
-{
-    B** bucket = JOIN(A, bucket)(self, value);
-    for(B* n = *bucket; n; n = n->next)
-        if(self->equal(&value, &n->value))
-        {
-            if(self->free)
-                self->free(&value);
-            return;
-        }
-    *bucket = JOIN(B, push)(*bucket, JOIN(B, init)(value));
-    self->size += 1;
 }
 
 static inline void
@@ -220,10 +99,115 @@ JOIN(I, range)(A* container, B* begin, B* end)
     return self;
 }
 
-static inline I
-JOIN(I, each)(A* a)
+#include <_share.h>
+
+static inline int
+JOIN(A, __is_prime)(size_t n)
 {
-    return JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+    if(n == 0 || n == 1)
+        return 0;
+    for(size_t i = 2; i * i <= n; i++)
+        if(n % i == 0)
+            return 0;
+    return 1;
+}
+
+static inline int
+JOIN(A, __next_prime)(size_t n)
+{
+    while(n)
+    {
+        if(JOIN(A, __is_prime)(n))
+            break;
+        n += 1;
+    }
+    return n;
+}
+
+static inline B*
+JOIN(B, init)(T value)
+{
+    B* n = malloc(sizeof(B));
+    n->value = value;
+    n->next = NULL;
+    return n;
+}
+
+static inline B*
+JOIN(B, push)(B* bucket, B* n)
+{
+    n->next = bucket;
+    return n;
+}
+
+static inline B**
+JOIN(A, bucket)(A* self, T value)
+{
+    size_t hash = self->hash(&value) % self->bucket_count;
+    return &self->bucket[hash];
+}
+
+static inline size_t
+JOIN(A, bucket_size)(B* self)
+{
+    size_t size = 0;
+    for(B* n = self; n; n = n->next)
+        size += 1;
+    return size;
+}
+
+static inline void
+JOIN(A, free_node)(A* self, B* n)
+{
+    if(self->free)
+        self->free(&n->value);
+    free(n);
+}
+
+static inline float
+JOIN(A, load_factor)(A* self)
+{
+    return (float) self->size / (float) self->bucket_count;
+}
+
+static inline void
+JOIN(A, reserve)(A* self, size_t desired_count)
+{
+    self->bucket_count = JOIN(A, __next_prime)(desired_count);
+    self->bucket = calloc(self->bucket_count, sizeof(B*));
+}
+
+static inline A
+JOIN(A, init)(size_t desired_count, size_t (*_hash)(T*), int (*_equal)(T*, T*))
+{
+    static A zero;
+    A self = zero;
+    self.hash = _hash;
+    self.equal = _equal;
+#ifdef P
+#undef P
+    self.copy = JOIN(A, implicit_copy);
+#else
+    self.free = JOIN(T, free);
+    self.copy = JOIN(T, copy);
+#endif
+    JOIN(A, reserve)(&self, desired_count);
+    return self;
+}
+
+static inline void
+JOIN(A, insert)(A* self, T value)
+{
+    B** bucket = JOIN(A, bucket)(self, value);
+    for(B* n = *bucket; n; n = n->next)
+        if(self->equal(&value, &n->value))
+        {
+            if(self->free)
+                self->free(&value);
+            return;
+        }
+    *bucket = JOIN(B, push)(*bucket, JOIN(B, init)(value));
+    self->size += 1;
 }
 
 static inline void
@@ -289,31 +273,6 @@ JOIN(A, remove)(A* self, T value)
         }
         prev = n;
     }
-}
-
-static inline int
-JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
-{
-    if(self->size != other->size)
-        return 0;
-    I a = JOIN(I, each)(self);
-    I b = JOIN(I, each)(other);
-    while(!a.done && !b.done)
-    {
-        if(!_equal(a.ref, b.ref))
-            return 0;
-        a.step(&a);
-        b.step(&b);
-    }
-    return 1;
-}
-
-static inline void
-JOIN(A, swap)(A* self, A* other)
-{
-    A temp = *self;
-    *self = *other;
-    *other = temp;
 }
 
 static inline A

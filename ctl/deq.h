@@ -42,41 +42,6 @@ typedef struct I
 }
 I;
 
-static inline int
-JOIN(A, empty)(A* self)
-{
-    return self->size == 0;
-}
-
-static inline T
-JOIN(A, implicit_copy)(T* self)
-{
-    return *self;
-}
-
-static inline A
-JOIN(A, init)(void)
-{
-    static A zero;
-    A self = zero;
-#ifdef P
-#undef P
-    self.copy = JOIN(A, implicit_copy);
-#else
-    self.free = JOIN(T, free);
-    self.copy = JOIN(T, copy);
-#endif
-    return self;
-}
-
-static inline B*
-JOIN(B, init)(size_t cut)
-{
-    B* self = (B*) malloc(sizeof(B));
-    self->a = self->b = cut;
-    return self;
-}
-
 static inline B**
 JOIN(A, first)(A* self)
 {
@@ -125,6 +90,63 @@ static inline T*
 JOIN(A, end)(A* self)
 {
     return JOIN(A, back)(self) + 1;
+}
+
+static inline void
+JOIN(I, step)(I* self)
+{
+    self->index = self->index_next;
+    if(self->index == self->index_last)
+        self->done = 1;
+    else
+    {
+        self->ref = JOIN(A, at)(self->container, self->index);
+        self->index_next += 1;
+    }
+}
+
+static inline I
+JOIN(I, range)(A* container, T* begin, T* end)
+{
+    static I zero;
+    I self = zero;
+    if(begin && end)
+    {
+        self.container = container;
+        self.step = JOIN(I, step);
+        self.index = begin - JOIN(A, begin)(container);
+        self.index_next = self.index + 1;
+        self.index_last = container->size - (JOIN(A, end)(container) - end);
+        self.ref = JOIN(A, at)(container, self.index);
+    }
+    else
+        self.done = 1;
+    return self;
+}
+
+#include <_share.h>
+
+static inline A
+JOIN(A, init)(void)
+{
+    static A zero;
+    A self = zero;
+#ifdef P
+#undef P
+    self.copy = JOIN(A, implicit_copy);
+#else
+    self.free = JOIN(T, free);
+    self.copy = JOIN(T, copy);
+#endif
+    return self;
+}
+
+static inline B*
+JOIN(B, init)(size_t cut)
+{
+    B* self = (B*) malloc(sizeof(B));
+    self->a = self->b = cut;
+    return self;
 }
 
 static inline void
@@ -330,14 +352,6 @@ JOIN(A, free)(A* self)
     *self = JOIN(A, init)();
 }
 
-static inline void
-JOIN(A, swap)(A* self, A* other)
-{
-    A temp = *self;
-    *self = *other;
-    *other = temp;
-}
-
 static inline A
 JOIN(A, copy)(A* self)
 {
@@ -375,46 +389,6 @@ JOIN(A, sort)(A* self, int _compare(T*, T*))
     JOIN(A, ranged_sort)(self, 0, self->size - 1, _compare);
 }
 
-static inline void
-JOIN(I, step)(I* self)
-{
-    self->index = self->index_next;
-    if(self->index == self->index_last)
-        self->done = 1;
-    else
-    {
-        self->ref = JOIN(A, at)(self->container, self->index);
-        self->index_next += 1;
-    }
-}
-
-static inline I
-JOIN(I, range)(A* container, T* begin, T* end)
-{
-    static I zero;
-    I self = zero;
-    if(begin && end)
-    {
-        self.container = container;
-        self.step = JOIN(I, step);
-        self.index = begin - JOIN(A, begin)(container);
-        self.index_next = self.index + 1;
-        self.index_last = container->size - (JOIN(A, end)(container) - end);
-        self.ref = JOIN(A, at)(container, self.index);
-    }
-    else
-        self.done = 1;
-    return self;
-}
-
-static inline I
-JOIN(I, each)(A* a)
-{
-    return JOIN(A, empty)(a)
-         ? JOIN(I, range)(a, NULL, NULL)
-         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
-}
-
 static inline size_t
 JOIN(A, remove_if)(A* self, int (*_match)(T*))
 {
@@ -428,23 +402,6 @@ JOIN(A, remove_if)(A* self, int (*_match)(T*))
             erases += 1;
         }
     return erases;
-}
-
-static inline int
-JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
-{
-    if(self->size != other->size)
-        return 0;
-    I a = JOIN(I, each)(self);
-    I b = JOIN(I, each)(other);
-    while(!a.done && !b.done)
-    {
-        if(!_equal(a.ref, b.ref))
-            return 0;
-        a.step(&a);
-        b.step(&b);
-    }
-    return 1;
 }
 
 static inline T*

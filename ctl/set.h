@@ -52,17 +52,77 @@ JOIN(A, end)(A* self)
     return NULL;
 }
 
-static inline int
-JOIN(A, empty)(A* self)
+static inline B*
+JOIN(B, min)(B* self)
 {
-    return self->size == 0;
+    while(self->l)
+        self = self->l;
+    return self;
 }
 
-static inline T
-JOIN(A, implicit_copy)(T* self)
+static inline B*
+JOIN(B, max)(B* self)
 {
-    return *self;
+    while(self->r)
+        self = self->r;
+    return self;
 }
+
+static inline B*
+JOIN(B, next)(B* self)
+{
+    if(self->r)
+    {
+        self = self->r;
+        while(self->l)
+            self = self->l;
+    }
+    else
+    {
+        B* parent = self->p;
+        while(parent && self == parent->r)
+        {
+            self = parent;
+            parent = parent->p;
+        }
+        self = parent;
+    }
+    return self;
+}
+
+static inline void
+JOIN(I, step)(I* self)
+{
+    if(self->next == self->end)
+        self->done = 1;
+    else
+    {
+        self->node = self->next;
+        self->ref = &self->node->key;
+        self->next = JOIN(B, next)(self->node);
+    }
+}
+
+static inline I
+JOIN(I, range)(A* container, B* begin, B* end)
+{
+    (void) container;
+    static I zero;
+    I self = zero;
+    if(begin)
+    {
+        self.step = JOIN(I, step);
+        self.node = JOIN(B, min)(begin);
+        self.ref = &self.node->key;
+        self.next = JOIN(B, next)(self.node);
+        self.end = end;
+    }
+    else
+        self.done = 1;
+    return self;
+}
+
+#include <_share.h>
 
 static inline A
 JOIN(A, init)(int _compare(T*, T*))
@@ -104,22 +164,6 @@ static inline int
 JOIN(B, is_red)(B* self)
 {
     return JOIN(B, color)(self) == 0;
-}
-
-static inline B*
-JOIN(B, min)(B* self)
-{
-    while(self->l)
-        self = self->l;
-    return self;
-}
-
-static inline B*
-JOIN(B, max)(B* self)
-{
-    while(self->r)
-        self = self->r;
-    return self;
 }
 
 static inline B*
@@ -561,90 +605,6 @@ JOIN(A, free)(A* self)
 {
     JOIN(A, clear)(self);
     *self = JOIN(A, init)(self->compare);
-}
-
-static inline void
-JOIN(A, swap)(A* self, A* other)
-{
-    A temp = *self;
-    *self = *other;
-    *other = temp;
-}
-
-static inline B*
-JOIN(B, next)(B* self)
-{
-    if(self->r)
-    {
-        self = self->r;
-        while(self->l)
-            self = self->l;
-    }
-    else
-    {
-        B* parent = self->p;
-        while(parent && self == parent->r)
-        {
-            self = parent;
-            parent = parent->p;
-        }
-        self = parent;
-    }
-    return self;
-}
-
-static inline void
-JOIN(I, step)(I* self)
-{
-    if(self->next == self->end)
-        self->done = 1;
-    else
-    {
-        self->node = self->next;
-        self->ref = &self->node->key;
-        self->next = JOIN(B, next)(self->node);
-    }
-}
-
-static inline I
-JOIN(I, range)(B* begin, B* end)
-{
-    static I zero;
-    I self = zero;
-    if(begin)
-    {
-        self.step = JOIN(I, step);
-        self.node = JOIN(B, min)(begin);
-        self.ref = &self.node->key;
-        self.next = JOIN(B, next)(self.node);
-        self.end = end;
-    }
-    else
-        self.done = 1;
-    return self;
-}
-
-static inline I
-JOIN(I, each)(A* a)
-{
-    return JOIN(I, range)(JOIN(A, begin)(a), JOIN(A, end)(a));
-}
-
-static inline int
-JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
-{
-    if(self->size != other->size)
-        return 0;
-    I a = JOIN(I, each)(self);
-    I b = JOIN(I, each)(other);
-    while(!a.done && !b.done)
-    {
-        if(!_equal(&a.node->key, &b.node->key))
-            return 0;
-        a.step(&a);
-        b.step(&b);
-    }
-    return 1;
 }
 
 static inline A
