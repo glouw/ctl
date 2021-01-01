@@ -66,7 +66,7 @@ JOIN(A, __next_prime)(size_t n)
 static inline B*
 JOIN(B, init)(T value)
 {
-    B* n = malloc(sizeof(*n));
+    B* n = malloc(sizeof(B));
     n->value = value;
     n->next = NULL;
     return n;
@@ -138,7 +138,13 @@ static inline void
 JOIN(A, reserve)(A* self, size_t desired_count)
 {
     self->bucket_count = JOIN(A, __next_prime)(desired_count);
-    self->bucket = calloc(self->bucket_count, sizeof(*self->bucket));
+    self->bucket = calloc(self->bucket_count, sizeof(B*));
+}
+
+static inline T
+JOIN(A, implicit_copy)(T* self)
+{
+    return *self;
 }
 
 static inline A
@@ -148,6 +154,13 @@ JOIN(A, init)(size_t desired_count, size_t (*_hash)(T*), int (*_equal)(T*, T*))
     A self = zero;
     self.hash = _hash;
     self.equal = _equal;
+#ifdef P
+#undef P
+    self.copy = JOIN(A, implicit_copy);
+#else
+    self.free = JOIN(T, free);
+    self.copy = JOIN(T, copy);
+#endif
     JOIN(A, reserve)(&self, desired_count);
     return self;
 }
@@ -210,9 +223,7 @@ JOIN(I, range)(A* container, B* begin, B* end)
 static inline I
 JOIN(I, each)(A* a)
 {
-    return JOIN(A, empty)(a)
-         ? JOIN(I, range)(a, NULL, NULL)
-         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+    return JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline void
@@ -278,6 +289,40 @@ JOIN(A, remove)(A* self, T value)
         }
         prev = n;
     }
+}
+
+static inline int
+JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
+{
+    if(self->size != other->size)
+        return 0;
+    I a = JOIN(I, each)(self);
+    I b = JOIN(I, each)(other);
+    while(!a.done && !b.done)
+    {
+        if(!_equal(a.ref, b.ref))
+            return 0;
+        a.step(&a);
+        b.step(&b);
+    }
+    return 1;
+}
+
+static inline void
+JOIN(A, swap)(A* self, A* other)
+{
+    A temp = *self;
+    *self = *other;
+    *other = temp;
+}
+
+static inline A
+JOIN(A, copy)(A* self)
+{
+    A other = JOIN(A, init)(self->bucket_count, self->hash, self->equal);
+    foreach(A, self, it)
+        JOIN(A, insert)(self, self->copy(it.ref));
+    return other;
 }
 
 #undef T
