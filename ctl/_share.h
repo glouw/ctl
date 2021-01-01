@@ -1,3 +1,8 @@
+// Commonalities; expandable by all containers.
+//
+// DO NOT STANDALONE INCLUDE.
+//
+
 static inline int
 JOIN(A, empty)(A* self)
 {
