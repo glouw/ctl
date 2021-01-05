@@ -1,3 +1,7 @@
+//
+// Set
+//
+
 #ifndef T
 #error "Template type T undefined for <set.h>"
 #endif
@@ -288,76 +292,76 @@ JOIN(B, replace)(A* self, B* a, B* b)
 
 #ifdef USE_INTERNAL_VERIFY
 
-#include <assert.h>
+    #include <assert.h>
 
-static inline void
-JOIN(B, verify_property_1)(B* self)
-{
-    assert(JOIN(B, is_red)(self) || JOIN(B, is_blk)(self));
-    if(self)
+    static inline void
+    JOIN(B, verify_property_1)(B* self)
     {
-        JOIN(B, verify_property_1)(self->l);
-        JOIN(B, verify_property_1)(self->r);
+        assert(JOIN(B, is_red)(self) || JOIN(B, is_blk)(self));
+        if(self)
+        {
+            JOIN(B, verify_property_1)(self->l);
+            JOIN(B, verify_property_1)(self->r);
+        }
     }
-}
 
-static inline void
-JOIN(B, verify_property_2)(B* self)
-{
-    assert(JOIN(B, is_blk)(self));
-}
+    static inline void
+    JOIN(B, verify_property_2)(B* self)
+    {
+        assert(JOIN(B, is_blk)(self));
+    }
 
-static inline void
-JOIN(B, verify_property_4)(B* self)
-{
-    if(JOIN(B, is_red)(self))
+    static inline void
+    JOIN(B, verify_property_4)(B* self)
     {
-        assert(JOIN(B, is_blk)(self->l));
-        assert(JOIN(B, is_blk)(self->r));
-        assert(JOIN(B, is_blk)(self->p));
+        if(JOIN(B, is_red)(self))
+        {
+            assert(JOIN(B, is_blk)(self->l));
+            assert(JOIN(B, is_blk)(self->r));
+            assert(JOIN(B, is_blk)(self->p));
+        }
+        if(self)
+        {
+            JOIN(B, verify_property_4)(self->l);
+            JOIN(B, verify_property_4)(self->r);
+        }
     }
-    if(self)
-    {
-        JOIN(B, verify_property_4)(self->l);
-        JOIN(B, verify_property_4)(self->r);
-    }
-}
 
-static inline void
-JOIN(B, count_blk)(B* self, int nodes, int* in_path)
-{
-    if(JOIN(B, is_blk)(self))
-        nodes += 1;
-    if(self)
+    static inline void
+    JOIN(B, count_blk)(B* self, int nodes, int* in_path)
     {
-        JOIN(B, count_blk)(self->l, nodes, in_path);
-        JOIN(B, count_blk)(self->r, nodes, in_path);
-    }
-    else
-    {
-        if(*in_path == -1)
-            *in_path = nodes;
+        if(JOIN(B, is_blk)(self))
+            nodes += 1;
+        if(self)
+        {
+            JOIN(B, count_blk)(self->l, nodes, in_path);
+            JOIN(B, count_blk)(self->r, nodes, in_path);
+        }
         else
-            assert(nodes == *in_path);
+        {
+            if(*in_path == -1)
+                *in_path = nodes;
+            else
+                assert(nodes == *in_path);
+        }
     }
-}
 
-static inline void
-JOIN(B, verify_property_5)(B* self)
-{
-    int in_path = -1;
-    JOIN(B, count_blk)(self, 0, &in_path);
-}
+    static inline void
+    JOIN(B, verify_property_5)(B* self)
+    {
+        int in_path = -1;
+        JOIN(B, count_blk)(self, 0, &in_path);
+    }
 
-static inline void
-JOIN(A, verify)(A* self)
-{
-    JOIN(B, verify_property_1)(self->root); // Property 1: Each node is either red or black.
-    JOIN(B, verify_property_2)(self->root); // Property 2: The root node is black.
-    /* Implicit */                          // Property 3: Leaves are colored black
-    JOIN(B, verify_property_4)(self->root); // Property 4: Every red node has two black ndoes.
-    JOIN(B, verify_property_5)(self->root); // Property 5: All paths from a node have the same number of black nodes.
-}
+    static inline void
+    JOIN(A, verify)(A* self)
+    {
+        JOIN(B, verify_property_1)(self->root); // Property 1: Each node is either red or black.
+        JOIN(B, verify_property_2)(self->root); // Property 2: The root node is black.
+        /* Implicit */                          // Property 3: Leaves are colored black
+        JOIN(B, verify_property_4)(self->root); // Property 4: Every red node has two black ndoes.
+        JOIN(B, verify_property_5)(self->root); // Property 5: All paths from a node have the same number of black nodes.
+    }
 
 #endif
 

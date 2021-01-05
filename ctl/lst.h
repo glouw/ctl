@@ -1,3 +1,7 @@
+//
+// Doubly Linked List
+//
+
 #ifndef T
 #error "Template type T undefined for <lst.h>"
 #endif

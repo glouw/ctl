@@ -1,3 +1,7 @@
+//
+// Double Ended Queue
+//
+
 #ifndef T
 #error "Template type T undefined for <deq.h>"
 #endif

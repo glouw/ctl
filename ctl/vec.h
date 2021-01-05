@@ -1,3 +1,7 @@
+//
+// Vector
+//
+
 #ifndef T
 #error "Template type T undefined for <vec.h>"
 #endif

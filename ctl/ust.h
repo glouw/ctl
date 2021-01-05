@@ -1,3 +1,7 @@
+//
+// Unordered Set
+//
+
 #ifndef T
 #error "Template type T undefined for <ust.h>"
 #endif
@@ -323,7 +327,7 @@ JOIN(A, count)(A* self, T value)
 }
 
 static inline void
-JOIN(A, remove)(A* self, T value)
+JOIN(A, erase)(A* self, T value)
 {
     B** bucket = JOIN(A, bucket)(self, value);
     B* prev = NULL;
@@ -341,6 +345,27 @@ JOIN(A, remove)(A* self, T value)
     }
 }
 
+static inline void
+JOIN(A, remove_if)(A* self, int (*_match)(T*))
+{
+    for(size_t i = 0; i < self->bucket_count; i++)
+    {
+        B** bucket = &self->bucket[i];
+        B* prev = NULL;
+        for(B* n = *bucket; n; n = n->next)
+        {
+            if(_match(&n->value))
+            {
+                B* next = n->next;
+                JOIN(A, free_node)(self, n);
+                if(prev)
+                    prev->next = next;
+            }
+            prev = n;
+        }
+    }
+}
+
 static inline A
 JOIN(A, copy)(A* self)
 {
@@ -349,6 +374,43 @@ JOIN(A, copy)(A* self)
     foreach(A, self, it)
         JOIN(A, insert)(&other, self->copy(it.ref));
     return other;
+}
+
+static inline A
+JOIN(A, intersection)(A* a, A* b)
+{
+    A self = JOIN(A, init)(a->hash, a->equal);
+    foreach(A, a, i)
+        if(JOIN(A, find)(b, *i.ref))
+            JOIN(A, insert)(&self, self.copy(i.ref));
+    return self;
+}
+
+static inline A
+JOIN(A, union)(A* a, A* b)
+{
+    A self = JOIN(A, init)(a->hash, a->equal);
+    foreach(A, a, i) JOIN(A, insert)(&self, self.copy(i.ref));
+    foreach(A, b, i) JOIN(A, insert)(&self, self.copy(i.ref));
+    return self;
+}
+
+static inline A
+JOIN(A, difference)(A* a, A* b)
+{
+    A self = JOIN(A, init)(a->hash, a->equal);
+    foreach(A, b, i) JOIN(A, erase)(&self, *i.ref);
+    return self;
+}
+
+static inline A
+JOIN(A, symmetric_difference)(A* a, A* b)
+{
+    A self = JOIN(A, union)(a, b);
+    A intersection = JOIN(A, intersection)(a, b);
+    foreach(A, &intersection, i) JOIN(A, erase)(&self, *i.ref);
+    JOIN(A, free)(&intersection);
+    return self;
 }
 
 #undef T

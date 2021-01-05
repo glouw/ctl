@@ -1,3 +1,7 @@
+//
+// Stack
+//
+
 #ifndef T
 #error "Template type T undefined for <stk.h>"
 #endif

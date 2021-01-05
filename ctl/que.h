@@ -1,3 +1,7 @@
+//
+// Queue
+//
+
 #ifndef T
 #error "Template type T undefined for <que.h>"
 #endif

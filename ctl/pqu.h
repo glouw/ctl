@@ -1,3 +1,7 @@
+//
+// Priority Queue
+//
+
 #ifndef T
 #error "Template type T undefined for <pqu.h>"
 #endif

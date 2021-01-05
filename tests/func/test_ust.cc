@@ -77,6 +77,7 @@ main(void)
         setup_usts(&a, b);
         enum
         {
+            TEST_ERASE,
             TEST_INSERT,
             TEST_CLEAR,
             TEST_SWAP,
@@ -88,43 +89,69 @@ main(void)
         int which = TEST_RAND(TEST_TOTAL);
         switch(which)
         {
+            case TEST_ERASE:
+            {
+                // BROKEN
+                //const int temp = 42;
+                //ust_digi_insert(&a, digi_init(temp));
+                //b.insert(DIGI(temp));
+                //digi z = digi_init(temp);
+                //ust_digi_erase(&a, z);
+                //b.erase(DIGI(temp));
+                //digi_free(&z);
+                //CHECK(a, b);
+                //puts("ERASE");
+                //break;
+            }
             case TEST_INSERT:
             {
-                //const float vb = frand();
-                //ust_digi_insert(&a, digi_init(vb));
-                //b.insert(DIGI(vb));
-                //CHECK(a, b);
+                const float vb = frand();
+                ust_digi_insert(&a, digi_init(vb));
+                b.insert(DIGI(vb));
+                CHECK(a, b);
                 break;
             }
             case TEST_CLEAR:
             {
-                //b.clear();
-                //ust_digi_clear(&a);
-                //CHECK(a, b);
+                b.clear();
+                ust_digi_clear(&a);
+                CHECK(a, b);
                 break;
             }
             case TEST_SWAP:
             {
-                //ust_digi aa = ust_digi_copy(&a);
-                //ust_digi aaa = ust_digi_init(digi_hash, digi_equal);
-                //std::unordered_set<DIGI> bb = b;
-                //std::unordered_set<DIGI> bbb;
-                //ust_digi_swap(&aaa, &aa);
-                //std::swap(bb, bbb);
-                //CHECK(aaa, bbb);
-                //ust_digi_free(&aaa);
-                //CHECK(a, b);
+                ust_digi aa = ust_digi_copy(&a);
+                ust_digi aaa = ust_digi_init(digi_hash, digi_equal);
+                std::unordered_set<DIGI> bb = b;
+                std::unordered_set<DIGI> bbb;
+                ust_digi_swap(&aaa, &aa);
+                std::swap(bb, bbb);
+                CHECK(aaa, bbb);
+                ust_digi_free(&aaa);
+                CHECK(a, b);
                 break;
             }
             case TEST_COUNT:
             {
-                //int key = TEST_RAND(TEST_MAX_SIZE);
-                //digi kd = digi_init(key);
-                //int aa = ust_digi_count(&a, kd);
-                //int bb = b.count(DIGI(key));
-                //assert(aa == bb);
-                //CHECK(a, b);
-                //digi_free(&kd);
+                size_t which_index = TEST_RAND(a.size);
+                size_t index = 0;
+                float value = 0.3f;
+                if(TEST_RAND(2))
+                    foreach(ust_digi, &a, it)
+                    {
+                        if(index == which_index)
+                        {
+                            value = *it.ref->value;
+                            break;
+                        }
+                        index += 1;
+                    }
+                digi kd = digi_init(value);
+                int aa = ust_digi_count(&a, kd);
+                int bb = b.count(DIGI(value));
+                assert(aa == bb);
+                CHECK(a, b);
+                digi_free(&kd);
                 break;
             }
             case TEST_COPY:
