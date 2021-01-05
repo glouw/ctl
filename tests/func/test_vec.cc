@@ -60,7 +60,7 @@ main(void)
                 {
                     const int value = TEST_RAND(INT_MAX);
                     vec_digi_push_back(&a, digi_init(value));
-                    b.push_back(DIGI{value});
+                    b.push_back(DIGI(value));
                 }
             }
             enum
@@ -88,7 +88,7 @@ main(void)
                 case TEST_PUSH_BACK:
                 {
                     const int value = TEST_RAND(INT_MAX);
-                    b.push_back(DIGI{value});
+                    b.push_back(DIGI(value));
                     vec_digi_push_back(&a, digi_init(value));
                     CHECK(a, b);
                     break;
@@ -128,7 +128,7 @@ main(void)
                     {
                         const int value = TEST_RAND(INT_MAX);
                         const size_t index = TEST_RAND(a.size);
-                        b.insert(b.begin() + index, DIGI{value});
+                        b.insert(b.begin() + index, DIGI(value));
                         vec_digi_insert(&a, index, digi_init(value));
                     }
                     CHECK(a, b);
@@ -178,7 +178,7 @@ main(void)
                     const int value = TEST_RAND(INT_MAX);
                     size_t assign_size = TEST_RAND(a.size) + 1;
                     vec_digi_assign(&a, assign_size, digi_init(value));
-                    b.assign(assign_size, DIGI{value});
+                    b.assign(assign_size, DIGI(value));
                     CHECK(a, b);
                     break;
                 }
@@ -220,7 +220,7 @@ main(void)
                         int value = TEST_RAND(2) ? TEST_RAND(INT_MAX) : *vec_digi_at(&a, index)->value;
                         digi key = digi_init(value);
                         digi* aa = vec_digi_find(&a, key, digi_match);
-                        auto bb = std::find(b.begin(), b.end(), DIGI{value});
+                        auto bb = std::find(b.begin(), b.end(), DIGI(value));
                         bool found_a = aa != NULL;
                         bool found_b = bb != b.end();
                         assert(found_a == found_b);

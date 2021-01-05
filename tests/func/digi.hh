@@ -2,21 +2,19 @@
 #define __DIGI__H__
 
 #include <stdlib.h>
-
-// THESE DIGI STRUCTS BEHAVE IDENTICALLY AND ARE USED AS THE BASIS
-// FOR TESTING COPY / FREE / CONSTRUCT FOR STL AND CTL CONTAINERS.
+#include <functional>
 
 typedef struct
 {
-    int* value;
+    float* value;
 }
 digi;
 
 static inline digi
-digi_init(int value)
+digi_init(float value)
 {
     digi self = {
-        (int*) malloc(sizeof(*self.value))
+        (float*) malloc(sizeof(*self.value))
     };
     *self.value = value;
     return self;
@@ -29,9 +27,21 @@ digi_free(digi* self)
 }
 
 static inline int
+digi_equal(digi* a, digi* b)
+{
+    return *a->value == *b->value;
+}
+
+static inline int
 digi_compare(digi* a, digi* b)
 {
     return *b->value < *a->value;
+}
+
+size_t
+digi_hash(digi* d)
+{
+    return std::hash<float>{}(*d->value);
 }
 
 static inline digi
@@ -45,7 +55,7 @@ digi_copy(digi* self)
 static inline int
 digi_is_odd(digi* d)
 {
-    return *d->value % 2;
+    return (int) *d->value % 2;
 }
 
 static inline int
@@ -56,8 +66,8 @@ digi_match(digi* a, digi* b)
 
 struct DIGI
 {
-    int* value;
-    DIGI(int _value): value { new int {_value} }
+    float* value;
+    DIGI(float _value): value { new float {_value} }
     {
     }
     DIGI(): DIGI(0)
@@ -74,7 +84,7 @@ struct DIGI
     DIGI& operator=(const DIGI& a)
     {
         delete value;
-        value = new int;
+        value = new float;
         *value = *a.value;
         return *this;
     }
@@ -103,7 +113,19 @@ struct DIGI
 static inline bool
 DIGI_is_odd(DIGI& d)
 {
-    return *d.value % 2;
+    return (int) *d.value % 2;
+}
+
+namespace std
+{
+    template<>
+    struct hash<DIGI>
+    {
+        std::size_t operator()(const DIGI& d) const
+        {
+            return std::hash<float>{}(*d.value);
+        }
+    };
 }
 
 #endif

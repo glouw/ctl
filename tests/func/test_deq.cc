@@ -95,7 +95,7 @@ test_random_work_load(void)
             {
                 assert(a.size == b.size());
                 deq_digi_push_front(&a, digi_init(1));
-                b.push_front(DIGI{1});
+                b.push_front(DIGI(1));
                 assert(a.size == b.size());
                 break;
             }
@@ -103,7 +103,7 @@ test_random_work_load(void)
             {
                 assert(a.size == b.size());
                 deq_digi_push_back(&a, digi_init(1));
-                b.push_back(DIGI{1});
+                b.push_back(DIGI(1));
                 assert(a.size == b.size());
                 break;
             }
@@ -172,7 +172,7 @@ main(void)
                 {
                     const int value = TEST_RAND(INT_MAX);
                     deq_digi_push_back(&a, digi_init(value));
-                    b.push_back(DIGI{value});
+                    b.push_back(DIGI(value));
                 }
             }
             enum
@@ -201,7 +201,7 @@ main(void)
                 case TEST_PUSH_BACK:
                 {
                     const int value = TEST_RAND(INT_MAX);
-                    b.push_back(DIGI{value});
+                    b.push_back(DIGI(value));
                     deq_digi_push_back(&a, digi_init(value));
                     CHECK(a, b);
                     break;
@@ -219,7 +219,7 @@ main(void)
                 case TEST_PUSH_FRONT:
                 {
                     const int value = TEST_RAND(INT_MAX);
-                    b.push_front(DIGI{value});
+                    b.push_front(DIGI(value));
                     deq_digi_push_front(&a, digi_init(value));
                     CHECK(a, b);
                     break;
@@ -296,7 +296,7 @@ main(void)
                     {
                         const int value = TEST_RAND(INT_MAX);
                         const size_t index = TEST_RAND(a.size);
-                        b.insert(b.begin() + index, DIGI{value});
+                        b.insert(b.begin() + index, DIGI(value));
                         deq_digi_insert(&a, index, digi_init(value));
                     }
                     CHECK(a, b);
@@ -307,7 +307,7 @@ main(void)
                     const int value = TEST_RAND(INT_MAX);
                     size_t assign_size = TEST_RAND(a.size) + 1;
                     deq_digi_assign(&a, assign_size, digi_init(value));
-                    b.assign(assign_size, DIGI{value});
+                    b.assign(assign_size, DIGI(value));
                     CHECK(a, b);
                     break;
                 }
@@ -336,7 +336,7 @@ main(void)
                         int value = TEST_RAND(2) ? TEST_RAND(INT_MAX) : *deq_digi_at(&a, index)->value;
                         digi key = digi_init(value);
                         digi* aa = deq_digi_find(&a, key, digi_match);
-                        auto bb = std::find(b.begin(), b.end(), DIGI{value});
+                        auto bb = std::find(b.begin(), b.end(), DIGI(value));
                         bool found_a = aa != NULL;
                         bool found_b = bb != b.end();
                         assert(found_a == found_b);

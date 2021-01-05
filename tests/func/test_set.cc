@@ -37,7 +37,7 @@ setup_sets(set_digi* a, std::set<DIGI>& b)
     {
         const int vb = TEST_RAND(TEST_MAX_SIZE);
         set_digi_insert(a, digi_init(vb));
-        b.insert(DIGI{vb});
+        b.insert(DIGI(vb));
     }
 }
 
@@ -77,7 +77,7 @@ main(void)
             {
                 const int vb = TEST_RAND(TEST_MAX_SIZE);
                 set_digi_insert(&a, digi_init(vb));
-                b.insert(DIGI{vb});
+                b.insert(DIGI(vb));
                 CHECK(a, b);
                 break;
             }
@@ -90,7 +90,7 @@ main(void)
                         const int key = TEST_RAND(TEST_MAX_SIZE);
                         digi kd = digi_init(key);
                         set_digi_erase(&a, kd);
-                        b.erase(DIGI{key});
+                        b.erase(DIGI(key));
                         CHECK(a, b);
                         digi_free(&kd);
                     }
@@ -105,7 +105,7 @@ main(void)
                     auto end = b.end();
                     while(iter != end)
                     {
-                        if(*iter->value % 2)
+                        if((int) *iter->value % 2)
                         {
                             iter = b.erase(iter);
                             b_erases += 1;
@@ -144,7 +144,7 @@ main(void)
                 int key = TEST_RAND(TEST_MAX_SIZE);
                 digi kd = digi_init(key);
                 int aa = set_digi_count(&a, kd);
-                int bb = b.count(DIGI{key});
+                int bb = b.count(DIGI(key));
                 assert(aa == bb);
                 CHECK(a, b);
                 digi_free(&kd);
@@ -155,7 +155,7 @@ main(void)
                 int key = TEST_RAND(TEST_MAX_SIZE);
                 digi kd = digi_init(key);
                 set_digi_node* aa = set_digi_find(&a, kd);
-                auto bb = b.find(DIGI{key});
+                auto bb = b.find(DIGI(key));
                 if(bb == b.end())
                     assert(set_digi_end(&a) == aa);
                 else

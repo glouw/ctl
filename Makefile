@@ -68,9 +68,13 @@ TESTS = \
 	tests/func/test_pqu \
 	tests/func/test_que \
 	tests/func/test_set \
+	tests/func/test_ust \
 	tests/func/test_stk \
 	tests/func/test_vec_capacity \
 	tests/func/test_vec
+
+TESTS = \
+	tests/func/test_ust
 
 EXAMPLES = \
 	examples/astar \
@@ -122,6 +126,7 @@ tests/func/test_lst:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_pqu:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_que:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_set:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
+tests/func/test_ust:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_stk:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_str:                 ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@
 tests/func/test_vec_capacity:        ALWAYS; $(CXX) $(CFLAGS) $@.cc -o $@

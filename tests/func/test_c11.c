@@ -190,7 +190,7 @@ main(void)
         lst_int_unique(&a, int_match);
         lst_int_free(&a);
     }{
-        ust_int a = ust_int_init(8, int_hash, int_equal);
+        ust_int a = ust_int_init(int_hash, int_equal);
         ust_int_insert(&a, -0);
         ust_int_insert(&a, -1);
         ust_int_insert(&a, -2);
@@ -247,9 +247,6 @@ main(void)
         ust_int_insert(&a, 25);
         ust_int_insert(&a, 26);
         ust_int_insert(&a, 27);
-        foreach(ust_int, &a, it) { printf("GOT %d\n", *it.ref); }
-        foreach(ust_int, &a, it) { printf("SIZE %lu\n", ust_int_bucket_size(it.node)); }
-        printf("%f\n", ust_int_load_factor(&a));
         ust_int_free(&a);
     }
     TEST_PASS(__FILE__);

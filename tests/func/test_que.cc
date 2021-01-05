@@ -34,7 +34,7 @@ main(void)
         {
             const int value = TEST_RAND(INT_MAX);
             que_digi_push(&a, digi_init(value));
-            b.push(DIGI{value});
+            b.push(DIGI(value));
         }
         enum
         {
@@ -49,7 +49,7 @@ main(void)
             case TEST_PUSH:
             {
                 const int value = TEST_RAND(INT_MAX);
-                b.push(DIGI{value});
+                b.push(DIGI(value));
                 que_digi_push(&a, digi_init(value));
                 CHECK(a, b);
                 break;

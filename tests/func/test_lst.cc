@@ -36,7 +36,7 @@ setup_lists(lst_digi* a, std::list<DIGI>& b, size_t size, int* max_value)
         if(max_value && value > *max_value)
             *max_value = value;
         lst_digi_push_back(a, digi_init(value));
-        b.push_back(DIGI{value});
+        b.push_back(DIGI(value));
     }
 }
 
@@ -83,7 +83,7 @@ main(void)
             {
                 int value = TEST_RAND(INT_MAX);
                 lst_digi_push_front(&a, digi_init(value));
-                b.push_front(DIGI{value});
+                b.push_front(DIGI(value));
                 CHECK(a, b);
                 break;
             }
@@ -91,7 +91,7 @@ main(void)
             {
                 int value = TEST_RAND(INT_MAX);
                 lst_digi_push_back(&a, digi_init(value));
-                b.push_back(DIGI{value});
+                b.push_back(DIGI(value));
                 CHECK(a, b);
                 break;
             }
@@ -145,7 +145,7 @@ main(void)
                     if(current == index)
                     {
                         lst_digi_insert(&a, it.node, digi_init(value));
-                        b.insert(iter, DIGI{value});
+                        b.insert(iter, DIGI(value));
                         break;
                     }
                     iter++;
@@ -176,7 +176,7 @@ main(void)
                 {
                     int value = TEST_RAND(INT_MAX);
                     lst_digi_assign(&a, width, digi_init(value));
-                    b.assign(width, DIGI{value});
+                    b.assign(width, DIGI(value));
                 }
                 CHECK(a, b);
                 break;
@@ -252,7 +252,7 @@ main(void)
                     if(pushes == (size - 1))
                         total = max_value + 1; // MAX + 1 ENSURES MERGE CAN APPEND TO TAIL.
                     lst_digi_push_back(&aa, digi_init(total));
-                    bb.push_back(DIGI{total});
+                    bb.push_back(DIGI(total));
                 }
                 b.merge(bb);
                 lst_digi_merge(&a, &aa, digi_compare);
@@ -302,7 +302,7 @@ main(void)
                     int value = TEST_RAND(2) ? TEST_RAND(INT_MAX) : test_value;
                     digi key = digi_init(value);
                     lst_digi_node* aa = lst_digi_find(&a, key, digi_match);
-                    auto bb = std::find(b.begin(), b.end(), DIGI{value});
+                    auto bb = std::find(b.begin(), b.end(), DIGI(value));
                     bool found_a = aa != NULL;
                     bool found_b = bb != b.end();
                     assert(found_a == found_b);
