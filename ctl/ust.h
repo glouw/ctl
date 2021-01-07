@@ -335,6 +335,16 @@ JOIN(A, count)(A* self, T value)
 }
 
 static inline void
+JOIN(A, linked_erase)(A* self, B** bucket, B* n, B* prev, B* next)
+{
+    JOIN(A, free_node)(self, n);
+    if(prev)
+        prev->next = next;
+    else
+        *bucket = next;
+}
+
+static inline void
 JOIN(A, erase)(A* self, T value)
 {
     B** bucket = JOIN(A, bucket)(self, value);
@@ -345,23 +355,38 @@ JOIN(A, erase)(A* self, T value)
         B* next = n->next;
         if(self->equal(&n->value, &value))
         {
-            JOIN(A, free_node)(self, n);
-            if(prev)
-                prev->next = next;
-            else
-                *bucket = next;
+            JOIN(A, linked_erase)(self, bucket, n, prev, next);
+            break;
         }
-        prev = n;
+        else
+            prev = n;
         n = next;
     }
 }
 
-static inline void
+static inline size_t
 JOIN(A, remove_if)(A* self, int (*_match)(T*))
 {
-    foreach(A, self, it)
-        if(_match(it.ref))
-            JOIN(A, free_node)(self, it.node);
+    size_t erases = 0;
+    for(size_t i = 0; i < self->bucket_count; i++)
+    {
+        B** bucket = &self->bucket[i];
+        B* prev = NULL;
+        B* n = *bucket;
+        while(n)
+        {
+            B* next = n->next;
+            if(_match(&n->value))
+            {
+                JOIN(A, linked_erase)(self, bucket, n, prev, next);
+                erases += 1;
+            }
+            else
+                prev = n;
+            n = next;
+        }
+    }
+    return erases;
 }
 
 static inline A

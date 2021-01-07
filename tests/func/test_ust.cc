@@ -37,7 +37,7 @@
 static float
 frand(void)
 {
-    return rand() / (float) RAND_MAX;
+    return 10.0f * rand() / (float) RAND_MAX;
 }
 
 static void
@@ -78,6 +78,7 @@ main(void)
         enum
         {
             TEST_ERASE,
+            TEST_REMOVE_IF,
             TEST_INSERT,
             TEST_CLEAR,
             TEST_SWAP,
@@ -98,6 +99,28 @@ main(void)
                 ust_digi_erase(&a, z);
                 b.erase(DIGI(temp));
                 digi_free(&z);
+                CHECK(a, b);
+                break;
+            }
+            case TEST_REMOVE_IF:
+            {
+                size_t b_erases = 0;
+                {   // C++20 STD::ERASE_IF
+                    auto iter = b.begin();
+                    auto end = b.end();
+                    while(iter != end)
+                    {
+                        if((int) *iter->value % 2)
+                        {
+                            iter = b.erase(iter);
+                            b_erases += 1;
+                        }
+                        else
+                            iter++;
+                    }
+                }
+                size_t a_erases = ust_digi_remove_if(&a, digi_is_odd);
+                assert(a_erases == b_erases);
                 CHECK(a, b);
                 break;
             }
