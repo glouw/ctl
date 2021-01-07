@@ -91,17 +91,15 @@ main(void)
         {
             case TEST_ERASE:
             {
-                // BROKEN
-                //const int temp = 42;
-                //ust_digi_insert(&a, digi_init(temp));
-                //b.insert(DIGI(temp));
-                //digi z = digi_init(temp);
-                //ust_digi_erase(&a, z);
-                //b.erase(DIGI(temp));
-                //digi_free(&z);
-                //CHECK(a, b);
-                //puts("ERASE");
-                //break;
+                const int temp = 42;
+                ust_digi_insert(&a, digi_init(temp));
+                b.insert(DIGI(temp));
+                digi z = digi_init(temp);
+                ust_digi_erase(&a, z);
+                b.erase(DIGI(temp));
+                digi_free(&z);
+                CHECK(a, b);
+                break;
             }
             case TEST_INSERT:
             {

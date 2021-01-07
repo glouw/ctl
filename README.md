@@ -115,7 +115,10 @@ To generate performance graphs, run:
 
 ```shell
 sh gen_images.sh
-# Graphing requires python3 and the Plotly family of libraries via pip3.
+# Graphing requires python3 and the Plotly family of libraries via pip.
+pip install plotly
+pip install psutil
+pip install kaleido
 ```
 
 To do all of the above in one step, run:

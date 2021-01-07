@@ -29,6 +29,7 @@ typedef struct A
     size_t size;
     size_t bucket_count;
     float max_load_factor;
+    int saturated;
 }
 A;
 
@@ -180,24 +181,29 @@ JOIN(A, swap)(A* self, A* other)
     *other = temp;
 }
 
-// TODO:
-// primes[] obtained experimentally - is there a quicker way to get more primes
-// other than checking bucket_count() on std::unorderd_set::insert()?
+static const size_t
+JOIN(A, primes)[] = {
+    13, 29, 59, 127, 257, 541, 1109, 2357, 5087, 10273, 20753,
+    42043, 85229, 172933, 351061, 712697, 1447153, 2938679,
+    5967347, 12117689, 24607243, 49969847, 101473717
+};
+
+static const size_t
+JOIN(A, primes_size) = len(JOIN(A, primes));
+
+static const size_t
+JOIN(A, last_prime) = JOIN(A, primes)[JOIN(A, primes_size) - 1];
+
 static inline int
 JOIN(A, __next_prime)(size_t n)
 {
-    const size_t primes[] = {
-        13, 29, 59, 127, 257, 541, 1109, 2357, 5087, 10273, 20753,
-        42043, 85229, 172933, 351061, 712697, 1447153, 2938679,
-        5967347, 12117689, 24607243, 49969847, 101473717
-    };
-    for(size_t i = 0; i < len(primes); i++)
+    for(size_t i = 0; i < JOIN(A, primes_size); i++)
     {
-        size_t p = primes[i];
+        size_t p = JOIN(A, primes)[i];
         if(n < p)
             return p;
     }
-    return primes[n - 1];
+    return JOIN(A, last_prime);
 }
 
 static inline B*
@@ -244,6 +250,8 @@ static inline void
 JOIN(A, reserve)(A* self, size_t desired_count)
 {
     self->bucket_count = JOIN(A, __next_prime)(desired_count);
+    if(self->bucket_count == JOIN(A, last_prime))
+        self->saturated = 1;
     free(self->bucket);
     self->bucket = (B**) calloc(self->bucket_count, sizeof(B*));
 }
@@ -269,16 +277,19 @@ JOIN(A, init)(size_t (*_hash)(T*), int (*_equal)(T*, T*))
 static inline void
 JOIN(A, rehash)(A* self, size_t desired_count)
 {
-    A rehashed = JOIN(A, init)(self->hash, self->equal);
-    JOIN(A, reserve)(&rehashed, desired_count);
-    foreach(A, self, it)
+    if(!self->saturated)
     {
-        B** bucket = JOIN(A, bucket)(&rehashed, it.node->value);
-        *bucket = JOIN(B, push)(*bucket, it.node);
+        A rehashed = JOIN(A, init)(self->hash, self->equal);
+        JOIN(A, reserve)(&rehashed, desired_count);
+        foreach(A, self, it)
+        {
+            B** bucket = JOIN(A, bucket)(&rehashed, it.node->value);
+            *bucket = JOIN(B, push)(*bucket, it.node);
+        }
+        rehashed.size = self->size;
+        free(self->bucket);
+        *self = rehashed;
     }
-    rehashed.size = self->size;
-    free(self->bucket);
-    *self = rehashed;
 }
 
 static inline void
@@ -313,10 +324,7 @@ JOIN(A, insert)(A* self, T value)
         *bucket = JOIN(B, push)(*bucket, JOIN(B, init)(value));
         self->size += 1;
         if(JOIN(A, load_factor)(self) > self->max_load_factor)
-        {
-            size_t bucket_count = 2 * self->bucket_count;
-            JOIN(A, rehash)(self, bucket_count);
-        }
+            JOIN(A, rehash)(self, 2 * self->bucket_count);
     }
 }
 
@@ -331,39 +339,29 @@ JOIN(A, erase)(A* self, T value)
 {
     B** bucket = JOIN(A, bucket)(self, value);
     B* prev = NULL;
-    for(B* n = *bucket; n; n = n->next)
+    B* n = *bucket;
+    while(n)
     {
-        if(self->equal(&value, &n->value))
+        B* next = n->next;
+        if(self->equal(&n->value, &value))
         {
-            B* next = n->next;
             JOIN(A, free_node)(self, n);
             if(prev)
                 prev->next = next;
-            break;
+            else
+                *bucket = next;
         }
         prev = n;
+        n = next;
     }
 }
 
 static inline void
 JOIN(A, remove_if)(A* self, int (*_match)(T*))
 {
-    for(size_t i = 0; i < self->bucket_count; i++)
-    {
-        B** bucket = &self->bucket[i];
-        B* prev = NULL;
-        for(B* n = *bucket; n; n = n->next)
-        {
-            if(_match(&n->value))
-            {
-                B* next = n->next;
-                JOIN(A, free_node)(self, n);
-                if(prev)
-                    prev->next = next;
-            }
-            prev = n;
-        }
-    }
+    foreach(A, self, it)
+        if(_match(it.ref))
+            JOIN(A, free_node)(self, it.node);
 }
 
 static inline A
