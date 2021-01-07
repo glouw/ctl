@@ -334,6 +334,12 @@ JOIN(A, count)(A* self, T value)
     return JOIN(A, find)(self, value) ? 1 : 0;
 }
 
+static inline int
+JOIN(A, contains)(A* self, T key)
+{
+    return JOIN(A, count)(self, key) == 1;
+}
+
 static inline void
 JOIN(A, linked_erase)(A* self, B** bucket, B* n, B* prev, B* next)
 {

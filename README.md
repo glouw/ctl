@@ -188,6 +188,7 @@ intersection                            x                   x
 union                                   x                   x
 difference                              x                   x
 symmetric_difference                    x                   x
+contains                                x                   x
 top                                          x         x
 push                                         x    x    x
 pop                                          x    x    x
@@ -220,7 +221,6 @@ insert_str               x
 replace                  x              x
 c_str                    x
 find                     x
-contains                                x
 rfind                    x
 find_first_of            x
 find_last_of             x
