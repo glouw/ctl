@@ -89,10 +89,6 @@ main(void)
             TEST_COUNT,
             TEST_COPY,
             TEST_EQUAL,
-            TEST_UNION,
-            TEST_INTERSECTION,
-            TEST_SYMMETRIC_DIFFERENCE,
-            TEST_DIFFERENCE,
             TEST_TOTAL,
         };
         int which = TEST_RAND(TEST_TOTAL);
