@@ -73,9 +73,6 @@ TESTS = \
 	tests/func/test_vec_capacity \
 	tests/func/test_vec
 
-TESTS = \
-	tests/func/test_ust
-
 EXAMPLES = \
 	examples/astar \
 	examples/postfix \

@@ -703,7 +703,8 @@ static inline A
 JOIN(A, difference)(A* a, A* b)
 {
     A self = JOIN(A, copy)(a);
-    foreach(A, b, i) JOIN(A, erase)(&self, *i.ref);
+    foreach(A, b, i)
+        JOIN(A, erase)(&self, *i.ref);
     return self;
 }
 
@@ -712,7 +713,8 @@ JOIN(A, symmetric_difference)(A* a, A* b)
 {
     A self = JOIN(A, union)(a, b);
     A intersection = JOIN(A, intersection)(a, b);
-    foreach(A, &intersection, i) JOIN(A, erase)(&self, *i.ref);
+    foreach(A, &intersection, i)
+        JOIN(A, erase)(&self, *i.ref);
     JOIN(A, free)(&intersection);
     return self;
 }

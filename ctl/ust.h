@@ -28,8 +28,6 @@ typedef struct A
     B** bucket;
     size_t size;
     size_t bucket_count;
-    float max_load_factor;
-    int saturated;
 }
 A;
 
@@ -63,12 +61,6 @@ JOIN(A, end)(A* self)
 {
     (void) self;
     return NULL;
-}
-
-static inline void
-JOIN(A, max_load_factor)(A* self, float f)
-{
-    self->max_load_factor = f;
 }
 
 static inline size_t
@@ -181,29 +173,36 @@ JOIN(A, swap)(A* self, A* other)
     *other = temp;
 }
 
-static const size_t
-JOIN(A, primes)[] = {
-    13, 29, 59, 127, 257, 541, 1109, 2357, 5087, 10273, 20753,
-    42043, 85229, 172933, 351061, 712697, 1447153, 2938679,
-    5967347, 12117689, 24607243, 49969847, 101473717, 206062531
-};
-
-static const size_t
-JOIN(A, primes_size) = len(JOIN(A, primes));
-
-static const size_t
-JOIN(A, last_prime) = JOIN(A, primes)[JOIN(A, primes_size) - 1];
-
-static inline int
-JOIN(A, __next_prime)(size_t n)
+size_t
+JOIN(A, closest_prime)(size_t number)
 {
-    for(size_t i = 0; i < JOIN(A, primes_size); i++)
+    static size_t primes[] = {
+        // Obtained experimentally by calling unordered_set::resize() and printing unordered_set::bucket_count().
+        2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 
+        103, 109, 113, 127, 137, 139, 149, 157, 167, 179, 193, 199, 211, 227, 241, 257, 277, 293, 313, 337, 
+        359, 383, 409, 439, 467, 503, 541, 577, 619, 661, 709, 761, 823, 887, 953, 1031, 1109, 1193, 1289, 1381, 
+        1493, 1613, 1741, 1879, 2029, 2179, 2357, 2549, 2753, 2971, 3209, 3469, 3739, 4027, 4349, 
+        4703, 5087, 5503, 5953, 6427, 6949, 7517, 8123, 8783, 9497, 10273, 11113, 12011, 12983, 14033, 
+        15173, 16411, 17749, 19183, 20753, 22447, 24281, 26267, 28411, 30727, 33223, 35933, 38873, 42043, 45481, 
+        49201, 53201, 57557, 62233, 67307, 72817, 78779, 85229, 92203, 99733, 107897, 116731, 126271, 136607, 147793, 
+        159871, 172933, 187091, 202409, 218971, 236897, 256279, 277261, 299951, 324503, 351061, 379787, 410857, 444487,
+        480881, 520241, 562841, 608903, 658753, 712697, 771049, 834181, 902483, 976369, 1056323, 1142821, 1236397, 1337629,
+        1447153, 1565659, 1693859, 1832561, 1982627, 2144977, 2320627, 2510653, 2716249, 2938679, 3179303, 3439651, 3721303,
+        4026031, 4355707, 4712381, 5098259, 5515729, 5967347, 6456007, 6984629, 7556579, 8175383, 8844859, 9569143, 10352717,
+        11200489, 12117689, 13109983, 14183539, 15345007, 16601593, 17961079, 19431899, 21023161, 22744717, 24607243, 
+    };
+    size_t min = primes[0];
+    if(number < min)
+        return min;
+    size_t size = len(primes);
+    for(size_t i = 0; i < size - 1; i++)
     {
-        size_t p = JOIN(A, primes)[i];
-        if(n < p)
-            return p;
+        size_t a = primes[i + 0];
+        size_t b = primes[i + 1];
+        if(number >= a && number <= b)
+            return number == a ? a : b;
     }
-    return JOIN(A, last_prime);
+    return primes[size - 1];
 }
 
 static inline B*
@@ -216,9 +215,10 @@ JOIN(B, init)(T value)
 }
 
 static inline B*
-JOIN(B, push)(B* bucket, B* n)
+JOIN(B, push)(A* self, B* bucket, B* n)
 {
     n->next = bucket;
+    self->size += 1;
     return n;
 }
 
@@ -231,33 +231,14 @@ JOIN(A, bucket_size)(A* self, size_t index)
     return size;
 }
 
-static inline void
-JOIN(A, free_node)(A* self, B* n)
-{
-    if(self->free)
-        self->free(&n->value);
-    free(n);
-    self->size -= 1;
-}
-
 static inline float
 JOIN(A, load_factor)(A* self)
 {
     return (float) self->size / (float) self->bucket_count;
 }
 
-static inline void
-JOIN(A, reserve)(A* self, size_t desired_count)
-{
-    self->bucket_count = JOIN(A, __next_prime)(desired_count);
-    if(self->bucket_count == JOIN(A, last_prime))
-        self->saturated = 1;
-    free(self->bucket);
-    self->bucket = (B**) calloc(self->bucket_count, sizeof(B*));
-}
-
 static inline A
-JOIN(A, init)(size_t (*_hash)(T*), int (*_equal)(T*, T*))
+JOIN(A, init)(size_t _hash(T*), int _equal(T*, T*))
 {
     static A zero;
     A self = zero;
@@ -270,26 +251,52 @@ JOIN(A, init)(size_t (*_hash)(T*), int (*_equal)(T*, T*))
     self.free = JOIN(T, free);
     self.copy = JOIN(T, copy);
 #endif
-    JOIN(A, max_load_factor)(&self, 1.0f);
     return self;
+}
+
+static inline void
+JOIN(A, rehash)(A* self, size_t desired_count);
+
+static inline void
+JOIN(A, reserve)(A* self, size_t desired_count)
+{
+    if(self->size > 0)
+        JOIN(A, rehash)(self, desired_count);
+    else
+    {
+        size_t bucket_count = JOIN(A, closest_prime)(desired_count);
+        B** temp = (B**) calloc(bucket_count, sizeof(B*));
+        for(size_t i = 0; i < self->bucket_count; i++)
+            temp[i] = self->bucket[i];
+        free(self->bucket);
+        self->bucket = temp;
+        self->bucket_count = bucket_count;
+    }
 }
 
 static inline void
 JOIN(A, rehash)(A* self, size_t desired_count)
 {
-    if(!self->saturated)
+    A rehashed = JOIN(A, init)(self->hash, self->equal);
+    if(desired_count <= self->size)
+        desired_count = self->size + 1;
+    JOIN(A, reserve)(&rehashed, desired_count);
+    foreach(A, self, it)
     {
-        A rehashed = JOIN(A, init)(self->hash, self->equal);
-        JOIN(A, reserve)(&rehashed, desired_count);
-        foreach(A, self, it)
-        {
-            B** bucket = JOIN(A, bucket)(&rehashed, it.node->value);
-            *bucket = JOIN(B, push)(*bucket, it.node);
-        }
-        rehashed.size = self->size;
-        free(self->bucket);
-        *self = rehashed;
+        B** bucket = JOIN(A, bucket)(&rehashed, it.node->value);
+        *bucket = JOIN(B, push)(&rehashed, *bucket, it.node);
     }
+    free(self->bucket);
+    *self = rehashed;
+}
+
+static inline void
+JOIN(A, free_node)(A* self, B* n)
+{
+    if(self->free)
+        self->free(&n->value);
+    free(n);
+    self->size -= 1;
 }
 
 static inline void
@@ -321,9 +328,8 @@ JOIN(A, insert)(A* self, T value)
     else
     {
         B** bucket = JOIN(A, bucket)(self, value);
-        *bucket = JOIN(B, push)(*bucket, JOIN(B, init)(value));
-        self->size += 1;
-        if(JOIN(A, load_factor)(self) > self->max_load_factor)
+        *bucket = JOIN(B, push)(self, *bucket, JOIN(B, init)(value));
+        if(self->size > self->bucket_count)
             JOIN(A, rehash)(self, 2 * self->bucket_count);
     }
 }
@@ -353,20 +359,23 @@ JOIN(A, linked_erase)(A* self, B** bucket, B* n, B* prev, B* next)
 static inline void
 JOIN(A, erase)(A* self, T value)
 {
-    B** bucket = JOIN(A, bucket)(self, value);
-    B* prev = NULL;
-    B* n = *bucket;
-    while(n)
+    if(!JOIN(A, empty)(self))
     {
-        B* next = n->next;
-        if(self->equal(&n->value, &value))
+        B** bucket = JOIN(A, bucket)(self, value);
+        B* prev = NULL;
+        B* n = *bucket;
+        while(n)
         {
-            JOIN(A, linked_erase)(self, bucket, n, prev, next);
-            break;
+            B* next = n->next;
+            if(self->equal(&n->value, &value))
+            {
+                JOIN(A, linked_erase)(self, bucket, n, prev, next);
+                break;
+            }
+            else
+                prev = n;
+            n = next;
         }
-        else
-            prev = n;
-        n = next;
     }
 }
 
@@ -399,47 +408,9 @@ static inline A
 JOIN(A, copy)(A* self)
 {
     A other = JOIN(A, init)(self->hash, self->equal);
-    JOIN(A, reserve)(&other, self->bucket_count);
     foreach(A, self, it)
         JOIN(A, insert)(&other, self->copy(it.ref));
     return other;
-}
-
-static inline A
-JOIN(A, intersection)(A* a, A* b)
-{
-    A self = JOIN(A, init)(a->hash, a->equal);
-    foreach(A, a, i)
-        if(JOIN(A, find)(b, *i.ref))
-            JOIN(A, insert)(&self, self.copy(i.ref));
-    return self;
-}
-
-static inline A
-JOIN(A, union)(A* a, A* b)
-{
-    A self = JOIN(A, init)(a->hash, a->equal);
-    foreach(A, a, i) JOIN(A, insert)(&self, self.copy(i.ref));
-    foreach(A, b, i) JOIN(A, insert)(&self, self.copy(i.ref));
-    return self;
-}
-
-static inline A
-JOIN(A, difference)(A* a, A* b)
-{
-    A self = JOIN(A, init)(a->hash, a->equal);
-    foreach(A, b, i) JOIN(A, erase)(&self, *i.ref);
-    return self;
-}
-
-static inline A
-JOIN(A, symmetric_difference)(A* a, A* b)
-{
-    A self = JOIN(A, union)(a, b);
-    A intersection = JOIN(A, intersection)(a, b);
-    foreach(A, &intersection, i) JOIN(A, erase)(&self, *i.ref);
-    JOIN(A, free)(&intersection);
-    return self;
 }
 
 #undef T

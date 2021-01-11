@@ -9,6 +9,8 @@
 
 #define CHECK(_x, _y) {                                                \
     assert(_x.size == _y.size());                                      \
+    if(_x.bucket_count > 0)                                            \
+        assert(_x.bucket_count == _y.bucket_count());                  \
     if(_x.size > 0)                                                    \
     {                                                                  \
         size_t a_found = 0;                                            \
@@ -28,7 +30,6 @@
             b_found += 1;                                              \
         }                                                              \
         assert(a_found == b_found);                                    \
-        assert(_x.bucket_count == _y.bucket_count());                  \
         for(size_t i = 0; i < _x.bucket_count; i++)                    \
             assert(ust_digi_bucket_size(&_x, i) == _y.bucket_size(i)); \
     }                                                                  \
@@ -37,7 +38,7 @@
 static float
 frand(void)
 {
-    return 10.0f * rand() / (float) RAND_MAX;
+    return 1e6 * rand() / (float) RAND_MAX;
 }
 
 static void
@@ -75,16 +76,23 @@ main(void)
         ust_digi a;
         std::unordered_set<DIGI> b;
         setup_usts(&a, b);
+        CHECK(a, b);
         enum
         {
             TEST_ERASE,
             TEST_REMOVE_IF,
             TEST_INSERT,
+            TEST_RESERVE,
+            TEST_REHASH,
             TEST_CLEAR,
             TEST_SWAP,
             TEST_COUNT,
             TEST_COPY,
             TEST_EQUAL,
+            TEST_UNION,
+            TEST_INTERSECTION,
+            TEST_SYMMETRIC_DIFFERENCE,
+            TEST_DIFFERENCE,
             TEST_TOTAL,
         };
         int which = TEST_RAND(TEST_TOTAL);
@@ -130,6 +138,22 @@ main(void)
                 ust_digi_insert(&a, digi_init(vb));
                 b.insert(DIGI(vb));
                 CHECK(a, b);
+                break;
+            }
+            case TEST_RESERVE:
+            {
+                const size_t capacity = TEST_RAND(a.bucket_count) + 1;
+                b.reserve(capacity);
+                ust_digi_reserve(&a, capacity);
+                CHECK(a, b)
+                break;
+            }
+            case TEST_REHASH:
+            {
+                const size_t capacity = 3 * TEST_RAND(a.bucket_count) + 1;
+                b.rehash(capacity);
+                ust_digi_rehash(&a, capacity);
+                CHECK(a, b)
                 break;
             }
             case TEST_CLEAR:
