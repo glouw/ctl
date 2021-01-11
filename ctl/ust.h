@@ -380,7 +380,7 @@ JOIN(A, erase)(A* self, T value)
 }
 
 static inline size_t
-JOIN(A, remove_if)(A* self, int (*_match)(T*))
+JOIN(A, remove_if)(A* self, int _match(T*))
 {
     size_t erases = 0;
     for(size_t i = 0; i < self->bucket_count; i++)

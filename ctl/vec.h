@@ -364,7 +364,7 @@ JOIN(A, copy)(A* self)
 }
 
 static inline size_t
-JOIN(A, remove_if)(A* self, int (*_match)(T*))
+JOIN(A, remove_if)(A* self, int _match(T*))
 {
     size_t erases = 0;
     foreach(A, self, it)
