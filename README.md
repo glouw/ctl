@@ -184,10 +184,10 @@ erase               x    x    x    x    x                   x
 copy                x    x    x    x    x                   x
 begin               x    x    x    x    x                   x
 end                 x    x    x    x    x                   x
-intersection                            x                   x
-union                                   x                   x
-difference                              x                   x
-symmetric_difference                    x                   x
+intersection                            x                   
+union                                   x                   
+difference                              x                   
+symmetric_difference                    x                   
 contains                                x                   x
 top                                          x         x
 push                                         x    x    x
