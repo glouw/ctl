@@ -218,4 +218,5 @@ main(void)
         CHECK(a, b)
         ust_digi_free(&a);
     }
+    TEST_PASS(__FILE__);
 }

@@ -214,12 +214,12 @@ JOIN(B, init)(T value)
     return n;
 }
 
-static inline B*
-JOIN(B, push)(A* self, B* bucket, B* n)
+static inline void
+JOIN(B, push)(A* self, B** bucket, B* n)
 {
-    n->next = bucket;
+    n->next = *bucket;
     self->size += 1;
-    return n;
+    *bucket = n;
 }
 
 static inline size_t
@@ -284,7 +284,7 @@ JOIN(A, rehash)(A* self, size_t desired_count)
     foreach(A, self, it)
     {
         B** bucket = JOIN(A, bucket)(&rehashed, it.node->value);
-        *bucket = JOIN(B, push)(&rehashed, *bucket, it.node);
+        JOIN(B, push)(&rehashed, bucket, it.node);
     }
     free(self->bucket);
     *self = rehashed;
@@ -328,7 +328,7 @@ JOIN(A, insert)(A* self, T value)
     else
     {
         B** bucket = JOIN(A, bucket)(self, value);
-        *bucket = JOIN(B, push)(self, *bucket, JOIN(B, init)(value));
+        JOIN(B, push)(self, bucket, JOIN(B, init)(value));
         if(self->size > self->bucket_count)
             JOIN(A, rehash)(self, 2 * self->bucket_count);
     }
