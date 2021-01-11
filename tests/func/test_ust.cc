@@ -141,7 +141,7 @@ main(void)
                 const size_t capacity = TEST_RAND(a.bucket_count) + 1;
                 b.reserve(capacity);
                 ust_digi_reserve(&a, capacity);
-                CHECK(a, b)
+                CHECK(a, b);
                 break;
             }
             case TEST_REHASH:
@@ -149,7 +149,7 @@ main(void)
                 const size_t capacity = 3 * TEST_RAND(a.bucket_count) + 1;
                 b.rehash(capacity);
                 ust_digi_rehash(&a, capacity);
-                CHECK(a, b)
+                CHECK(a, b);
                 break;
             }
             case TEST_CLEAR:
@@ -215,7 +215,7 @@ main(void)
                 break;
             }
         }
-        CHECK(a, b)
+        CHECK(a, b);
         ust_digi_free(&a);
     }
     TEST_PASS(__FILE__);
