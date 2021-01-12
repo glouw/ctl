@@ -55,6 +55,7 @@ main(void)
         setup_sets(&a, b);
         enum
         {
+            TEST_SELF,
             TEST_INSERT,
             TEST_ERASE,
             TEST_REMOVE_IF,
@@ -73,6 +74,18 @@ main(void)
         int which = TEST_RAND(TEST_TOTAL);
         switch(which)
         {
+            case TEST_SELF:
+            {
+                set_digi aa = set_digi_copy(&a);
+                foreach(set_digi, &aa, it)
+                    assert(set_digi_find(&a, *it.ref));
+                foreach(set_digi, &a, it)
+                    set_digi_erase(&aa, *it.ref);
+                assert(set_digi_empty(&aa));
+                set_digi_free(&aa);
+                CHECK(a, b);
+                break;
+            }
             case TEST_INSERT:
             {
                 const int vb = TEST_RAND(TEST_MAX_SIZE);
@@ -164,17 +177,6 @@ main(void)
                 digi_free(&kd);
                 break;
             }
-#if 0
-            case TEST_CONTAINS: // C++20.
-            {
-                int key = TEST_RAND(TEST_MAX_SIZE);
-                int aa = set_digi_contains(&a, key);
-                int bb = b.contains(key);
-                assert(aa == bb);
-                CHECK(a, b);
-                break;
-            }
-#endif
             case TEST_COPY:
             {
                 set_digi aa = set_digi_copy(&a);

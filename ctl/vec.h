@@ -70,7 +70,7 @@ JOIN(A, end)(A* self)
 static inline void
 JOIN(I, step)(I* self)
 {
-    if(self->next < self->begin || self->next >= self->end)
+    if(self->next >= self->end)
         self->done = 1;
     else
     {

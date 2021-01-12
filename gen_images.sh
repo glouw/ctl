@@ -51,9 +51,19 @@ perf_graph \
     "tests/perf/set/perf_set_insert.cc \
      tests/perf/set/perf_set_insert.c \
      tests/perf/set/perf_set_erase.cc \
-     tests/perf/set/perf_set_erase.c
+     tests/perf/set/perf_set_erase.c \
      tests/perf/set/perf_set_iterate.cc \
      tests/perf/set/perf_set_iterate.c"
+
+perf_graph \
+    'ust.log' \
+    "std::unordered_set<int> vs. CTL ust_int ($CFLAGS) ($VERSION)" \
+    "tests/perf/ust/perf_ust_insert.cc \
+     tests/perf/ust/perf_ust_insert.c \
+     tests/perf/ust/perf_ust_erase.cc \
+     tests/perf/ust/perf_ust_erase.c \
+     tests/perf/ust/perf_ust_iterate.cc \
+     tests/perf/ust/perf_ust_iterate.c"
 
 perf_graph \
     'pqu.log' \

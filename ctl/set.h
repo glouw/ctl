@@ -268,12 +268,6 @@ JOIN(A, count)(A* self, T key)
     return JOIN(A, find)(self, key) ? 1 : 0;
 }
 
-static inline int
-JOIN(A, contains)(A* self, T key)
-{
-    return JOIN(A, count)(self, key) == 1;
-}
-
 static inline void
 JOIN(B, replace)(A* self, B* a, B* b)
 {

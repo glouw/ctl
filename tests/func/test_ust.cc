@@ -79,6 +79,8 @@ main(void)
         CHECK(a, b);
         enum
         {
+            TEST_SELF,
+            TEST_FIND,
             TEST_ERASE,
             TEST_REMOVE_IF,
             TEST_INSERT,
@@ -94,6 +96,32 @@ main(void)
         int which = TEST_RAND(TEST_TOTAL);
         switch(which)
         {
+            case TEST_SELF:
+            {
+                ust_digi aa = ust_digi_copy(&a);
+                foreach(ust_digi, &aa, it)
+                    assert(ust_digi_find(&a, *it.ref));
+                foreach(ust_digi, &a, it)
+                    ust_digi_erase(&aa, *it.ref);
+                assert(ust_digi_empty(&aa));
+                ust_digi_free(&aa);
+                CHECK(a, b);
+                break;
+            }
+            case TEST_FIND:
+            {
+                int key = TEST_RAND(TEST_MAX_SIZE);
+                digi kd = digi_init(key);
+                ust_digi_node* aa = ust_digi_find(&a, kd);
+                auto bb = b.find(DIGI(key));
+                if(bb == b.end())
+                    assert(ust_digi_end(&a) == aa);
+                else
+                    assert(*bb->value == *aa->key.value);
+                CHECK(a, b);
+                digi_free(&kd);
+                break;
+            }
             case TEST_ERASE:
             {
                 const int temp = 42;

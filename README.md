@@ -75,7 +75,7 @@ type type_copy(type*);
 Forgetting a declaration will print a human-readable error message:
 
 ```shell
-tests/test_c11.c:11:11: error: ‘type_free’ undeclared (first use in this function)
+tests/test_c11.c:11:11: error: type_free undeclared (first use in this function)
    11 | #define T type
 ```
 
@@ -88,6 +88,7 @@ for template type `T` as type `int` for all measurements.
 ![](images/lst.log.png)
 ![](images/deq.log.png)
 ![](images/set.log.png)
+![](images/ust.log.png)
 ![](images/pqu.log.png)
 ![](images/compile.log.png)
 
@@ -188,7 +189,6 @@ intersection                            x
 union                                   x                   
 difference                              x                   
 symmetric_difference                    x                   
-contains                                x                   x
 top                                          x         x
 push                                         x    x    x
 pop                                          x    x    x

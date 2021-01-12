@@ -22,6 +22,9 @@
 #define T deq_int
 #include <vec.h>
 
+#define T deq_int
+#include <ust.h>
+
 #define P
 #define T int
 #include <lst.h>
@@ -40,6 +43,9 @@
 
 #define T lst_int
 #include <vec.h>
+
+#define T lst_int
+#include <ust.h>
 
 #define T lst_int
 #include <deq.h>
@@ -61,6 +67,9 @@
 #include <vec.h>
 
 #define T pqu_int
+#include <ust.h>
+
+#define T pqu_int
 #include <deq.h>
 
 #define T pqu_int
@@ -80,6 +89,9 @@
 #include <vec.h>
 
 #define T que_int
+#include <ust.h>
+
+#define T que_int
 #include <deq.h>
 
 #define T que_int
@@ -99,6 +111,9 @@
 #include <vec.h>
 
 #define T set_int
+#include <ust.h>
+
+#define T set_int
 #include <deq.h>
 
 #define T set_int
@@ -116,6 +131,9 @@
 
 #define T stk_int
 #include <vec.h>
+
+#define T stk_int
+#include <ust.h>
 
 #define T stk_int
 #include <deq.h>
@@ -137,6 +155,9 @@
 #include <vec.h>
 
 #define T vec_int
+#include <ust.h>
+
+#define T vec_int
 #include <deq.h>
 
 #define T vec_int
@@ -153,6 +174,31 @@
 
 #define T vec_int
 #include <stk.h>
+
+#define P
+#define T int
+#include <ust.h>
+
+#define T ust_int
+#include <deq.h>
+
+#define T ust_int
+#include <lst.h>
+
+#define T ust_int
+#include <pqu.h>
+
+#define T ust_int
+#include <que.h>
+
+#define T ust_int
+#include <set.h>
+
+#define T ust_int
+#include <stk.h>
+
+#define T ust_int
+#include <vec.h>
 
 int
 main(void)

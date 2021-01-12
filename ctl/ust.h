@@ -14,7 +14,7 @@
 
 typedef struct B
 {
-    T value;
+    T key;
     struct B* next;
 }
 B;
@@ -39,7 +39,7 @@ typedef struct I
     T* ref;
     B* next;
     A* container;
-    size_t bucket;
+    size_t index;
     int done;
 }
 I;
@@ -73,9 +73,24 @@ static inline void
 JOIN(I, update)(I* self)
 {
     self->node = self->next;
-    self->ref = &self->node->value;
+    self->ref = &self->node->key;
     self->next = self->node->next;
-    self->bucket = JOIN(I, index)(self->container, *self->ref);
+}
+
+static inline int
+JOIN(I, scan)(I* self)
+{
+    for(size_t i = self->index + 1; i < self->container->bucket_count; i++)
+    {
+        self->next = self->container->bucket[i];
+        if(self->next)
+        {
+            self->index = i;
+            JOIN(I, update)(self);
+            return 1;
+        }
+    }
+    return 0;
 }
 
 static inline void
@@ -83,13 +98,8 @@ JOIN(I, step)(I* self)
 {
     if(self->next == JOIN(A, end)(self->container))
     {
-        for(size_t i = self->bucket + 1; i < self->container->bucket_count; i++)
-            if((self->next = self->container->bucket[i]))
-            {
-                JOIN(I, update)(self);
-                return;
-            }
-        self->done = 1;
+        if(!JOIN(I, scan)(self))
+            self->done = 1;
     }
     else
         JOIN(I, update)(self);
@@ -104,11 +114,11 @@ JOIN(I, range)(A* container, B* begin, B* end)
     {
         self.step = JOIN(I, step);
         self.node = begin;
-        self.ref = &self.node->value;
+        self.ref = &self.node->key;
         self.next = self.node->next;
         self.end = end;
         self.container = container;
-        self.bucket = JOIN(I, index)(container, *self.ref);
+        self.index = JOIN(I, index)(container, *self.ref);
     }
     else
         self.done = 1;
@@ -149,7 +159,7 @@ JOIN(A, find)(A* self, T value)
     {
         B** bucket = JOIN(A, bucket)(self, value);
         for(B* n = *bucket; n; n = n->next)
-            if(self->equal(&value, &n->value))
+            if(self->equal(&value, &n->key))
                 return n;
     }
     return NULL;
@@ -209,7 +219,7 @@ static inline B*
 JOIN(B, init)(T value)
 {
     B* n = (B*) malloc(sizeof(B));
-    n->value = value;
+    n->key = value;
     n->next = NULL;
     return n;
 }
@@ -283,7 +293,7 @@ JOIN(A, rehash)(A* self, size_t desired_count)
     JOIN(A, reserve)(&rehashed, desired_count);
     foreach(A, self, it)
     {
-        B** bucket = JOIN(A, bucket)(&rehashed, it.node->value);
+        B** bucket = JOIN(A, bucket)(&rehashed, it.node->key);
         JOIN(B, push)(&rehashed, bucket, it.node);
     }
     free(self->bucket);
@@ -294,7 +304,7 @@ static inline void
 JOIN(A, free_node)(A* self, B* n)
 {
     if(self->free)
-        self->free(&n->value);
+        self->free(&n->key);
     free(n);
     self->size -= 1;
 }
@@ -340,12 +350,6 @@ JOIN(A, count)(A* self, T value)
     return JOIN(A, find)(self, value) ? 1 : 0;
 }
 
-static inline int
-JOIN(A, contains)(A* self, T key)
-{
-    return JOIN(A, count)(self, key) == 1;
-}
-
 static inline void
 JOIN(A, linked_erase)(A* self, B** bucket, B* n, B* prev, B* next)
 {
@@ -367,7 +371,7 @@ JOIN(A, erase)(A* self, T value)
         while(n)
         {
             B* next = n->next;
-            if(self->equal(&n->value, &value))
+            if(self->equal(&n->key, &value))
             {
                 JOIN(A, linked_erase)(self, bucket, n, prev, next);
                 break;
@@ -391,7 +395,7 @@ JOIN(A, remove_if)(A* self, int _match(T*))
         while(n)
         {
             B* next = n->next;
-            if(_match(&n->value))
+            if(_match(&n->key))
             {
                 JOIN(A, linked_erase)(self, bucket, n, prev, next);
                 erases += 1;
