@@ -12,6 +12,8 @@
 #define B JOIN(A, node)
 #define I JOIN(A, it)
 
+#define LAST_PRIME (24607243)
+
 typedef struct B
 {
     T key;
@@ -28,6 +30,7 @@ typedef struct A
     B** bucket;
     size_t size;
     size_t bucket_count;
+    int saturated;
 }
 A;
 
@@ -183,11 +186,10 @@ JOIN(A, swap)(A* self, A* other)
     *other = temp;
 }
 
-size_t
+static inline size_t
 JOIN(A, closest_prime)(size_t number)
 {
     static size_t primes[] = {
-        // Obtained experimentally by calling unordered_set::resize() and printing unordered_set::bucket_count().
         2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 
         103, 109, 113, 127, 137, 139, 149, 157, 167, 179, 193, 199, 211, 227, 241, 257, 277, 293, 313, 337, 
         359, 383, 409, 439, 467, 503, 541, 577, 619, 661, 709, 761, 823, 887, 953, 1031, 1109, 1193, 1289, 1381, 
@@ -199,7 +201,7 @@ JOIN(A, closest_prime)(size_t number)
         480881, 520241, 562841, 608903, 658753, 712697, 771049, 834181, 902483, 976369, 1056323, 1142821, 1236397, 1337629,
         1447153, 1565659, 1693859, 1832561, 1982627, 2144977, 2320627, 2510653, 2716249, 2938679, 3179303, 3439651, 3721303,
         4026031, 4355707, 4712381, 5098259, 5515729, 5967347, 6456007, 6984629, 7556579, 8175383, 8844859, 9569143, 10352717,
-        11200489, 12117689, 13109983, 14183539, 15345007, 16601593, 17961079, 19431899, 21023161, 22744717, 24607243, 
+        11200489, 12117689, 13109983, 14183539, 15345007, 16601593, 17961079, 19431899, 21023161, 22744717, LAST_PRIME
     };
     size_t min = primes[0];
     if(number < min)
@@ -212,7 +214,7 @@ JOIN(A, closest_prime)(size_t number)
         if(number >= a && number <= b)
             return number == a ? a : b;
     }
-    return primes[size - 1];
+    return LAST_PRIME;
 }
 
 static inline B*
@@ -270,34 +272,42 @@ JOIN(A, rehash)(A* self, size_t desired_count);
 static inline void
 JOIN(A, reserve)(A* self, size_t desired_count)
 {
-    if(self->size > 0)
-        JOIN(A, rehash)(self, desired_count);
-    else
+    if(!self->saturated)
     {
-        size_t bucket_count = JOIN(A, closest_prime)(desired_count);
-        B** temp = (B**) calloc(bucket_count, sizeof(B*));
-        for(size_t i = 0; i < self->bucket_count; i++)
-            temp[i] = self->bucket[i];
-        free(self->bucket);
-        self->bucket = temp;
-        self->bucket_count = bucket_count;
+        if(self->size > 0)
+            JOIN(A, rehash)(self, desired_count);
+        else
+        {
+            size_t bucket_count = JOIN(A, closest_prime)(desired_count);
+            B** temp = (B**) calloc(bucket_count, sizeof(B*));
+            for(size_t i = 0; i < self->bucket_count; i++)
+                temp[i] = self->bucket[i];
+            free(self->bucket);
+            self->bucket = temp;
+            self->bucket_count = bucket_count;
+            if(bucket_count == LAST_PRIME)
+                self->saturated = 1;
+        }
     }
 }
 
 static inline void
 JOIN(A, rehash)(A* self, size_t desired_count)
 {
-    A rehashed = JOIN(A, init)(self->hash, self->equal);
-    if(desired_count <= self->size)
-        desired_count = self->size + 1;
-    JOIN(A, reserve)(&rehashed, desired_count);
-    foreach(A, self, it)
+    if(!self->saturated)
     {
-        B** bucket = JOIN(A, bucket)(&rehashed, it.node->key);
-        JOIN(B, push)(&rehashed, bucket, it.node);
+        A rehashed = JOIN(A, init)(self->hash, self->equal);
+        if(desired_count <= self->size)
+            desired_count = self->size + 1;
+        JOIN(A, reserve)(&rehashed, desired_count);
+        foreach(A, self, it)
+        {
+            B** bucket = JOIN(A, bucket)(&rehashed, it.node->key);
+            JOIN(B, push)(&rehashed, bucket, it.node);
+        }
+        free(self->bucket);
+        *self = rehashed;
     }
-    free(self->bucket);
-    *self = rehashed;
 }
 
 static inline void
@@ -421,3 +431,5 @@ JOIN(A, copy)(A* self)
 #undef A
 #undef B
 #undef I
+
+#undef LAST_PRIME
