@@ -12,8 +12,6 @@
 #define B JOIN(A, node)
 #define I JOIN(A, it)
 
-#define LAST_PRIME (24607243)
-
 typedef struct B
 {
     T key;
@@ -187,7 +185,7 @@ JOIN(A, swap)(A* self, A* other)
 }
 
 static inline size_t
-JOIN(A, closest_prime)(size_t number)
+JOIN(A, closest_prime)(size_t number, int* saturated)
 {
     static size_t primes[] = {
         2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 
@@ -201,7 +199,7 @@ JOIN(A, closest_prime)(size_t number)
         480881, 520241, 562841, 608903, 658753, 712697, 771049, 834181, 902483, 976369, 1056323, 1142821, 1236397, 1337629,
         1447153, 1565659, 1693859, 1832561, 1982627, 2144977, 2320627, 2510653, 2716249, 2938679, 3179303, 3439651, 3721303,
         4026031, 4355707, 4712381, 5098259, 5515729, 5967347, 6456007, 6984629, 7556579, 8175383, 8844859, 9569143, 10352717,
-        11200489, 12117689, 13109983, 14183539, 15345007, 16601593, 17961079, 19431899, 21023161, 22744717, LAST_PRIME
+        11200489, 12117689, 13109983, 14183539, 15345007, 16601593, 17961079, 19431899, 21023161, 22744717, 24607243
     };
     size_t min = primes[0];
     if(number < min)
@@ -214,7 +212,9 @@ JOIN(A, closest_prime)(size_t number)
         if(number >= a && number <= b)
             return number == a ? a : b;
     }
-    return LAST_PRIME;
+    if(saturated)
+        *saturated = 1;
+    return primes[size - 1];
 }
 
 static inline B*
@@ -278,15 +278,13 @@ JOIN(A, reserve)(A* self, size_t desired_count)
             JOIN(A, rehash)(self, desired_count);
         else
         {
-            size_t bucket_count = JOIN(A, closest_prime)(desired_count);
+            size_t bucket_count = JOIN(A, closest_prime)(desired_count, &self->saturated);
             B** temp = (B**) calloc(bucket_count, sizeof(B*));
             for(size_t i = 0; i < self->bucket_count; i++)
                 temp[i] = self->bucket[i];
             free(self->bucket);
             self->bucket = temp;
             self->bucket_count = bucket_count;
-            if(bucket_count == LAST_PRIME)
-                self->saturated = 1;
         }
     }
 }
@@ -431,5 +429,3 @@ JOIN(A, copy)(A* self)
 #undef A
 #undef B
 #undef I
-
-#undef LAST_PRIME
