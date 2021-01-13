@@ -9,12 +9,24 @@
 #define T int
 #include <ust.h>
 
+#define P
+#define T float
+#include <ust.h>
+
 size_t
 int_hash(int* x)
 { return abs(*x); }
 
 int
 int_equal(int* a, int* b)
+{ return *a == *b; }
+
+size_t
+float_hash(float* x)
+{ return abs((int) *x); }
+
+int
+float_equal(float* a, float* b)
 { return *a == *b; }
 
 #define P
@@ -199,55 +211,18 @@ main(void)
         ust_int_insert(&a, -5);
         ust_int_insert(&a, -6);
         ust_int_insert(&a, -7);
-        ust_int_insert(&a, -8);
-        ust_int_insert(&a, -9);
-        ust_int_insert(&a, -10);
-        ust_int_insert(&a, -11);
-        ust_int_insert(&a, -12);
-        ust_int_insert(&a, -13);
-        ust_int_insert(&a, -14);
-        ust_int_insert(&a, -15);
-        ust_int_insert(&a, -16);
-        ust_int_insert(&a, -17);
-        ust_int_insert(&a, -18);
-        ust_int_insert(&a, -19);
-        ust_int_insert(&a, -20);
-        ust_int_insert(&a, -21);
-        ust_int_insert(&a, -22);
-        ust_int_insert(&a, -23);
-        ust_int_insert(&a, -24);
-        ust_int_insert(&a, -25);
-        ust_int_insert(&a, -26);
-        ust_int_insert(&a, -27);
-        ust_int_insert(&a, 0);
-        ust_int_insert(&a, 1);
-        ust_int_insert(&a, 2);
-        ust_int_insert(&a, 3);
-        ust_int_insert(&a, 4);
-        ust_int_insert(&a, 5);
-        ust_int_insert(&a, 6);
-        ust_int_insert(&a, 7);
-        ust_int_insert(&a, 8);
-        ust_int_insert(&a, 9);
-        ust_int_insert(&a, 10);
-        ust_int_insert(&a, 11);
-        ust_int_insert(&a, 12);
-        ust_int_insert(&a, 13);
-        ust_int_insert(&a, 14);
-        ust_int_insert(&a, 15);
-        ust_int_insert(&a, 16);
-        ust_int_insert(&a, 17);
-        ust_int_insert(&a, 18);
-        ust_int_insert(&a, 19);
-        ust_int_insert(&a, 20);
-        ust_int_insert(&a, 21);
-        ust_int_insert(&a, 22);
-        ust_int_insert(&a, 23);
-        ust_int_insert(&a, 24);
-        ust_int_insert(&a, 25);
-        ust_int_insert(&a, 26);
-        ust_int_insert(&a, 27);
         ust_int_free(&a);
+    }{
+        ust_float a = ust_float_init(float_hash, float_equal);
+        ust_float_insert(&a, -0);
+        ust_float_insert(&a, -1);
+        ust_float_insert(&a, -2);
+        ust_float_insert(&a, -3);
+        ust_float_insert(&a, -4);
+        ust_float_insert(&a, -5);
+        ust_float_insert(&a, -6);
+        ust_float_insert(&a, -7);
+        ust_float_free(&a);
     }
     TEST_PASS(__FILE__);
 }
