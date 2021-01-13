@@ -58,11 +58,11 @@ perf_graph \
 perf_graph \
     'ust.log' \
     "std::unordered_set<int> vs. CTL ust_int ($CFLAGS) ($VERSION)" \
-    "tests/perf/ust/perf_ust_insert.cc \
+    "tests/perf/ust/perf_unordered_set_insert.cc \
      tests/perf/ust/perf_ust_insert.c \
-     tests/perf/ust/perf_ust_erase.cc \
+     tests/perf/ust/perf_unordered_set_erase.cc \
      tests/perf/ust/perf_ust_erase.c \
-     tests/perf/ust/perf_ust_iterate.cc \
+     tests/perf/ust/perf_unordered_set_iterate.cc \
      tests/perf/ust/perf_ust_iterate.c"
 
 perf_graph \
