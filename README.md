@@ -233,5 +233,6 @@ key_compare              x
 
 ## Acknowledgements
 
-Thank you `kully` for the Plotly code, and thank you for the general review.
+Thank you https://github.com/kully for the Plotly code, and thank you for the general review and manual testing.
+
 Thank you `smlckz` for the `foreach` cleanup.
