@@ -245,6 +245,44 @@ JOIN(B, init)(T key, int color)
 }
 
 static inline B*
+JOIN(A, lower_bound)(A* self, T key)
+{
+    B* node = self->root;
+    B* result = NULL;
+    while(node)
+    {
+        int diff = self->compare(&key, &node->key);
+        if(diff <= 0)
+        {
+            result = node;
+            node = node->l;
+        }
+        else
+            node = node->r;
+    }
+    return result;
+}
+
+static inline B*
+JOIN(A, upper_bound)(A* self, T key)
+{
+    B* node = self->root;
+    B* result = NULL;
+    while(node)
+    {
+        int diff = self->compare(&key, &node->key);
+        if(diff < 0)
+        {
+            result = node;
+            node = node->l;
+        }
+        else
+            node = node->r;
+    }
+    return result;
+}
+
+static inline B*
 JOIN(A, find)(A* self, T key)
 {
     B* node = self->root;
