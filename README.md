@@ -238,3 +238,5 @@ key_compare              x
 Thank you https://github.com/kully for the Plotly code, and thank you for the general review and manual testing.
 
 Thank you `smlckz` for the `foreach` cleanup.
+
+Thank you https://github.com/wwwVladislav for the addition of set lower_bound and upper_bound.
