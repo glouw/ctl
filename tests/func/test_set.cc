@@ -63,6 +63,8 @@ main(void)
             TEST_SWAP,
             TEST_COUNT,
             TEST_FIND,
+            TEST_LOWER_BOUND,
+            TEST_UPPER_BOUND,
             TEST_COPY,
             TEST_EQUAL,
             TEST_UNION,
@@ -169,6 +171,34 @@ main(void)
                 digi kd = digi_init(key);
                 set_digi_node* aa = set_digi_find(&a, kd);
                 auto bb = b.find(DIGI(key));
+                if(bb == b.end())
+                    assert(set_digi_end(&a) == aa);
+                else
+                    assert(*bb->value == *aa->key.value);
+                CHECK(a, b);
+                digi_free(&kd);
+                break;
+            }
+            case TEST_LOWER_BOUND:
+            {
+                int key = TEST_RAND(TEST_MAX_SIZE);
+                digi kd = digi_init(key);
+                set_digi_node* aa = set_digi_lower_bound(&a, kd);
+                auto bb = b.lower_bound(DIGI(key));
+                if(bb == b.end())
+                    assert(set_digi_end(&a) == aa);
+                else
+                    assert(*bb->value == *aa->key.value);
+                CHECK(a, b);
+                digi_free(&kd);
+                break;
+            }
+            case TEST_UPPER_BOUND:
+            {
+                int key = TEST_RAND(TEST_MAX_SIZE);
+                digi kd = digi_init(key);
+                set_digi_node* aa = set_digi_upper_bound(&a, kd);
+                auto bb = b.upper_bound(DIGI(key));
                 if(bb == b.end())
                     assert(set_digi_end(&a) == aa);
                 else

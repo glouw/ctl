@@ -181,6 +181,8 @@ step                x    x    x    x    x                   x
 range               x    x    x    x    x                   x
 find                x    x    x    x    x                   x
 count                    x              x                   x
+lower_bound                             x                   
+upper_bound                             x                   
 erase               x    x    x    x    x                   x
 copy                x    x    x    x    x                   x
 begin               x    x    x    x    x                   x
