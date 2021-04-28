@@ -6,7 +6,7 @@
 #error "Template type T undefined for <vec.h>"
 #endif
 
-#include "ctl.h"
+#include <ctl.h>
 
 #define A JOIN(vec, T)
 #define I JOIN(A, it)
@@ -15,61 +15,62 @@
 
 typedef struct A
 {
-    T *value;
-    void (*free)(T *);
+    T* value;
+    void (*free)(T*);
 #ifdef COMPARE
-    int (*compare)(T *, T *);
+    int (*compare)(T*, T*);
 #endif
-    T (*copy)
-    (T *);
+    T (*copy)(T*);
     size_t size;
     size_t capacity;
-} A;
+}
+A;
 
 typedef struct I
 {
-    void (*step)(struct I *);
-    T *ref;
-    T *begin;
-    T *end;
-    T *next;
+    void (*step)(struct I*);
+    T* ref;
+    T* begin;
+    T* end;
+    T* next;
     int done;
-} I;
+}
+I;
 
-static inline T *
-    JOIN(A, at)(A *self, size_t index)
+static inline T*
+JOIN(A, at)(A* self, size_t index)
 {
     return &self->value[index];
 }
 
-static inline T *
-    JOIN(A, front)(A *self)
+static inline T*
+JOIN(A, front)(A* self)
 {
     return JOIN(A, at)(self, 0);
 }
 
-static inline T *
-    JOIN(A, back)(A *self)
+static inline T*
+JOIN(A, back)(A* self)
 {
     return JOIN(A, at)(self, self->size - 1);
 }
 
-static inline T *
-    JOIN(A, begin)(A *self)
+static inline T*
+JOIN(A, begin)(A* self)
 {
     return JOIN(A, front)(self);
 }
 
-static inline T *
-    JOIN(A, end)(A *self)
+static inline T*
+JOIN(A, end)(A* self)
 {
     return JOIN(A, back)(self) + 1;
 }
 
 static inline void
-    JOIN(I, step)(I *self)
+JOIN(I, step)(I* self)
 {
-    if (self->next >= self->end)
+    if(self->next >= self->end)
         self->done = 1;
     else
     {
@@ -79,12 +80,12 @@ static inline void
 }
 
 static inline I
-    JOIN(I, range)(A *container, T *begin, T *end)
+JOIN(I, range)(A* container, T* begin, T* end)
 {
-    (void)container;
+    (void) container;
     static I zero;
     I self = zero;
-    if (begin && end)
+    if(begin && end)
     {
         self.step = JOIN(I, step);
         self.begin = begin;
@@ -98,35 +99,35 @@ static inline I
 }
 
 static inline int
-    JOIN(A, empty)(A *self)
+JOIN(A, empty)(A* self)
 {
     return self->size == 0;
 }
 
 static inline I
-    JOIN(I, each)(A *a)
+JOIN(I, each)(A* a)
 {
     return JOIN(A, empty)(a)
-               ? JOIN(I, range)(a, NULL, NULL)
-               : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+         ? JOIN(I, range)(a, NULL, NULL)
+         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline T
-    JOIN(A, implicit_copy)(T *self)
+JOIN(A, implicit_copy)(T* self)
 {
     return *self;
 }
 
 static inline int
-    JOIN(A, equal)(A *self, A *other, int _equal(T *, T *))
+JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
 {
-    if (self->size != other->size)
+    if(self->size != other->size)
         return 0;
     I a = JOIN(I, each)(self);
     I b = JOIN(I, each)(other);
-    while (!a.done && !b.done)
+    while(!a.done && !b.done)
     {
-        if (!_equal(a.ref, b.ref))
+        if(!_equal(a.ref, b.ref))
             return 0;
         a.step(&a);
         b.step(&b);
@@ -135,7 +136,7 @@ static inline int
 }
 
 static inline void
-    JOIN(A, swap)(A *self, A *other)
+JOIN(A, swap)(A* self, A* other)
 {
     A temp = *self;
     *self = *other;
@@ -143,7 +144,7 @@ static inline void
 }
 
 static inline A
-    JOIN(A, init)(void)
+JOIN(A, init)(void)
 {
     static A zero;
     A self = zero;
@@ -158,178 +159,165 @@ static inline A
 }
 
 static inline void
-    JOIN(A, set)(A *self, size_t index, T value)
+JOIN(A, set)(A* self, size_t index, T value)
 {
-    T *ref = JOIN(A, at)(self, index);
-    if (self->free)
+    T* ref = JOIN(A, at)(self, index);
+    if(self->free)
         self->free(ref);
     *ref = value;
 }
 
 static inline void
-    JOIN(A, pop_back)(A *self)
+JOIN(A, pop_back)(A* self)
 {
     static T zero;
     self->size -= 1;
-    JOIN(A, set)
-    (self, self->size, zero);
+    JOIN(A, set)(self, self->size, zero);
 }
 
 static inline void
-    JOIN(A, wipe)(A *self, size_t n)
+JOIN(A, wipe)(A* self, size_t n)
 {
-    while (n != 0)
+    while(n != 0)
     {
-        JOIN(A, pop_back)
-        (self);
+        JOIN(A, pop_back)(self);
         n -= 1;
     }
 }
 
 static inline void
-    JOIN(A, clear)(A *self)
+JOIN(A, clear)(A* self)
 {
-    if (self->size > 0)
-        JOIN(A, wipe)
-        (self, self->size);
+    if(self->size > 0)
+        JOIN(A, wipe)(self, self->size);
 }
 
 static inline void
-    JOIN(A, free)(A *self)
+JOIN(A, free)(A* self)
 {
-    JOIN(A, clear)
-    (self);
+    JOIN(A, clear)(self);
     free(self->value);
     *self = JOIN(A, init)();
 }
 
 static inline void
-    JOIN(A, fit)(A *self, size_t capacity)
+JOIN(A, fit)(A* self, size_t capacity)
 {
     static T zero;
     size_t overall = capacity;
-    if (MUST_ALIGN_16(T))
+    if(MUST_ALIGN_16(T))
         overall += 1;
-    self->value = (T *)realloc(self->value, overall * sizeof(T));
-    if (MUST_ALIGN_16(T))
-        for (size_t i = self->capacity; i < overall; i++)
+    self->value = (T*) realloc(self->value, overall * sizeof(T));
+    if(MUST_ALIGN_16(T))
+        for(size_t i = self->capacity; i < overall; i++)
             self->value[i] = zero;
     self->capacity = capacity;
 }
 
 static inline void
-    JOIN(A, reserve)(A *self, const size_t capacity)
+JOIN(A, reserve)(A* self, const size_t capacity)
 {
-    if (capacity != self->capacity)
+    if(capacity != self->capacity)
     {
         size_t actual = 0;
-        if (MUST_ALIGN_16(T))
+        if(MUST_ALIGN_16(T))
         {
-            if (capacity <= self->size)
+            if(capacity <= self->size)
                 actual = self->size;
-            else if (capacity > self->size && capacity < self->capacity)
+            else
+            if(capacity > self->size && capacity < self->capacity)
                 actual = capacity;
             else
             {
                 actual = 2 * self->capacity;
-                if (capacity > actual)
+                if(capacity > actual)
                     actual = capacity;
             }
         }
-        else if (capacity > self->capacity)
+        else
+        if(capacity > self->capacity)
             actual = capacity;
-        if (actual > 0)
-            JOIN(A, fit)
-            (self, actual);
+        if(actual > 0)
+            JOIN(A, fit)(self, actual);
     }
 }
 
 static inline void
-    JOIN(A, push_back)(A *self, T value)
+JOIN(A, push_back)(A* self, T value)
 {
-    if (self->size == self->capacity)
-        JOIN(A, reserve)
-        (self, self->capacity == 0 ? 1 : 2 * self->capacity);
+    if(self->size == self->capacity)
+        JOIN(A, reserve)(self, self->capacity == 0 ? 1 : 2 * self->capacity);
     *JOIN(A, at)(self, self->size) = value;
     self->size += 1;
 }
 
 static inline void
-    JOIN(A, resize)(A *self, size_t size, T value)
+JOIN(A, resize)(A* self, size_t size, T value)
 {
-    if (size < self->size)
+    if(size < self->size)
     {
         int64_t less = self->size - size;
-        if (less > 0)
-            JOIN(A, wipe)
-            (self, less);
+        if(less > 0)
+            JOIN(A, wipe)(self, less);
     }
     else
     {
-        if (size > self->capacity)
+        if(size > self->capacity)
         {
             size_t capacity = 2 * self->size;
-            if (size > capacity)
+            if(size > capacity)
                 capacity = size;
-            JOIN(A, reserve)
-            (self, capacity);
+            JOIN(A, reserve)(self, capacity);
         }
-        for (size_t i = 0; self->size < size; i++)
-            JOIN(A, push_back)
-            (self, self->copy(&value));
+        for(size_t i = 0; self->size < size; i++)
+            JOIN(A, push_back)(self, self->copy(&value));
     }
-    if (self->free)
+    if(self->free)
         self->free(&value);
 }
 
 static inline void
-    JOIN(A, assign)(A *self, size_t size, T value)
+JOIN(A, assign)(A* self, size_t size, T value)
 {
-    JOIN(A, resize)
-    (self, size, self->copy(&value));
-    for (size_t i = 0; i < size; i++)
-        JOIN(A, set)
-        (self, i, self->copy(&value));
-    if (self->free)
+    JOIN(A, resize)(self, size, self->copy(&value));
+    for(size_t i = 0; i < size; i++)
+        JOIN(A, set)(self, i, self->copy(&value));
+    if(self->free)
         self->free(&value);
 }
 
 static inline void
-    JOIN(A, shrink_to_fit)(A *self)
+JOIN(A, shrink_to_fit)(A* self)
 {
-    JOIN(A, fit)
-    (self, self->size);
+    JOIN(A, fit)(self, self->size);
 }
 
-static inline T *
-    JOIN(A, data)(A *self)
+static inline T*
+JOIN(A, data)(A* self)
 {
     return JOIN(A, front)(self);
 }
 
 static inline void
-    JOIN(A, insert)(A *self, size_t index, T value)
+JOIN(A, insert)(A* self, size_t index, T value)
 {
-    if (self->size > 0)
+    if(self->size > 0)
     {
-        JOIN(A, push_back)
-        (self, *JOIN(A, back)(self));
-        for (size_t i = self->size - 2; i > index; i--)
+        JOIN(A, push_back)(self, *JOIN(A, back)(self));
+        for(size_t i = self->size - 2; i > index; i--)
             self->value[i] = self->value[i - 1];
         self->value[index] = value;
     }
     else
-        JOIN(A, push_back)
-        (self, value);
+        JOIN(A, push_back)(self, value);
 }
 
 static inline void
-    JOIN(A, erase)(A *self, size_t index)
+JOIN(A, erase)(A* self, size_t index)
 {
     static T zero;
-    JOIN(A, set)
-    (self, index, zero);
-    for (size_t i = index; i < self->size - 1; i++)
+    JOIN(A, set)(self, index, zero);
+    for(size_t i = index; i < self->size - 1; i++)
     {
         self->value[i] = self->value[i + 1];
         self->value[i + 1] = zero;
@@ -338,59 +326,53 @@ static inline void
 }
 
 static inline void
-    JOIN(A, ranged_sort)(A *self, int64_t a, int64_t b, int _compare(T *, T *))
+JOIN(A, ranged_sort)(A* self, int64_t a, int64_t b, int _compare(T*, T*))
 {
-    if (a >= b)
+    if(a >= b)
         return;
     int64_t mid = (a + b) / 2;
     SWAP(T, &self->value[a], &self->value[mid]);
     int64_t z = a;
-    for (int64_t i = a + 1; i <= b; i++)
-        if (_compare(&self->value[a], &self->value[i]))
+    for(int64_t i = a + 1; i <= b; i++)
+        if(_compare(&self->value[a], &self->value[i]))
         {
             z += 1;
             SWAP(T, &self->value[z], &self->value[i]);
         }
     SWAP(T, &self->value[a], &self->value[z]);
-    JOIN(A, ranged_sort)
-    (self, a, z - 1, _compare);
-    JOIN(A, ranged_sort)
-    (self, z + 1, b, _compare);
+    JOIN(A, ranged_sort)(self, a, z - 1, _compare);
+    JOIN(A, ranged_sort)(self, z + 1, b, _compare);
 }
 
 static inline void
-    JOIN(A, sort)(A *self, int _compare(T *, T *))
+JOIN(A, sort)(A* self, int _compare(T*, T*))
 {
-    JOIN(A, ranged_sort)
-    (self, 0, self->size - 1, _compare);
+    JOIN(A, ranged_sort)(self, 0, self->size - 1, _compare);
 }
 
 static inline A
-    JOIN(A, copy)(A *self)
+JOIN(A, copy)(A* self)
 {
     A other = JOIN(A, init)();
 #ifdef COMPARE
     other.compare = self->compare;
 #endif
-    JOIN(A, reserve)
-    (&other, self->size);
-    while (other.size < self->size)
-        JOIN(A, push_back)
-        (&other, other.copy(&self->value[other.size]));
+    JOIN(A, reserve)(&other, self->size);
+    while(other.size < self->size)
+        JOIN(A, push_back)(&other, other.copy(&self->value[other.size]));
     return other;
 }
 
 static inline size_t
-    JOIN(A, remove_if)(A *self, int _match(T *))
+JOIN(A, remove_if)(A* self, int _match(T*))
 {
     size_t erases = 0;
-    foreach (A, self, it)
+    foreach(A, self, it)
     {
-        if (_match(it.ref))
+        if(_match(it.ref))
         {
             size_t index = it.ref - JOIN(A, begin)(self);
-            JOIN(A, erase)
-            (self, index);
+            JOIN(A, erase)(self, index);
             it.end = JOIN(A, end)(self);
             it.next = it.ref;
             erases += 1;
@@ -399,11 +381,11 @@ static inline size_t
     return erases;
 }
 
-static inline T *
-    JOIN(A, find)(A *self, T key, int _equal(T *, T *))
+static inline T*
+JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 {
-    foreach (A, self, it)
-        if (_equal(it.ref, &key))
+    foreach(A, self, it)
+        if(_equal(it.ref, &key))
             return it.ref;
     return NULL;
 }

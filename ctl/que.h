@@ -6,27 +6,27 @@
 #error "Template type T undefined for <que.h>"
 #endif
 
-#define push_back push
-#define pop_front pop
-#define at __AT
-#define begin __BEGIN
-#define end __END
-#define push_front __PUSH_FRONT
-#define pop_back __PUSH_BACK
-#define erase __ERASE
-#define insert __INSERT
-#define resize __RESIZE
-#define assign __ASSIGN
-#define clear __CLEAR
+#define push_back   push
+#define pop_front   pop
+#define at          __AT
+#define begin       __BEGIN
+#define end         __END
+#define push_front  __PUSH_FRONT
+#define pop_back    __PUSH_BACK
+#define erase       __ERASE
+#define insert      __INSERT
+#define resize      __RESIZE
+#define assign      __ASSIGN
+#define clear       __CLEAR
 #define ranged_sort __RANGED_SORT
-#define sort __SORT
-#define range __RANGE
-#define each __each
-#define step __STEP
-#define remove_if __REMOVE_IF
+#define sort        __SORT
+#define range       __RANGE
+#define each        __each
+#define step        __STEP
+#define remove_if   __REMOVE_IF
 
 #define deq que
-#include "deq.h"
+#include <deq.h>
 #undef deq
 
 #undef push_back
