@@ -26,7 +26,7 @@
 #define remove_if   __REMOVE_IF
 
 #define deq que
-#include <deq.h>
+#include "deq.h"
 #undef deq
 
 #undef push_back

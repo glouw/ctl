@@ -6,7 +6,7 @@
 #error "Template type T undefined for <deq.h>"
 #endif
 
-#include <ctl.h>
+#include "ctl.h"
 
 #define A JOIN(deq, T)
 #define B JOIN(A, bucket)

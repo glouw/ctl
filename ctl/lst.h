@@ -6,7 +6,7 @@
 #error "Template type T undefined for <lst.h>"
 #endif
 
-#include <ctl.h>
+#include "ctl.h"
 
 #define A JOIN(lst, T)
 #define B JOIN(A, node)

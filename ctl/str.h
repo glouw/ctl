@@ -15,7 +15,7 @@
 #define str_init str___INIT
 #define str_equal str___EQUAL
 #define str_find str___FIND
-#include <vec.h>
+#include "vec.h"
 #undef str_init
 #undef str_equal
 #undef str_find

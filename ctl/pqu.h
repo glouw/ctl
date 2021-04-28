@@ -34,7 +34,7 @@
 #define HOLD
 #define COMPARE
 #define init __INIT
-#include <vec.h>
+#include "vec.h"
 #undef init
 #undef vec
 
