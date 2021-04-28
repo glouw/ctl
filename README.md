@@ -58,6 +58,73 @@ gcc main.c -I ctl
 For a much more thorough getting started guide,
 see the wiki: https://github.com/glouw/ctl/wiki
 
+## CMake Support
+### Install
+1. Clone this repo by
+```
+git clone https://github.com/glouw/ctl
+```
+2. Configure
+```
+cd ctl
+mkdir build
+cd build
+cmake ..
+```
+3. Install
+- Linux:
+```
+sudo cmake --install .
+```
+
+- Windows: Open a shell with administrator
+```
+cmake --install .
+```
+
+### Use ctl CMake packages
+Add the following line to your `CMakeLists.txt`
+```cmake
+find_package(ctl REQUIRED CONFIG)
+#... Add your executable or target
+target_link_libraries(<Target> PRIVATE ctl)
+```
+
+Include the header using `#include <ctl/...>`, for example:
+```c
+#include <stdio.h>
+
+#define P
+#define T int
+#include <ctl/vec.h>
+
+int compare(int* a, int* b) { return *b < *a; }
+
+int main(void)
+{
+    vec_int a = vec_int_init();
+    vec_int_push_back(&a, 9);
+    vec_int_push_back(&a, 1);
+    vec_int_push_back(&a, 8);
+    vec_int_push_back(&a, 3);
+    vec_int_push_back(&a, 4);
+    vec_int_sort(&a, compare);
+    foreach(vec_int, &a, it)
+        printf("%d\n", *it.ref);
+    vec_int_free(&a);
+}
+```
+
+### Uninstall
+`cd` into `ctl/build` directory
+- Linux:
+```
+sudo cmake --build . --target Uninstall
+```
+- Windows: Open a shell with administrator
+```
+cmake --build . --target Uninstall
+```
 ## Memory Ownership
 
 Types with memory ownership require definition `P` be omitted, and require
