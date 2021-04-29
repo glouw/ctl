@@ -15,8 +15,10 @@
 #define str_init str___INIT
 #define str_equal str___EQUAL
 #define str_find str___FIND
+#define str_copy str___COPY
 #include <vec.h>
 #undef str_init
+#undef str_copy
 #undef str_equal
 #undef str_find
 #undef vec_char
@@ -44,6 +46,14 @@ str_append(str* self, const char* s)
     str_resize(self, self->size + len, '\0');
     for(size_t i = 0; i < len; i++)
         self->value[start + i] = s[i];
+}
+
+static inline str
+str_copy(str* s)
+{
+    str other = str_init("");
+    str_append(&other, s->value);
+    return other;
 }
 
 static inline void
