@@ -10,7 +10,7 @@
 
 #define A JOIN(deq, T)
 #define B JOIN(A, bucket)
-#define I JOIN(A, it)
+#define Z JOIN(A, it)
 
 #define DEQ_BUCKET_SIZE (512)
 
@@ -34,9 +34,9 @@ typedef struct A
 }
 A;
 
-typedef struct I
+typedef struct Z
 {
-    void (*step)(struct I*);
+    void (*step)(struct Z*);
     A* container;
     T* ref;
     size_t index;
@@ -44,7 +44,7 @@ typedef struct I
     size_t index_last;
     int done;
 }
-I;
+Z;
 
 static inline B**
 JOIN(A, first)(A* self)
@@ -99,7 +99,7 @@ JOIN(A, end)(A* self)
 }
 
 static inline void
-JOIN(I, step)(I* self)
+JOIN(Z, step)(Z* self)
 {
     self->index = self->index_next;
     if(self->index == self->index_last)
@@ -111,15 +111,15 @@ JOIN(I, step)(I* self)
     }
 }
 
-static inline I
-JOIN(I, range)(A* container, T* begin, T* end)
+static inline Z
+JOIN(Z, range)(A* container, T* begin, T* end)
 {
-    static I zero;
-    I self = zero;
+    static Z zero;
+    Z self = zero;
     if(begin && end)
     {
         self.container = container;
-        self.step = JOIN(I, step);
+        self.step = JOIN(Z, step);
         self.index = begin - JOIN(A, begin)(container);
         self.index_next = self.index + 1;
         self.index_last = container->size - (JOIN(A, end)(container) - end);
@@ -136,12 +136,12 @@ JOIN(A, empty)(A* self)
     return self->size == 0;
 }
 
-static inline I
-JOIN(I, each)(A* a)
+static inline Z
+JOIN(Z, each)(A* a)
 {
     return JOIN(A, empty)(a)
-         ? JOIN(I, range)(a, NULL, NULL)
-         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+         ? JOIN(Z, range)(a, NULL, NULL)
+         : JOIN(Z, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline T
@@ -155,8 +155,8 @@ JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
 {
     if(self->size != other->size)
         return 0;
-    I a = JOIN(I, each)(self);
-    I b = JOIN(I, each)(other);
+    Z a = JOIN(Z, each)(self);
+    Z b = JOIN(Z, each)(other);
     while(!a.done && !b.done)
     {
         if(!_equal(a.ref, b.ref))
@@ -465,6 +465,6 @@ JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 #undef T
 #undef A
 #undef B
-#undef I
+#undef Z
 
 #undef DEQ_BUCKET_SIZE

@@ -10,7 +10,7 @@
 
 #define A JOIN(lst, T)
 #define B JOIN(A, node)
-#define I JOIN(A, it)
+#define Z JOIN(A, it)
 
 typedef struct B
 {
@@ -30,9 +30,9 @@ typedef struct A
 }
 A;
 
-typedef struct I
+typedef struct Z
 {
-    void (*step)(struct I*);
+    void (*step)(struct Z*);
     T* ref;
     B* begin;
     B* node;
@@ -40,7 +40,7 @@ typedef struct I
     B* end;
     int done;
 }
-I;
+Z;
 
 static inline T*
 JOIN(A, front)(A* self)
@@ -68,7 +68,7 @@ JOIN(A, end)(A* self)
 }
 
 static inline void
-JOIN(I, step)(I* self)
+JOIN(Z, step)(Z* self)
 {
     if(self->next == self->end)
         self->done = 1;
@@ -80,15 +80,15 @@ JOIN(I, step)(I* self)
     }
 }
 
-static inline I
-JOIN(I, range)(A* container, B* begin, B* end)
+static inline Z
+JOIN(Z, range)(A* container, B* begin, B* end)
 {
     (void) container;
-    static I zero;
-    I self = zero;
+    static Z zero;
+    Z self = zero;
     if(begin)
     {
-        self.step = JOIN(I, step);
+        self.step = JOIN(Z, step);
         self.begin = begin;
         self.end = end;
         self.next = begin->next;
@@ -106,12 +106,12 @@ JOIN(A, empty)(A* self)
     return self->size == 0;
 }
 
-static inline I
-JOIN(I, each)(A* a)
+static inline Z
+JOIN(Z, each)(A* a)
 {
     return JOIN(A, empty)(a)
-         ? JOIN(I, range)(a, NULL, NULL)
-         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+         ? JOIN(Z, range)(a, NULL, NULL)
+         : JOIN(Z, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline T
@@ -125,8 +125,8 @@ JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
 {
     if(self->size != other->size)
         return 0;
-    I a = JOIN(I, each)(self);
-    I b = JOIN(I, each)(other);
+    Z a = JOIN(Z, each)(self);
+    Z b = JOIN(Z, each)(other);
     while(!a.done && !b.done)
     {
         if(!_equal(a.ref, b.ref))
@@ -414,4 +414,4 @@ JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 #undef T
 #undef A
 #undef B
-#undef I
+#undef Z

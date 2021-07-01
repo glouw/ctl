@@ -10,7 +10,7 @@
 
 #define A JOIN(ust, T)
 #define B JOIN(A, node)
-#define I JOIN(A, it)
+#define Z JOIN(A, it)
 
 typedef struct B
 {
@@ -31,9 +31,9 @@ typedef struct A
 }
 A;
 
-typedef struct I
+typedef struct Z
 {
-    void (*step)(struct I*);
+    void (*step)(struct Z*);
     B* end;
     B* node;
     T* ref;
@@ -42,7 +42,7 @@ typedef struct I
     size_t index;
     int done;
 }
-I;
+Z;
 
 static inline B*
 JOIN(A, begin)(A* self)
@@ -64,13 +64,13 @@ JOIN(A, end)(A* self)
 }
 
 static inline size_t
-JOIN(I, index)(A* self, T value)
+JOIN(Z, index)(A* self, T value)
 {
     return self->hash(&value) % self->bucket_count;
 }
 
 static inline void
-JOIN(I, update)(I* self)
+JOIN(Z, update)(Z* self)
 {
     self->node = self->next;
     self->ref = &self->node->key;
@@ -78,7 +78,7 @@ JOIN(I, update)(I* self)
 }
 
 static inline int
-JOIN(I, scan)(I* self)
+JOIN(Z, scan)(Z* self)
 {
     for(size_t i = self->index + 1; i < self->container->bucket_count; i++)
     {
@@ -86,7 +86,7 @@ JOIN(I, scan)(I* self)
         if(self->next)
         {
             self->index = i;
-            JOIN(I, update)(self);
+            JOIN(Z, update)(self);
             return 1;
         }
     }
@@ -94,31 +94,31 @@ JOIN(I, scan)(I* self)
 }
 
 static inline void
-JOIN(I, step)(I* self)
+JOIN(Z, step)(Z* self)
 {
     if(self->next == JOIN(A, end)(self->container))
     {
-        if(!JOIN(I, scan)(self))
+        if(!JOIN(Z, scan)(self))
             self->done = 1;
     }
     else
-        JOIN(I, update)(self);
+        JOIN(Z, update)(self);
 }
 
-static inline I
-JOIN(I, range)(A* container, B* begin, B* end)
+static inline Z
+JOIN(Z, range)(A* container, B* begin, B* end)
 {
-    static I zero;
-    I self = zero;
+    static Z zero;
+    Z self = zero;
     if(begin)
     {
-        self.step = JOIN(I, step);
+        self.step = JOIN(Z, step);
         self.node = begin;
         self.ref = &self.node->key;
         self.next = self.node->next;
         self.end = end;
         self.container = container;
-        self.index = JOIN(I, index)(container, *self.ref);
+        self.index = JOIN(Z, index)(container, *self.ref);
     }
     else
         self.done = 1;
@@ -128,7 +128,7 @@ JOIN(I, range)(A* container, B* begin, B* end)
 static inline B**
 JOIN(A, bucket)(A* self, T value)
 {
-    size_t index = JOIN(I, index)(self, value);
+    size_t index = JOIN(Z, index)(self, value);
     return &self->bucket[index];
 }
 
@@ -138,12 +138,12 @@ JOIN(A, empty)(A* self)
     return self->size == 0;
 }
 
-static inline I
-JOIN(I, each)(A* a)
+static inline Z
+JOIN(Z, each)(A* a)
 {
     return JOIN(A, empty)(a)
-         ? JOIN(I, range)(a, NULL, NULL)
-         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+         ? JOIN(Z, range)(a, NULL, NULL)
+         : JOIN(Z, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline T
@@ -452,4 +452,4 @@ JOIN(A, copy)(A* self)
 #undef T
 #undef A
 #undef B
-#undef I
+#undef Z

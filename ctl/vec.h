@@ -9,7 +9,7 @@
 #include <ctl.h>
 
 #define A JOIN(vec, T)
-#define I JOIN(A, it)
+#define Z JOIN(A, it)
 
 #define MUST_ALIGN_16(T) (sizeof(T) == sizeof(char))
 
@@ -26,16 +26,16 @@ typedef struct A
 }
 A;
 
-typedef struct I
+typedef struct Z
 {
-    void (*step)(struct I*);
+    void (*step)(struct Z*);
     T* ref;
     T* begin;
     T* end;
     T* next;
     int done;
 }
-I;
+Z;
 
 static inline T*
 JOIN(A, at)(A* self, size_t index)
@@ -68,7 +68,7 @@ JOIN(A, end)(A* self)
 }
 
 static inline void
-JOIN(I, step)(I* self)
+JOIN(Z, step)(Z* self)
 {
     if(self->next >= self->end)
         self->done = 1;
@@ -79,15 +79,15 @@ JOIN(I, step)(I* self)
     }
 }
 
-static inline I
-JOIN(I, range)(A* container, T* begin, T* end)
+static inline Z
+JOIN(Z, range)(A* container, T* begin, T* end)
 {
     (void) container;
-    static I zero;
-    I self = zero;
+    static Z zero;
+    Z self = zero;
     if(begin && end)
     {
-        self.step = JOIN(I, step);
+        self.step = JOIN(Z, step);
         self.begin = begin;
         self.end = end;
         self.next = begin + 1;
@@ -104,12 +104,12 @@ JOIN(A, empty)(A* self)
     return self->size == 0;
 }
 
-static inline I
-JOIN(I, each)(A* a)
+static inline Z
+JOIN(Z, each)(A* a)
 {
     return JOIN(A, empty)(a)
-         ? JOIN(I, range)(a, NULL, NULL)
-         : JOIN(I, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
+         ? JOIN(Z, range)(a, NULL, NULL)
+         : JOIN(Z, range)(a, JOIN(A, begin)(a), JOIN(A, end)(a));
 }
 
 static inline T
@@ -123,8 +123,8 @@ JOIN(A, equal)(A* self, A* other, int _equal(T*, T*))
 {
     if(self->size != other->size)
         return 0;
-    I a = JOIN(I, each)(self);
-    I b = JOIN(I, each)(other);
+    Z a = JOIN(Z, each)(self);
+    Z b = JOIN(Z, each)(other);
     while(!a.done && !b.done)
     {
         if(!_equal(a.ref, b.ref))
@@ -395,7 +395,7 @@ JOIN(A, find)(A* self, T key, int _equal(T*, T*))
 #endif
 
 #undef A
-#undef I
+#undef Z
 #undef MUST_ALIGN_16
 
 // Hold preserves `T` if other containers

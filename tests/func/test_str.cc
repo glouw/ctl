@@ -304,14 +304,6 @@ main(void)
                     CHECK(a, b);
                     break;
                 }
-                case TEST_RESERVE:
-                {
-                    const size_t capacity = 3 * TEST_RAND(a.capacity);
-                    b.reserve(capacity);
-                    str_reserve(&a, capacity);
-                    CHECK(a, b);
-                    break;
-                }
                 case TEST_SHRINK_TO_FIT:
                 {
                     b.shrink_to_fit();
