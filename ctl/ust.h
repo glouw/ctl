@@ -6,7 +6,7 @@
 #error "Template type T undefined for <ust.h>"
 #endif
 
-#include <ctl.h>
+#include "ctl.h"
 
 #define A JOIN(ust, T)
 #define B JOIN(A, node)

@@ -6,7 +6,7 @@
 #error "Template type T undefined for <set.h>"
 #endif
 
-#include <ctl.h>
+#include "ctl.h"
 
 #define A JOIN(set, T)
 #define B JOIN(A, node)

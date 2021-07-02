@@ -1,3 +1,6 @@
 test
 a.out
 *.asm
+.vscode/settings.json
+build/
+Uninstall.cmake

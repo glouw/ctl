@@ -6,7 +6,7 @@
 #error "Template type T undefined for <vec.h>"
 #endif
 
-#include <ctl.h>
+#include "ctl.h"
 
 #define A JOIN(vec, T)
 #define Z JOIN(A, it)
