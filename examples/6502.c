@@ -1,5 +1,5 @@
 //
-// -- A 6502 compiler specalizing in 16-bit integer math and brute force loop unrolling --
+// -- A 6502 compiler specializing in 16-bit integer math and brute force loop unrolling --
 //
 
 #include <str.h>
@@ -1091,7 +1091,7 @@ compile(char* code)
 void
 boids(void)
 {
-    // This program simluates 9 boids starting in random positions and
+    // This program simulates 9 boids starting in random positions and
     // move in random velocities while avoid one another. Boids bounce
     // off the edge of the screen.
     compile(
