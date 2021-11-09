@@ -97,7 +97,7 @@ str_find(str* self, const char* s)
     return SIZE_MAX;
 }
 
-static inline int
+static inline size_t
 str_count(str* self, char c)
 {
     size_t count = 0;
